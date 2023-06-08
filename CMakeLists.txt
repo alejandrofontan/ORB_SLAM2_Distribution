@@ -6,6 +6,12 @@ if(COMPILE_WITH_PANGOLIN)
     add_definitions(-DCOMPILED_WITH_PANGOLIN=1)
 endif()
 
+option(COMPILE_DETERMINISTIC "Compile Deterministic Version Of ORB_SLAM2" OFF)
+if(COMPILE_DETERMINISTIC)
+    add_definitions(-DCOMPILED_DETERMINISTIC=1)
+endif()
+
+
 set(OPENCV_LOCAL_VERSION "4.7.0")
 set(EIGEN_LOCAL_VERSION "3.4.0")
 set(PANGOLIN_LOCAL_VERSION "0.8")
@@ -73,7 +79,7 @@ src/KeyFrameDatabase.cc
 src/Sim3Solver.cc
 src/Initializer.cc
 src/Viewer.cc
-)
+src/Utils.cpp)
 
 target_link_libraries(${PROJECT_NAME}
 ${OpenCV_LIBS}

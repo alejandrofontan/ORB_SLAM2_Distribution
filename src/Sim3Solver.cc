@@ -20,6 +20,7 @@
 
 
 #include "Sim3Solver.h"
+#include "Utils.h"
 
 #include <vector>
 #include <cmath>
@@ -165,8 +166,7 @@ cv::Mat Sim3Solver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInli
         // Get min set of points
         for(short i = 0; i < 3; ++i)
         {
-            int randi = DUtils::Random::RandomInt(0, vAvailableIndices.size()-1);
-
+            int randi = RandomIntegerGenerator::getRandomNumber(int(vAvailableIndices.size() - 1)) ;
             int idx = vAvailableIndices[randi];
 
             mvX3Dc1[idx].copyTo(P3Dc1i.col(i));
