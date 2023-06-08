@@ -23,8 +23,11 @@
 #include "System.h"
 #include "Converter.h"
 #include <thread>
-#include <pangolin/pangolin.h>
 #include <iomanip>
+
+#ifdef COMPILED_WITH_PANGOLIN
+#include<pangolin/pangolin.h>
+#endif
 
 namespace ORB_SLAM2
 {
@@ -94,6 +97,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     mpLoopCloser = new LoopClosing(mpMap, mpKeyFrameDatabase, mpVocabulary, mSensor!=MONOCULAR);
     mptLoopClosing = new thread(&ORB_SLAM2::LoopClosing::Run, mpLoopCloser);
 
+#ifdef COMPILED_WITH_PANGOLIN
     //Initialize the Viewer thread and launch
     if(bUseViewer)
     {
@@ -101,6 +105,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
         mptViewer = new thread(&Viewer::Run, mpViewer);
         mpTracker->SetViewer(mpViewer);
     }
+#endif
 
     //Set pointers between threads
     mpTracker->SetLocalMapper(mpLocalMapper);
@@ -315,8 +320,10 @@ void System::Shutdown()
         usleep(5000);
     }
 
+#ifdef COMPILED_WITH_PANGOLIN
     if(mpViewer)
         pangolin::BindToContext("ORB-SLAM2: Map Viewer");
+#endif
 }
 
 void System::SaveTrajectoryTUM(const string &filename)

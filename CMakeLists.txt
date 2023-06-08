@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 2.8)
 project(ORB_SLAM2_Deterministic)
 
+option(COMPILE_WITH_PANGOLIN "Compile using Pangolin for Visualization" ON)
+if(COMPILE_WITH_PANGOLIN)
+    add_definitions(-DCOMPILED_WITH_PANGOLIN=1)
+endif()
+
 set(OPENCV_LOCAL_VERSION "4.7.0")
 set(EIGEN_LOCAL_VERSION "3.4.0")
 set(PANGOLIN_LOCAL_VERSION "0.8")
@@ -33,14 +38,18 @@ LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
 
 find_package(OpenCV ${OPENCV_LOCAL_VERSION} REQUIRED HINTS ${OPENCV_LOCAL_PATH})
 find_package(Eigen3 ${EIGEN_LOCAL_VERSION} REQUIRED HINTS ${EIGEN_LOCAL_PATH})
-find_package(Pangolin ${PANGOLIN_LOCAL_VERSION} REQUIRED HINTS ${PANGOLIN_LOCAL_PATH})
+if(COMPILE_WITH_PANGOLIN)
+    find_package(Pangolin ${PANGOLIN_LOCAL_VERSION} REQUIRED HINTS ${PANGOLIN_LOCAL_PATH})
+endif()
 
 include_directories(
 ${PROJECT_SOURCE_DIR}
 ${PROJECT_SOURCE_DIR}/include
 ${EIGEN3_INCLUDE_DIR}
-${Pangolin_INCLUDE_DIRS}
 )
+if(COMPILE_WITH_PANGOLIN)
+    include_directories(${Pangolin_INCLUDE_DIRS})
+endif()
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 
@@ -69,10 +78,15 @@ src/Viewer.cc
 target_link_libraries(${PROJECT_NAME}
 ${OpenCV_LIBS}
 ${EIGEN3_LIBS}
-${Pangolin_LIBRARIES}
 ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
 ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
 )
+if(COMPILE_WITH_PANGOLIN)
+    target_link_libraries(
+            ${PROJECT_NAME}
+            ${Pangolin_LIBRARIES}
+    )
+endif()
 
 # Build examples
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/RGB-D)

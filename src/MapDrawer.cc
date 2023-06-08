@@ -21,8 +21,11 @@
 #include "MapDrawer.h"
 #include "MapPoint.h"
 #include "KeyFrame.h"
-#include <pangolin/pangolin.h>
 #include <mutex>
+
+#ifdef COMPILED_WITH_PANGOLIN
+#include<pangolin/pangolin.h>
+#endif
 
 namespace ORB_SLAM2
 {
@@ -41,6 +44,13 @@ MapDrawer::MapDrawer(Map* pMap, const string &strSettingPath):mpMap(pMap)
 
 }
 
+void MapDrawer::SetCurrentCameraPose(const cv::Mat &Tcw)
+{
+    unique_lock<mutex> lock(mMutexCamera);
+    mCameraPose = Tcw.clone();
+}
+
+#ifdef COMPILED_WITH_PANGOLIN
 void MapDrawer::DrawMapPoints()
 {
     const vector<MapPoint*> &vpMPs = mpMap->GetAllMapPoints();
@@ -218,13 +228,6 @@ void MapDrawer::DrawCurrentCamera(pangolin::OpenGlMatrix &Twc)
     glPopMatrix();
 }
 
-
-void MapDrawer::SetCurrentCameraPose(const cv::Mat &Tcw)
-{
-    unique_lock<mutex> lock(mMutexCamera);
-    mCameraPose = Tcw.clone();
-}
-
 void MapDrawer::GetCurrentOpenGLCameraMatrix(pangolin::OpenGlMatrix &M)
 {
     if(!mCameraPose.empty())
@@ -260,5 +263,5 @@ void MapDrawer::GetCurrentOpenGLCameraMatrix(pangolin::OpenGlMatrix &M)
     else
         M.SetIdentity();
 }
-
+#endif
 } //namespace ORB_SLAM

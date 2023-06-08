@@ -19,10 +19,11 @@
 */
 
 #include "Viewer.h"
-#include <pangolin/pangolin.h>
-
 #include <mutex>
 
+#ifdef COMPILED_WITH_PANGOLIN
+#include<pangolin/pangolin.h>
+#endif
 namespace ORB_SLAM2
 {
 
@@ -51,6 +52,7 @@ Viewer::Viewer(System* pSystem, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer
     mViewpointF = fSettings["Viewer.ViewpointF"];
 }
 
+#ifdef COMPILED_WITH_PANGOLIN
 void Viewer::Run()
 {
     mbFinished = false;
@@ -167,6 +169,7 @@ void Viewer::Run()
 
     SetFinish();
 }
+#endif
 
 void Viewer::RequestFinish()
 {
