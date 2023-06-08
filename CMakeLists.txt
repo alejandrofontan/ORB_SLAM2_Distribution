@@ -1,6 +1,13 @@
 cmake_minimum_required(VERSION 2.8)
 project(ORB_SLAM2)
 
+set(OPENCV_LOCAL_VERSION "4.7.0")
+set(OPENCV_LOCAL_PATH "/home/alex/libraries/opencv-${OPENCV_LOCAL_VERSION}/install")
+set(EIGEN_LOCAL_VERSION "3.4.0")
+set(EIGEN_LOCAL_PATH "/home/alex/libraries/eigen-${EIGEN_LOCAL_VERSION}/install")
+set(PANGOLIN_LOCAL_VERSION "0.8")
+set(PANGOLIN_LOCAL_PATH "/home/alex/libraries/Pangolin-${PANGOLIN_LOCAL_VERSION}/install")
+
 IF(NOT CMAKE_BUILD_TYPE)
   SET(CMAKE_BUILD_TYPE Release)
 ENDIF()
@@ -28,16 +35,9 @@ endif()
 
 LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
 
-find_package(OpenCV 3.0 QUIET)
-if(NOT OpenCV_FOUND)
-   find_package(OpenCV 2.4.3 QUIET)
-   if(NOT OpenCV_FOUND)
-      message(FATAL_ERROR "OpenCV > 2.4.3 not found.")
-   endif()
-endif()
-
-find_package(Eigen3 3.1.0 REQUIRED)
-find_package(Pangolin REQUIRED)
+find_package(OpenCV ${OPENCV_LOCAL_VERSION} REQUIRED HINTS ${OPENCV_LOCAL_PATH})
+find_package(Eigen3 ${EIGEN_LOCAL_VERSION} REQUIRED HINTS ${EIGEN_LOCAL_PATH})
+find_package(Pangolin ${PANGOLIN_LOCAL_VERSION} REQUIRED HINTS ${PANGOLIN_LOCAL_PATH})
 
 include_directories(
 ${PROJECT_SOURCE_DIR}
