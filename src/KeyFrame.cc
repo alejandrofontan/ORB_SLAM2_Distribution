@@ -25,6 +25,10 @@
 
 namespace ORB_SLAM2
 {
+    
+static bool KeyframeComparison(pair<int , KeyFrame*> a, pair<int , KeyFrame*> b){
+    return (a.second->mnId < b.second->mnId);
+}
 
 long unsigned int KeyFrame::nNextId=0;
 
@@ -143,7 +147,7 @@ void KeyFrame::UpdateBestCovisibles()
     for(map<KeyFrame*,int>::iterator mit=mConnectedKeyFrameWeights.begin(), mend=mConnectedKeyFrameWeights.end(); mit!=mend; mit++)
        vPairs.push_back(make_pair(mit->second,mit->first));
 
-    sort(vPairs.begin(),vPairs.end());
+    sort(vPairs.begin(),vPairs.end(),KeyframeComparison);
     list<KeyFrame*> lKFs;
     list<int> lWs;
     for(size_t i=0, iend=vPairs.size(); i<iend;i++)
@@ -351,7 +355,7 @@ void KeyFrame::UpdateConnections()
         pKFmax->AddConnection(this,nmax);
     }
 
-    sort(vPairs.begin(),vPairs.end());
+    sort(vPairs.begin(),vPairs.end(),KeyframeComparison);
     list<KeyFrame*> lKFs;
     list<int> lWs;
     for(size_t i=0; i<vPairs.size();i++)
