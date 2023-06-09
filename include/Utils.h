@@ -8,6 +8,11 @@
 #include <vector>
 #include <iostream>
 
+using FrameId = long unsigned int;
+using KeyframeId = long unsigned int;
+using KeypointIndex = int;
+using OctaveType = int;
+
 namespace ORB_SLAM2
 {
     class RandomIntegerGenerator

@@ -28,6 +28,7 @@
 #include "ORBextractor.h"
 #include "Frame.h"
 #include "KeyFrameDatabase.h"
+#include "Utils.h"
 
 #include <mutex>
 
@@ -72,16 +73,17 @@ public:
     void AddChild(KeyFrame* pKF);
     void EraseChild(KeyFrame* pKF);
     void ChangeParent(KeyFrame* pKF);
-    std::set<KeyFrame*> GetChilds();
+    map<KeyframeId , KeyFrame*> GetChilds();
     KeyFrame* GetParent();
     bool hasChild(KeyFrame* pKF);
 
     // Loop Edges
     void AddLoopEdge(KeyFrame* pKF);
-    std::set<KeyFrame*> GetLoopEdges();
+    std::map<KeyframeId, KeyFrame*> GetLoopEdges();
 
     // MapPoint observation functions
-    void AddMapPoint(MapPoint* pMP, const size_t &idx);
+    MapPoint* CreateMapPoint(const cv::Mat& worldPos, const KeypointIndex& projIndex);
+    void AddMapPoint(MapPoint* pMP, const KeypointIndex &idx);
     void EraseMapPointMatch(const size_t &idx);
     void EraseMapPointMatch(MapPoint* pMP);
     void ReplaceMapPointMatch(const size_t &idx, MapPoint* pMP);
@@ -209,6 +211,7 @@ protected:
     // Grid over the image to speed up feature matching
     std::vector< std::vector <std::vector<size_t> > > mGrid;
 
+    std::map<KeyframeId, KeyFrame*> mConnectedKeyFrames;
     std::map<KeyFrame*,int> mConnectedKeyFrameWeights;
     std::vector<KeyFrame*> mvpOrderedConnectedKeyFrames;
     std::vector<int> mvOrderedWeights;
@@ -216,8 +219,8 @@ protected:
     // Spanning Tree and Loop Edges
     bool mbFirstConnection;
     KeyFrame* mpParent;
-    std::set<KeyFrame*> mspChildrens;
-    std::set<KeyFrame*> mspLoopEdges;
+    std::map<KeyframeId, KeyFrame*> mspChildrens;
+    std::map<KeyframeId, KeyFrame*> mspLoopEdges;
 
     // Bad flags
     bool mbNotErase;
@@ -232,6 +235,8 @@ protected:
     std::mutex mMutexConnections;
     std::mutex mMutexFeatures;
 };
+
+typedef ORB_SLAM2::KeyFrame* Keyframe;
 
 } //namespace ORB_SLAM
 

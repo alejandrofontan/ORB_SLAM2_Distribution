@@ -24,6 +24,7 @@
 #include"KeyFrame.h"
 #include"Frame.h"
 #include"Map.h"
+#include"Utils.h"
 
 #include<opencv2/core/core.hpp>
 #include<mutex>
@@ -35,6 +36,24 @@ class KeyFrame;
 class Map;
 class Frame;
 
+class Observation{
+    public:
+        Observation() = default;
+        Observation(KeyFrame* projKeyFrame, const KeypointIndex& projIndex, KeyFrame* referenceKeyframe, const KeypointIndex& referenceKeypointIndex);
+
+        // Observations are matched respect to a reference keyframe and projected to a projection keyframe
+        // ref : reference keyframe
+        // proj : projection keyframe
+
+        KeyFrame* projKeyframe{};
+        KeypointIndex projIndex{};
+        OctaveType projOctave{};
+
+        KeyFrame* refKeyframe{};
+        KeypointIndex  refIndex{};
+        OctaveType refOctave{};
+
+    };
 
 class MapPoint
 {
@@ -48,19 +67,26 @@ public:
     cv::Mat GetNormal();
     KeyFrame* GetReferenceKeyFrame();
 
-    std::map<KeyFrame*,size_t> GetObservations();
     int Observations();
 
-    void AddObservation(KeyFrame* pKF,size_t idx);
-    void EraseObservation(KeyFrame* pKF);
+    void AddObservation(KeyFrame* projKeyframe, const KeypointIndex& projIndex);
+    void EraseObservation(KeyFrame* projKeyframe);
+    std::map<KeyframeId , Observation> GetObservations();
+    int GetNumberOfObservations();
 
-    int GetIndexInKeyFrame(KeyFrame* pKF);
-    bool IsInKeyFrame(KeyFrame* pKF);
+    void increasePointObservability(KeyFrame* projKeyframe, const KeypointIndex& projIndex);
+    void decreasePointObservability(KeyFrame* projKeyframe, const KeypointIndex& projIndex);
+
+    void SetCurrentRefKeyframeIndex(const KeypointIndex& refKeyframeIndex);
+    KeyFrame* GetCurrentRefKeyframe();
+
+    int GetIndexInKeyFrame(KeyFrame* keyframe);
+    bool IsInKeyFrame(KeyFrame* keyframe);
 
     void SetBadFlag();
     bool isBad();
 
-    void Replace(MapPoint* pMP);    
+    void Replace(MapPoint* mapPt);
     MapPoint* GetReplaced();
 
     void IncreaseVisible(int n=1);
@@ -70,7 +96,7 @@ public:
         return mnFound;
     }
 
-    void ComputeDistinctiveDescriptors();
+    MapPoint* ComputeDistinctiveDescriptors();
 
     cv::Mat GetDescriptor();
 
@@ -118,13 +144,15 @@ protected:
      cv::Mat mWorldPos;
 
      // Keyframes observing the point and associated index in keyframe
-     std::map<KeyFrame*,size_t> mObservations;
+     std::map<KeyframeId, Observation> mObservations;
 
      // Mean viewing direction
      cv::Mat mNormalVector;
 
      // Best descriptor to fast matching
      cv::Mat mDescriptor;
+     KeyFrame* currentReferenceKeyframe;
+     KeypointIndex currentReferenceKeypointIndex;
 
      // Reference KeyFrame
      KeyFrame* mpRefKF;
@@ -146,6 +174,8 @@ protected:
      std::mutex mMutexPos;
      std::mutex mMutexFeatures;
 };
+
+typedef MapPoint* MapPt;
 
 } //namespace ORB_SLAM
 

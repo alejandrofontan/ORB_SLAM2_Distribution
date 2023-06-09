@@ -29,6 +29,15 @@ namespace ORB_SLAM2
 long unsigned int MapPoint::nNextId=0;
 mutex MapPoint::mGlobalMutex;
 
+Observation::Observation(KeyFrame* projKeyframe, const KeypointIndex& projIndex,
+                         KeyFrame* refKeyframe , const KeypointIndex& refIndex):
+                         projKeyframe(projKeyframe), projIndex(projIndex),
+                        refKeyframe(refKeyframe), refIndex(refIndex){
+
+        projOctave = projKeyframe->mvKeysUn[projIndex].octave;
+        refOctave = refKeyframe->mvKeysUn[refIndex].octave;
+}
+
 MapPoint::MapPoint(const cv::Mat &Pos, KeyFrame *pRefKF, Map* pMap):
     mnFirstKFid(pRefKF->mnId), mnFirstFrame(pRefKF->mnFrameId), nObs(0), mnTrackReferenceForFrame(0),
     mnLastFrameSeen(0), mnBALocalForKF(0), mnFuseCandidateForKF(0), mnLoopPointForKF(0), mnCorrectedByKF(0),
@@ -41,6 +50,9 @@ MapPoint::MapPoint(const cv::Mat &Pos, KeyFrame *pRefKF, Map* pMap):
     // MapPoints can be created from Tracking and Local Mapping. This mutex avoid conflicts with id.
     unique_lock<mutex> lock(mpMap->mMutexPointCreation);
     mnId=nNextId++;
+
+    currentReferenceKeyframe = mpRefKF;
+    currentReferenceKeypointIndex = -1;
 }
 
 MapPoint::MapPoint(const cv::Mat &Pos, Map* pMap, Frame* pFrame, const int &idxF):
@@ -68,6 +80,9 @@ MapPoint::MapPoint(const cv::Mat &Pos, Map* pMap, Frame* pFrame, const int &idxF
     // MapPoints can be created from Tracking and Local Mapping. This mutex avoid conflicts with id.
     unique_lock<mutex> lock(mpMap->mMutexPointCreation);
     mnId=nNextId++;
+
+    currentReferenceKeyframe = nullptr;
+    currentReferenceKeypointIndex = -1;
 }
 
 void MapPoint::SetWorldPos(const cv::Mat &Pos)
@@ -95,48 +110,47 @@ KeyFrame* MapPoint::GetReferenceKeyFrame()
     return mpRefKF;
 }
 
-void MapPoint::AddObservation(KeyFrame* pKF, size_t idx)
+void MapPoint::AddObservation(KeyFrame* projKeyframe, const KeypointIndex& projIndex)
 {
-    unique_lock<mutex> lock(mMutexFeatures);
-    if(mObservations.count(pKF))
-        return;
-    mObservations[pKF]=idx;
-
-    if(pKF->mvuRight[idx]>=0)
-        nObs+=2;
-    else
-        nObs++;
-}
-
-void MapPoint::EraseObservation(KeyFrame* pKF)
-{
-    bool bBad=false;
     {
         unique_lock<mutex> lock(mMutexFeatures);
-        if(mObservations.count(pKF))
+        if(mObservations.count(projKeyframe->mnId))
+            return;
+        mObservations[projKeyframe->mnId] = Observation(projKeyframe, projIndex,
+                                                        currentReferenceKeyframe,
+                                                        currentReferenceKeypointIndex);
+        increasePointObservability(projKeyframe,projIndex);
+    }
+
+    ComputeDistinctiveDescriptors()->UpdateNormalAndDepth();
+
+}
+
+void MapPoint::EraseObservation(KeyFrame* projKeyframe)
+{
+    bool removePoint{false};
+    {
+        unique_lock<mutex> lock(mMutexFeatures);
+        if(mObservations.count(projKeyframe->mnId))
         {
-            int idx = mObservations[pKF];
-            if(pKF->mvuRight[idx]>=0)
-                nObs-=2;
-            else
-                nObs--;
-
-            mObservations.erase(pKF);
-
-            if(mpRefKF==pKF)
-                mpRefKF=mObservations.begin()->first;
+            KeypointIndex projIndex = mObservations[projKeyframe->mnId].projIndex;
+            decreasePointObservability(projKeyframe,projIndex);
+            mObservations.erase(projKeyframe->mnId);
+            if(mpRefKF == projKeyframe)
+                mpRefKF = mObservations.begin()->second.projKeyframe;
 
             // If only 2 observations or less, discard point
-            if(nObs<=2)
-                bBad=true;
+            removePoint = (GetNumberOfObservations() <= 2);
         }
     }
 
-    if(bBad)
+    if(removePoint)
         SetBadFlag();
+    else
+        ComputeDistinctiveDescriptors()->UpdateNormalAndDepth();
 }
 
-map<KeyFrame*, size_t> MapPoint::GetObservations()
+std::map<KeyframeId, Observation> MapPoint::GetObservations()
 {
     unique_lock<mutex> lock(mMutexFeatures);
     return mObservations;
@@ -148,20 +162,46 @@ int MapPoint::Observations()
     return nObs;
 }
 
+int MapPoint::GetNumberOfObservations()
+{
+    return int(mObservations.size());
+}
+
+void MapPoint::increasePointObservability(KeyFrame* projKeyframe, const KeypointIndex& projIndex){
+    if(projKeyframe->mvuRight[projIndex] >= 0)
+        nObs+=2;
+    else
+        nObs++;
+}
+
+void MapPoint::decreasePointObservability(KeyFrame* projKeyframe, const KeypointIndex& projIndex){
+    if(projKeyframe->mvuRight[projIndex] >= 0)
+        nObs-=2;
+    else
+        nObs--;
+}
+
+void MapPoint::SetCurrentRefKeyframeIndex(const KeypointIndex& refKeyframeIndex){
+    currentReferenceKeypointIndex = refKeyframeIndex;
+}
+
+KeyFrame* MapPoint::GetCurrentRefKeyframe(){
+    return currentReferenceKeyframe;
+}
+
 void MapPoint::SetBadFlag()
 {
-    map<KeyFrame*,size_t> obs;
+    map<KeyframeId , Observation> observations;
     {
         unique_lock<mutex> lock1(mMutexFeatures);
         unique_lock<mutex> lock2(mMutexPos);
-        mbBad=true;
-        obs = mObservations;
+        mbBad = true;
+        observations = mObservations;
         mObservations.clear();
     }
-    for(map<KeyFrame*,size_t>::iterator mit=obs.begin(), mend=obs.end(); mit!=mend; mit++)
-    {
-        KeyFrame* pKF = mit->first;
-        pKF->EraseMapPointMatch(mit->second);
+    for(auto& obs: observations){
+        Keyframe keyframe = obs.second.projKeyframe;
+        keyframe->EraseMapPointMatch(obs.second.projIndex);
     }
 
     mpMap->EraseMapPoint(this);
@@ -174,42 +214,43 @@ MapPoint* MapPoint::GetReplaced()
     return mpReplaced;
 }
 
-void MapPoint::Replace(MapPoint* pMP)
+void MapPoint::Replace(MapPt mapPt)
 {
-    if(pMP->mnId==this->mnId)
+    if(mapPt->mnId == this->mnId)
         return;
 
     int nvisible, nfound;
-    map<KeyFrame*,size_t> obs;
+    map<KeyframeId , Observation> observations;
     {
         unique_lock<mutex> lock1(mMutexFeatures);
         unique_lock<mutex> lock2(mMutexPos);
-        obs=mObservations;
+        observations = mObservations;
         mObservations.clear();
-        mbBad=true;
+        mbBad = true;
         nvisible = mnVisible;
         nfound = mnFound;
-        mpReplaced = pMP;
+        mpReplaced = mapPt;
     }
 
-    for(map<KeyFrame*,size_t>::iterator mit=obs.begin(), mend=obs.end(); mit!=mend; mit++)
+    for(auto& obs: observations)
     {
         // Replace measurement in keyframe
-        KeyFrame* pKF = mit->first;
+        Keyframe keyframe = obs.second.projKeyframe;
 
-        if(!pMP->IsInKeyFrame(pKF))
+        if(!mapPt->IsInKeyFrame(keyframe))
         {
-            pKF->ReplaceMapPointMatch(mit->second, pMP);
-            pMP->AddObservation(pKF,mit->second);
+            keyframe->ReplaceMapPointMatch(obs.second.projIndex, mapPt);
+            mapPt->AddObservation(keyframe,obs.second.projIndex);
         }
         else
         {
-            pKF->EraseMapPointMatch(mit->second);
+            keyframe->EraseMapPointMatch(obs.second.projIndex);
         }
     }
-    pMP->IncreaseFound(nfound);
-    pMP->IncreaseVisible(nvisible);
-    pMP->ComputeDistinctiveDescriptors();
+
+    mapPt->IncreaseFound(nfound);
+    mapPt->IncreaseVisible(nvisible);
+    mapPt->ComputeDistinctiveDescriptors()->UpdateNormalAndDepth();
 
     mpMap->EraseMapPoint(this);
 }
@@ -239,38 +280,42 @@ float MapPoint::GetFoundRatio()
     return static_cast<float>(mnFound)/mnVisible;
 }
 
-void MapPoint::ComputeDistinctiveDescriptors()
+MapPt MapPoint::ComputeDistinctiveDescriptors()
 {
     // Retrieve all observed descriptors
-    vector<cv::Mat> vDescriptors;
+    vector<cv::Mat> descriptors;
+    vector<KeypointIndex> projIndexes{};
+    vector<Keyframe> projectionKeyframes{};
 
-    map<KeyFrame*,size_t> observations;
+    map<KeyframeId, Observation> observations;
 
     {
         unique_lock<mutex> lock1(mMutexFeatures);
         if(mbBad)
-            return;
-        observations=mObservations;
+            return this;
     }
+
+    observations = GetObservations();
 
     if(observations.empty())
-        return;
+        return this;
 
-    vDescriptors.reserve(observations.size());
-
-    for(map<KeyFrame*,size_t>::iterator mit=observations.begin(), mend=observations.end(); mit!=mend; mit++)
+    descriptors.reserve(observations.size());
+    for(auto& obs: observations)
     {
-        KeyFrame* pKF = mit->first;
-
-        if(!pKF->isBad())
-            vDescriptors.push_back(pKF->mDescriptors.row(mit->second));
+        Keyframe projKeyframe = obs.second.projKeyframe;
+        if(!projKeyframe->isBad()){
+            descriptors.push_back(projKeyframe->mDescriptors.row(obs.second.projIndex));
+            projIndexes.push_back(obs.second.projIndex);
+            projectionKeyframes.push_back(projKeyframe);
+        }
     }
 
-    if(vDescriptors.empty())
-        return;
+    if(descriptors.empty())
+        return this;
 
-    // Compute distances between them
-    const size_t N = vDescriptors.size();
+    // Compute distances between descriptors
+    const size_t N = descriptors.size();
 
     float Distances[N][N];
     for(size_t i=0;i<N;i++)
@@ -278,9 +323,9 @@ void MapPoint::ComputeDistinctiveDescriptors()
         Distances[i][i]=0;
         for(size_t j=i+1;j<N;j++)
         {
-            int distij = ORBmatcher::DescriptorDistance(vDescriptors[i],vDescriptors[j]);
-            Distances[i][j]=distij;
-            Distances[j][i]=distij;
+            int distij = ORBmatcher::DescriptorDistance(descriptors[i],descriptors[j]);
+            Distances[i][j] = float(distij);
+            Distances[j][i] = float(distij);
         }
     }
 
@@ -302,8 +347,12 @@ void MapPoint::ComputeDistinctiveDescriptors()
 
     {
         unique_lock<mutex> lock(mMutexFeatures);
-        mDescriptor = vDescriptors[BestIdx].clone();
+        mDescriptor = descriptors[BestIdx].clone();
+        currentReferenceKeypointIndex = projIndexes[BestIdx];
+        currentReferenceKeyframe = projectionKeyframes[BestIdx];
     }
+
+    return this;
 }
 
 cv::Mat MapPoint::GetDescriptor()
@@ -312,60 +361,62 @@ cv::Mat MapPoint::GetDescriptor()
     return mDescriptor.clone();
 }
 
-int MapPoint::GetIndexInKeyFrame(KeyFrame *pKF)
+int MapPoint::GetIndexInKeyFrame(KeyFrame* keyframe)
 {
     unique_lock<mutex> lock(mMutexFeatures);
-    if(mObservations.count(pKF))
-        return mObservations[pKF];
+    if(mObservations.count(keyframe->mnId))
+        return mObservations[keyframe->mnId].projIndex;
     else
         return -1;
 }
 
-bool MapPoint::IsInKeyFrame(KeyFrame *pKF)
+bool MapPoint::IsInKeyFrame(KeyFrame* keyframe)
 {
     unique_lock<mutex> lock(mMutexFeatures);
-    return (mObservations.count(pKF));
+    return (mObservations.count(keyframe->mnId));
 }
 
 void MapPoint::UpdateNormalAndDepth()
 {
-    map<KeyFrame*,size_t> observations;
-    KeyFrame* pRefKF;
-    cv::Mat Pos;
+
+    map<KeyframeId , Observation> observations = GetObservations();
+    if(observations.empty())
+        return;
+
+    Keyframe refKeyframe;
+    cv::Mat XYZ;
     {
         unique_lock<mutex> lock1(mMutexFeatures);
         unique_lock<mutex> lock2(mMutexPos);
         if(mbBad)
             return;
-        observations=mObservations;
-        pRefKF=mpRefKF;
-        Pos = mWorldPos.clone();
+
+        refKeyframe = mpRefKF;
+        XYZ = mWorldPos.clone();
     }
 
-    if(observations.empty())
-        return;
-
     cv::Mat normal = cv::Mat::zeros(3,1,CV_32F);
-    int n=0;
-    for(map<KeyFrame*,size_t>::iterator mit=observations.begin(), mend=observations.end(); mit!=mend; mit++)
+    int n = 0;
+
+    for(const auto& obs: observations)
     {
-        KeyFrame* pKF = mit->first;
-        cv::Mat Owi = pKF->GetCameraCenter();
-        cv::Mat normali = mWorldPos - Owi;
-        normal = normal + normali/cv::norm(normali);
+        KeyFrame* projKeyframe = obs.second.projKeyframe;
+        cv::Mat cameraCenter = projKeyframe->GetCameraCenter();
+        cv::Mat normal_i = XYZ - cameraCenter;
+        normal = normal + normal_i/cv::norm(normal_i);
         n++;
     }
 
-    cv::Mat PC = Pos - pRefKF->GetCameraCenter();
+    cv::Mat PC = XYZ - refKeyframe->GetCameraCenter();
     const float dist = cv::norm(PC);
-    const int level = pRefKF->mvKeysUn[observations[pRefKF]].octave;
-    const float levelScaleFactor =  pRefKF->mvScaleFactors[level];
-    const int nLevels = pRefKF->mnScaleLevels;
+    const int level = refKeyframe->mvKeysUn[observations[refKeyframe->mnId].projIndex].octave;
+    const float levelScaleFactor =  refKeyframe->mvScaleFactors[level];
+    const int nLevels = refKeyframe->mnScaleLevels;
 
     {
         unique_lock<mutex> lock3(mMutexPos);
         mfMaxDistance = dist*levelScaleFactor;
-        mfMinDistance = mfMaxDistance/pRefKF->mvScaleFactors[nLevels-1];
+        mfMinDistance = mfMaxDistance/refKeyframe->mvScaleFactors[nLevels-1];
         mNormalVector = normal/n;
     }
 }
