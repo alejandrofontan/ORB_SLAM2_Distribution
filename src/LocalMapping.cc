@@ -61,7 +61,7 @@ namespace ORB_SLAM2 {
 
                 if (!CheckNewKeyFrames()) {
                     // Find more matches in neighbor keyframes and fuse point duplications
-                    SearchInNeighbors();
+                    SearchInNeighbors(mpCurrentKeyFrame);
                 }
 
                 mbAbortBA = false;
@@ -98,6 +98,48 @@ namespace ORB_SLAM2 {
 
         SetFinish();
     }
+
+void LocalMapping::RunSequential()
+{
+    mbFinished = false;
+
+    // Tracking will see that Local Mapping is busy
+    SetAcceptKeyFrames(false);
+
+    // Check if there are keyframes in the queue
+    if(CheckNewKeyFrames()){
+
+        // BoW conversion and insertion in Map
+        ProcessNewKeyFrame();
+
+        // Check recent MapPoints
+        MapPointCulling();
+
+        // Triangulate new MapPoints
+        CreateNewMapPoints(mpCurrentKeyFrame);
+
+        if(!CheckNewKeyFrames())
+        {
+            // Find more matches in neighbor keyframes and fuse point duplications
+            SearchInNeighbors(mpCurrentKeyFrame);
+        }
+
+        // Local BA
+        if(mpMap->KeyFramesInMap()>2){
+            bool mbAbortBA_sequential = false;
+            Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame,&mbAbortBA_sequential, mpMap);
+        }
+
+        // Check redundant local Keyframes
+        KeyFrameCulling();
+
+        mpLoopCloser->InsertKeyFrame(mpCurrentKeyFrame);
+
+    }
+
+    // Tracking will see that Local Mapping is busy
+    SetAcceptKeyFrames(true);
+}
 
     void LocalMapping::InsertKeyFrame(KeyFrame *pKF) {
         unique_lock<mutex> lock(mMutexNewKFs);
@@ -400,86 +442,73 @@ void LocalMapping::CreateNewMapPoints(KeyFrame *keyframe) {
     }
 }
 
-void LocalMapping::SearchInNeighbors()
+void LocalMapping::SearchInNeighbors(Keyframe keyframe)
 {
     // Retrieve neighbor keyframes
-    int nn = 10;
+    int numberOfNeighbors = 10;
     if(mbMonocular)
-        nn=20;
-    const vector<KeyFrame*> vpNeighKFs = mpCurrentKeyFrame->GetBestCovisibilityKeyFrames(nn);
-    vector<KeyFrame*> vpTargetKFs;
-    for(vector<KeyFrame*>::const_iterator vit=vpNeighKFs.begin(), vend=vpNeighKFs.end(); vit!=vend; vit++)
-    {
-        KeyFrame* pKFi = *vit;
-        if(pKFi->isBad() || pKFi->mnFuseTargetForKF == mpCurrentKeyFrame->mnId)
+        numberOfNeighbors = 20;
+
+    const vector<KeyFrame*> neighbors = keyframe->GetBestCovisibilityKeyFrames(numberOfNeighbors);
+
+    vector<KeyFrame*> targetKeyframes;
+    set<KeyFrame*> targetKeyframes_;
+
+    for(auto& neighbor: neighbors){
+
+        if(neighbor->isBad() || targetKeyframes_.count(neighbor))
             continue;
-        vpTargetKFs.push_back(pKFi);
-        pKFi->mnFuseTargetForKF = mpCurrentKeyFrame->mnId;
+
+        targetKeyframes.push_back(neighbor);
+        targetKeyframes_.insert(neighbor);
 
         // Extend to some second neighbors
-        const vector<KeyFrame*> vpSecondNeighKFs = pKFi->GetBestCovisibilityKeyFrames(5);
-        for(vector<KeyFrame*>::const_iterator vit2=vpSecondNeighKFs.begin(), vend2=vpSecondNeighKFs.end(); vit2!=vend2; vit2++)
+        const vector<KeyFrame*> secondNeighbors = neighbor->GetBestCovisibilityKeyFrames(5);
+        for(auto& secondNeighbor: secondNeighbors)
         {
-            KeyFrame* pKFi2 = *vit2;
-            if(pKFi2->isBad() || pKFi2->mnFuseTargetForKF==mpCurrentKeyFrame->mnId || pKFi2->mnId==mpCurrentKeyFrame->mnId)
+            if(secondNeighbor->isBad() || targetKeyframes_.count(secondNeighbor) || secondNeighbor->mnId == keyframe->mnId)
                 continue;
-            vpTargetKFs.push_back(pKFi2);
+
+            targetKeyframes.push_back(secondNeighbor);
+            //targetKeyframes_.insert(secondNeighbor);
         }
     }
-
 
     // Search matches by projection from current KF in target KFs
     ORBmatcher matcher;
-    vector<MapPoint*> vpMapPointMatches = mpCurrentKeyFrame->GetMapPointMatches();
-    for(vector<KeyFrame*>::iterator vit=vpTargetKFs.begin(), vend=vpTargetKFs.end(); vit!=vend; vit++)
-    {
-        KeyFrame* pKFi = *vit;
-
-        matcher.Fuse(pKFi,vpMapPointMatches);
-    }
+    vector<MapPoint*> mapPointMatches = keyframe->GetMapPointMatches();
+    for(auto& targetKeyframe: targetKeyframes)
+        matcher.Fuse(targetKeyframe,mapPointMatches,3.0f);
 
     // Search matches by projection from target KFs in current KF
-    vector<MapPoint*> vpFuseCandidates;
-    vpFuseCandidates.reserve(vpTargetKFs.size()*vpMapPointMatches.size());
+    vector<MapPoint*> fuseCandidates;
+    set<MapPoint*> fuseCandidates_;
+    fuseCandidates.reserve(targetKeyframes.size() * mapPointMatches.size());
 
-    for(vector<KeyFrame*>::iterator vitKF=vpTargetKFs.begin(), vendKF=vpTargetKFs.end(); vitKF!=vendKF; vitKF++)
+    for(auto& targetKeyframe: targetKeyframes)
     {
-        KeyFrame* pKFi = *vitKF;
+        vector<MapPoint*> mapPoints = targetKeyframe->GetMapPointMatches();
 
-        vector<MapPoint*> vpMapPointsKFi = pKFi->GetMapPointMatches();
-
-        for(vector<MapPoint*>::iterator vitMP=vpMapPointsKFi.begin(), vendMP=vpMapPointsKFi.end(); vitMP!=vendMP; vitMP++)
+        for(auto& mapPoint: mapPoints)
         {
-            MapPoint* pMP = *vitMP;
-            if(!pMP)
+            if((!mapPoint) || mapPoint->isBad() || fuseCandidates_.count(mapPoint))
                 continue;
-            if(pMP->isBad() || pMP->mnFuseCandidateForKF == mpCurrentKeyFrame->mnId)
-                continue;
-            pMP->mnFuseCandidateForKF = mpCurrentKeyFrame->mnId;
-            vpFuseCandidates.push_back(pMP);
+
+            fuseCandidates.push_back(mapPoint);
+            fuseCandidates_.insert(mapPoint);
         }
     }
 
-    matcher.Fuse(mpCurrentKeyFrame,vpFuseCandidates);
-
-
+    matcher.Fuse(keyframe,fuseCandidates,3.0);
     // Update points
-    vpMapPointMatches = mpCurrentKeyFrame->GetMapPointMatches();
-    for(size_t i=0, iend=vpMapPointMatches.size(); i<iend; i++)
-    {
-        MapPoint* pMP=vpMapPointMatches[i];
-        if(pMP)
-        {
-            if(!pMP->isBad())
-            {
-                pMP->ComputeDistinctiveDescriptors();
-                pMP->UpdateNormalAndDepth();
-            }
-        }
-    }
+    mapPointMatches = keyframe->GetMapPointMatches();
+    for(auto& mapPoint: mapPointMatches)
+        if(mapPoint)
+            if(!mapPoint->isBad())
+                mapPoint->ComputeDistinctiveDescriptors()->UpdateNormalAndDepth();
 
     // Update connections in covisibility graph
-    mpCurrentKeyFrame->UpdateConnections();
+    keyframe->UpdateConnections();
 }
 
 cv::Mat LocalMapping::ComputeF12(KeyFrame *&pKF1, KeyFrame *&pKF2)
@@ -507,11 +536,16 @@ void LocalMapping::RequestStop()
     mbStopRequested = true;
     unique_lock<mutex> lock2(mMutexNewKFs);
     mbAbortBA = true;
+#ifdef COMPILED_SEQUENTIAL
+    Stop();
+#endif
 }
 
 bool LocalMapping::Stop()
 {
+#ifndef COMPILED_SEQUENTIAL
     unique_lock<mutex> lock(mMutexStop);
+#endif
     if(mbStopRequested && !mbNotStop)
     {
         mbStopped = true;
@@ -659,7 +693,7 @@ void LocalMapping::RequestReset()
         unique_lock<mutex> lock(mMutexReset);
         mbResetRequested = true;
     }
-
+#ifndef COMPILED_SEQUENTIAL
     while(1)
     {
         {
@@ -669,16 +703,21 @@ void LocalMapping::RequestReset()
         }
         usleep(3000);
     }
+#else
+   ResetIfRequested();
+#endif
 }
 
 void LocalMapping::ResetIfRequested()
 {
+#ifndef COMPILED_SEQUENTIAL
     unique_lock<mutex> lock(mMutexReset);
+#endif
     if(mbResetRequested)
     {
         mlNewKeyFrames.clear();
         mlpRecentAddedMapPoints.clear();
-        mbResetRequested=false;
+        mbResetRequested = false;
     }
 }
 

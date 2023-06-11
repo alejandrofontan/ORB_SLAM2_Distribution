@@ -87,6 +87,29 @@ void LoopClosing::Run()
     SetFinish();
 }
 
+void LoopClosing::RunSequential()
+{
+    mbFinished =false;
+
+    // Check if there are keyframes in the queue
+    if(CheckNewKeyFrames())
+    {
+        // Detect loop candidates and check covisibility consistency
+        if(DetectLoop())
+        {
+            // Compute similarity transformation [sR|t]
+            // In the stereo/RGBD case s=1
+            if(ComputeSim3())
+            {
+                // Perform loop fusion and pose graph optimization
+                CorrectLoop();
+            }
+        }
+    }
+
+    SetFinish();
+}
+
 void LoopClosing::InsertKeyFrame(KeyFrame *pKF)
 {
     unique_lock<mutex> lock(mMutexLoopQueue);
@@ -576,8 +599,11 @@ void LoopClosing::CorrectLoop()
     mbRunningGBA = true;
     mbFinishedGBA = false;
     mbStopGBA = false;
+#ifndef COMPILED_SEQUENTIAL
     mpThreadGBA = new thread(&LoopClosing::RunGlobalBundleAdjustment,this,mpCurrentKF->mnId);
-
+#else
+    RunGlobalBundleAdjustment(mpCurrentKF->mnId);
+#endif
     // Loop closed. Release Local Mapping.
     mpLocalMapper->Release();    
 
@@ -619,7 +645,7 @@ void LoopClosing::RequestReset()
         unique_lock<mutex> lock(mMutexReset);
         mbResetRequested = true;
     }
-
+#ifndef COMPILED_SEQUENTIAL
     while(1)
     {
         {
@@ -629,6 +655,9 @@ void LoopClosing::RequestReset()
         }
         usleep(5000);
     }
+#else
+    ResetIfRequested();
+#endif
 }
 
 void LoopClosing::ResetIfRequested()

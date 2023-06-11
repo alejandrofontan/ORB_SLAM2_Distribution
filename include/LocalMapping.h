@@ -48,6 +48,7 @@ public:
 
     // Main function
     void Run();
+    void RunSequential();
 
     void InsertKeyFrame(KeyFrame* pKF);
 
@@ -79,7 +80,7 @@ protected:
     void CreateNewMapPoints(Keyframe keyframe);
 
     void MapPointCulling();
-    void SearchInNeighbors();
+    void SearchInNeighbors(Keyframe keyframe);
 
     void KeyFrameCulling();
 

@@ -273,8 +273,10 @@ void Tracking::Track()
 
     mLastProcessedState=mState;
 
+#ifndef COMPILED_SEQUENTIAL
     // Get Map Mutex -> Map cannot be changed
     unique_lock<mutex> lock(mpMap->mMutexMapUpdate);
+#endif
 
     if(mState==NOT_INITIALIZED)
     {
@@ -503,6 +505,10 @@ void Tracking::Track()
         mlbLost.push_back(mState==LOST);
     }
 
+#ifdef COMPILED_SEQUENTIAL
+    mpLocalMapper->RunSequential();
+    mpLoopClosing->RunSequential();
+#endif
 }
 
 
@@ -623,6 +629,9 @@ void Tracking::MonocularInitialization()
             mCurrentFrame.SetPose(Tcw);
 
             CreateInitialMapMonocular();
+#ifdef COMPILED_SEQUENTIAL
+            mpLocalMapper->RunSequential();
+#endif
         }
     }
 }
@@ -1499,6 +1508,7 @@ void Tracking::Reset()
     // Reset Local Mapping
     cout << "Reseting Local Mapper...";
     mpLocalMapper->RequestReset();
+
     cout << " done" << endl;
 
     // Reset Loop Closing

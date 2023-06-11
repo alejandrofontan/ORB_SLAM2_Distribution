@@ -6,6 +6,11 @@ if(COMPILE_WITH_PANGOLIN)
     add_definitions(-DCOMPILED_WITH_PANGOLIN=1)
 endif()
 
+option(COMPILE_SEQUENTIAL "Compile Sequential Version Of ORB_SLAM2" OFF)
+if(COMPILE_SEQUENTIAL)
+    add_definitions(-DCOMPILED_SEQUENTIAL=1)
+endif()
+
 option(COMPILE_DETERMINISTIC "Compile Deterministic Version Of ORB_SLAM2" OFF)
 if(COMPILE_DETERMINISTIC)
     add_definitions(-DCOMPILED_DETERMINISTIC=1)
