@@ -321,11 +321,13 @@ void System::Shutdown()
             usleep(5000);
     }
 
+#ifndef COMPILED_SEQUENTIAL
     // Wait until all thread have effectively stopped
     while(!mpLocalMapper->isFinished() || !mpLoopCloser->isFinished() || mpLoopCloser->isRunningGBA())
     {
         usleep(5000);
     }
+#endif
 
 #ifdef COMPILED_WITH_PANGOLIN
     if(mpViewer)
@@ -501,6 +503,16 @@ vector<cv::KeyPoint> System::GetTrackedKeyPointsUn()
 {
     unique_lock<mutex> lock(mMutexState);
     return mTrackedKeyPointsUn;
+}
+
+void System::readImage(cv::Mat& im, const string& imagePath) const{
+    im = cv::imread(imagePath,cv::IMREAD_UNCHANGED);
+    if(im.empty())
+    {
+        cerr << endl << "Failed to load image at: " << imagePath << endl;
+        return;
+    }
+    //cv::resize(im.clone(),im, cv::Size(), resolutionFactor, resolutionFactor, cv::INTER_LINEAR);
 }
 
 } //namespace ORB_SLAM

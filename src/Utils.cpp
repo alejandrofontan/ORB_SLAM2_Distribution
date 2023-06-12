@@ -11,6 +11,13 @@ bool ORB_SLAM2::RandomIntegerGenerator::need_to_be_seeded = true;
 int ORB_SLAM2::RandomIntegerGenerator::randomIntegerIndex = -1;
 std::vector<int> ORB_SLAM2::RandomIntegerGenerator::listOfRandomIntegers{};
 
+std::string ORB_SLAM2::paddingZeros(const std::string& number, const size_t numberOfZeros){
+    std::string zeros{};
+    for(size_t iZero{}; iZero < numberOfZeros - number.size(); ++iZero)
+        zeros += "0";
+    return (zeros + number);
+}
+
 void ORB_SLAM2::RandomIntegerGenerator::seedRandomGenerator(){
 #ifdef COMPILED_DETERMINISTIC
     if(need_to_be_seeded){

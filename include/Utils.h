@@ -8,13 +8,20 @@
 #include <vector>
 #include <iostream>
 
-using FrameId = long unsigned int;
-using KeyframeId = long unsigned int;
-using KeypointIndex = int;
-using OctaveType = int;
+
 
 namespace ORB_SLAM2
 {
+    using FrameId = long unsigned int;
+    using KeyframeId = long unsigned int;
+    using KeypointIndex = int;
+    using OctaveType = int;
+
+    using Seconds = double;
+    using NanoSeconds = double;
+
+    std::string paddingZeros(const std::string& number, size_t numberOfZeros = 5);
+
     class RandomIntegerGenerator
     {
     private:
