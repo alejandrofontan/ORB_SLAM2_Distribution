@@ -990,7 +990,7 @@ int ORBmatcher::Fuse(KeyFrame *pKF, cv::Mat Scw, const vector<MapPoint *> &vpPoi
     cv::Mat Ow = -Rcw.t()*tcw;
 
     // Set of MapPoints already found in the KeyFrame
-    const set<MapPoint*> spAlreadyFound = pKF->GetMapPoints();
+    const map<long unsigned int, MapPoint*> spAlreadyFound = pKF->GetMapPoints();
 
     int nFused=0;
 
@@ -1002,7 +1002,7 @@ int ORBmatcher::Fuse(KeyFrame *pKF, cv::Mat Scw, const vector<MapPoint *> &vpPoi
         MapPoint* pMP = vpPoints[iMP];
 
         // Discard Bad MapPoints and already found
-        if(pMP->isBad() || spAlreadyFound.count(pMP))
+        if(pMP->isBad() || spAlreadyFound.count(pMP->mnId))
             continue;
 
         // Get 3D Coords.

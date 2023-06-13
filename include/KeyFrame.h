@@ -63,7 +63,7 @@ public:
     void EraseConnection(KeyFrame* pKF);
     void UpdateConnections();
     void UpdateBestCovisibles();
-    std::set<KeyFrame *> GetConnectedKeyFrames();
+    map<KeyframeId,KeyFrame*> GetConnectedKeyFrames();
     std::vector<KeyFrame* > GetVectorCovisibleKeyFrames();
     std::vector<KeyFrame*> GetBestCovisibilityKeyFrames(const int &N);
     std::vector<KeyFrame*> GetCovisiblesByWeight(const int &w);
@@ -87,7 +87,7 @@ public:
     void EraseMapPointMatch(const size_t &idx);
     void EraseMapPointMatch(MapPoint* pMP);
     void ReplaceMapPointMatch(const size_t &idx, MapPoint* pMP);
-    std::set<MapPoint*> GetMapPoints();
+    std::map<long unsigned int ,MapPoint*> GetMapPoints();
     std::vector<MapPoint*> GetMapPointMatches();
     int TrackedMapPoints(const int &minObs);
     MapPoint* GetMapPoint(const size_t &idx);
@@ -212,7 +212,7 @@ protected:
     std::vector< std::vector <std::vector<size_t> > > mGrid;
 
     std::map<KeyframeId, KeyFrame*> mConnectedKeyFrames;
-    std::map<KeyFrame*,int> mConnectedKeyFrameWeights;
+    std::map<KeyframeId,int> mConnectedKeyFrameWeights;
     std::vector<KeyFrame*> mvpOrderedConnectedKeyFrames;
     std::vector<int> mvOrderedWeights;
 

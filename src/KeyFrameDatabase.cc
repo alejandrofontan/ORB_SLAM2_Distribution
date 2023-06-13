@@ -75,7 +75,7 @@ void KeyFrameDatabase::clear()
 
 vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float minScore)
 {
-    set<KeyFrame*> spConnectedKeyFrames = pKF->GetConnectedKeyFrames();
+    map<KeyframeId,Keyframe> spConnectedKeyFrames = pKF->GetConnectedKeyFrames();
     list<KeyFrame*> lKFsSharingWords;
 
     // Search all keyframes that share a word with current keyframes
@@ -93,7 +93,7 @@ vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float mi
                 if(pKFi->mnLoopQuery!=pKF->mnId)
                 {
                     pKFi->mnLoopWords=0;
-                    if(!spConnectedKeyFrames.count(pKFi))
+                    if(!spConnectedKeyFrames.count(pKFi->mnId))
                     {
                         pKFi->mnLoopQuery=pKF->mnId;
                         lKFsSharingWords.push_back(pKFi);
@@ -175,7 +175,7 @@ vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float mi
     // Return all those keyframes with a score higher than 0.75*bestScore
     float minScoreToRetain = 0.75f*bestAccScore;
 
-    set<KeyFrame*> spAlreadyAddedKF;
+    map<KeyframeId , Keyframe> spAlreadyAddedKF;
     vector<KeyFrame*> vpLoopCandidates;
     vpLoopCandidates.reserve(lAccScoreAndMatch.size());
 
@@ -184,10 +184,10 @@ vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float mi
         if(it->first>minScoreToRetain)
         {
             KeyFrame* pKFi = it->second;
-            if(!spAlreadyAddedKF.count(pKFi))
+            if(!spAlreadyAddedKF.count(pKFi->mnId))
             {
                 vpLoopCandidates.push_back(pKFi);
-                spAlreadyAddedKF.insert(pKFi);
+                spAlreadyAddedKF.insert(make_pair(pKFi->mnId,pKFi));
             }
         }
     }
@@ -288,7 +288,7 @@ vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F)
 
     // Return all those keyframes with a score higher than 0.75*bestScore
     float minScoreToRetain = 0.75f*bestAccScore;
-    set<KeyFrame*> spAlreadyAddedKF;
+    map<long unsigned int, KeyFrame*> spAlreadyAddedKF;
     vector<KeyFrame*> vpRelocCandidates;
     vpRelocCandidates.reserve(lAccScoreAndMatch.size());
     for(list<pair<float,KeyFrame*> >::iterator it=lAccScoreAndMatch.begin(), itend=lAccScoreAndMatch.end(); it!=itend; it++)
@@ -297,10 +297,10 @@ vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F)
         if(si>minScoreToRetain)
         {
             KeyFrame* pKFi = it->second;
-            if(!spAlreadyAddedKF.count(pKFi))
+            if(!spAlreadyAddedKF.count(pKFi->mnId))
             {
                 vpRelocCandidates.push_back(pKFi);
-                spAlreadyAddedKF.insert(pKFi);
+                spAlreadyAddedKF.insert(make_pair(pKFi->mnId,pKFi));
             }
         }
     }

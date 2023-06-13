@@ -452,21 +452,21 @@ void LocalMapping::SearchInNeighbors(Keyframe keyframe)
     const vector<KeyFrame*> neighbors = keyframe->GetBestCovisibilityKeyFrames(numberOfNeighbors);
 
     vector<KeyFrame*> targetKeyframes;
-    set<KeyFrame*> targetKeyframes_;
+    map<KeyframeId, Keyframe> targetKeyframes_;
 
     for(auto& neighbor: neighbors){
 
-        if(neighbor->isBad() || targetKeyframes_.count(neighbor))
+        if(neighbor->isBad() || targetKeyframes_.count(neighbor->mnId))
             continue;
 
         targetKeyframes.push_back(neighbor);
-        targetKeyframes_.insert(neighbor);
+        targetKeyframes_.insert(make_pair(neighbor->mnId,neighbor));
 
         // Extend to some second neighbors
         const vector<KeyFrame*> secondNeighbors = neighbor->GetBestCovisibilityKeyFrames(5);
         for(auto& secondNeighbor: secondNeighbors)
         {
-            if(secondNeighbor->isBad() || targetKeyframes_.count(secondNeighbor) || secondNeighbor->mnId == keyframe->mnId)
+            if(secondNeighbor->isBad() || targetKeyframes_.count(secondNeighbor->mnId) || secondNeighbor->mnId == keyframe->mnId)
                 continue;
 
             targetKeyframes.push_back(secondNeighbor);

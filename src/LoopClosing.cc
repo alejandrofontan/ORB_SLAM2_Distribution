@@ -35,6 +35,10 @@
 namespace ORB_SLAM2
 {
 
+LoopConnections::LoopConnections(const KeyframeId & keyframeId, const Keyframe& keyframe, const map<KeyframeId,Keyframe>& connections):
+    keyframeId(keyframeId), keyframe(keyframe), connections(connections){
+}
+
 LoopClosing::LoopClosing(Map *pMap, KeyFrameDatabase *pDB, ORBVocabulary *pVoc, const bool bFixScale):
     mbResetRequested(false), mbFinishRequested(false), mbFinished(true), mpMap(pMap),
     mpKeyFrameDB(pDB), mpORBVocabulary(pVoc), mpMatchedKF(NULL), mLastLoopKFid(0), mbRunningGBA(false), mbFinishedGBA(true),
@@ -184,19 +188,19 @@ bool LoopClosing::DetectLoop()
     {
         KeyFrame* pCandidateKF = vpCandidateKFs[i];
 
-        set<KeyFrame*> spCandidateGroup = pCandidateKF->GetConnectedKeyFrames();
-        spCandidateGroup.insert(pCandidateKF);
+        map<KeyframeId, Keyframe> spCandidateGroup = pCandidateKF->GetConnectedKeyFrames();
+        spCandidateGroup[pCandidateKF->mnId] = pCandidateKF;
 
         bool bEnoughConsistent = false;
         bool bConsistentForSomeGroup = false;
         for(size_t iG=0, iendG=mvConsistentGroups.size(); iG<iendG; iG++)
         {
-            set<KeyFrame*> sPreviousGroup = mvConsistentGroups[iG].first;
+            map<KeyframeId,Keyframe> sPreviousGroup = mvConsistentGroups[iG].first;
 
             bool bConsistent = false;
-            for(set<KeyFrame*>::iterator sit=spCandidateGroup.begin(), send=spCandidateGroup.end(); sit!=send;sit++)
+            for(auto& sit: spCandidateGroup)
             {
-                if(sPreviousGroup.count(*sit))
+                if(sPreviousGroup.count(sit.first))
                 {
                     bConsistent=true;
                     bConsistentForSomeGroup=true;
@@ -459,9 +463,8 @@ void LoopClosing::CorrectLoop()
     mvpCurrentConnectedKFs.push_back(mpCurrentKF);
 
     KeyFrameAndPose CorrectedSim3, NonCorrectedSim3;
-    CorrectedSim3[mpCurrentKF]=mg2oScw;
+    CorrectedSim3[mpCurrentKF->mnId] = make_pair(mpCurrentKF,mg2oScw);
     cv::Mat Twc = mpCurrentKF->GetPoseInverse();
-
 
     {
         // Get Map Mutex
@@ -481,24 +484,24 @@ void LoopClosing::CorrectLoop()
                 g2o::Sim3 g2oSic(Converter::toMatrix3d(Ric),Converter::toVector3d(tic),1.0);
                 g2o::Sim3 g2oCorrectedSiw = g2oSic*mg2oScw;
                 //Pose corrected with the Sim3 of the loop closure
-                CorrectedSim3[pKFi]=g2oCorrectedSiw;
+                CorrectedSim3[pKFi->mnId] = make_pair(pKFi,g2oCorrectedSiw);
             }
 
             cv::Mat Riw = Tiw.rowRange(0,3).colRange(0,3);
             cv::Mat tiw = Tiw.rowRange(0,3).col(3);
             g2o::Sim3 g2oSiw(Converter::toMatrix3d(Riw),Converter::toVector3d(tiw),1.0);
             //Pose without correction
-            NonCorrectedSim3[pKFi]=g2oSiw;
+            NonCorrectedSim3[pKFi->mnId]= make_pair(pKFi,g2oSiw);
         }
 
         // Correct all MapPoints obsrved by current keyframe and neighbors, so that they align with the other side of the loop
         for(KeyFrameAndPose::iterator mit=CorrectedSim3.begin(), mend=CorrectedSim3.end(); mit!=mend; mit++)
         {
-            KeyFrame* pKFi = mit->first;
-            g2o::Sim3 g2oCorrectedSiw = mit->second;
+            KeyFrame* pKFi = mit->second.first;
+            g2o::Sim3 g2oCorrectedSiw = mit->second.second;
             g2o::Sim3 g2oCorrectedSwi = g2oCorrectedSiw.inverse();
 
-            g2o::Sim3 g2oSiw =NonCorrectedSim3[pKFi];
+            g2o::Sim3 g2oSiw =NonCorrectedSim3[pKFi->mnId].second;
 
             vector<MapPoint*> vpMPsi = pKFi->GetMapPointMatches();
             for(size_t iMP=0, endMPi = vpMPsi.size(); iMP<endMPi; iMP++)
@@ -566,28 +569,28 @@ void LoopClosing::CorrectLoop()
 
 
     // After the MapPoint fusion, new links in the covisibility graph will appear attaching both sides of the loop
-    map<KeyFrame*, set<KeyFrame*> > LoopConnections;
+    map<KeyframeId,LoopConnections> loopConnections{};
 
-    for(vector<KeyFrame*>::iterator vit=mvpCurrentConnectedKFs.begin(), vend=mvpCurrentConnectedKFs.end(); vit!=vend; vit++)
+    for(const auto& pKFi: mvpCurrentConnectedKFs)
     {
-        KeyFrame* pKFi = *vit;
         vector<KeyFrame*> vpPreviousNeighbors = pKFi->GetVectorCovisibleKeyFrames();
 
         // Update connections. Detect new links.
         pKFi->UpdateConnections();
-        LoopConnections[pKFi]=pKFi->GetConnectedKeyFrames();
-        for(vector<KeyFrame*>::iterator vit_prev=vpPreviousNeighbors.begin(), vend_prev=vpPreviousNeighbors.end(); vit_prev!=vend_prev; vit_prev++)
+        loopConnections.insert(std::make_pair(pKFi->mnId, LoopConnections(pKFi->mnId, pKFi, pKFi->GetConnectedKeyFrames())));
+
+        for(auto& vit_prev: vpPreviousNeighbors)
         {
-            LoopConnections[pKFi].erase(*vit_prev);
+            loopConnections[pKFi->mnId].connections.erase(vit_prev->mnId);
         }
-        for(vector<KeyFrame*>::iterator vit2=mvpCurrentConnectedKFs.begin(), vend2=mvpCurrentConnectedKFs.end(); vit2!=vend2; vit2++)
+        for(auto& vit2: mvpCurrentConnectedKFs)
         {
-            LoopConnections[pKFi].erase(*vit2);
+            loopConnections[pKFi->mnId].connections.erase(vit2->mnId);
         }
     }
 
     // Optimize graph
-    Optimizer::OptimizeEssentialGraph(mpMap, mpMatchedKF, mpCurrentKF, NonCorrectedSim3, CorrectedSim3, LoopConnections, mbFixScale);
+    Optimizer::OptimizeEssentialGraph(mpMap, mpMatchedKF, mpCurrentKF, NonCorrectedSim3, CorrectedSim3, loopConnections, mbFixScale);
 
     mpMap->InformNewBigChange();
 
@@ -616,9 +619,9 @@ void LoopClosing::SearchAndFuse(const KeyFrameAndPose &CorrectedPosesMap)
 
     for(KeyFrameAndPose::const_iterator mit=CorrectedPosesMap.begin(), mend=CorrectedPosesMap.end(); mit!=mend;mit++)
     {
-        KeyFrame* pKF = mit->first;
+        KeyFrame* pKF = mit->second.first;
 
-        g2o::Sim3 g2oScw = mit->second;
+        g2o::Sim3 g2oScw = mit->second.second;
         cv::Mat cvScw = Converter::toCvMat(g2oScw);
 
         vector<MapPoint*> vpReplacePoints(mvpLoopMapPoints.size(),static_cast<MapPoint*>(NULL));

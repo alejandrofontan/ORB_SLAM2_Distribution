@@ -128,10 +128,12 @@ void KeyFrame::AddConnection(KeyFrame *pKF, const int &weight)
 {
     {
         unique_lock<mutex> lock(mMutexConnections);
-        if(!mConnectedKeyFrameWeights.count(pKF))
-            mConnectedKeyFrameWeights[pKF]=weight;
-        else if(mConnectedKeyFrameWeights[pKF]!=weight)
-            mConnectedKeyFrameWeights[pKF]=weight;
+        if(!mConnectedKeyFrameWeights.count(pKF->mnId)){
+            mConnectedKeyFrameWeights[pKF->mnId]=weight;
+            mConnectedKeyFrames[pKF->mnId] = pKF;
+        }
+        else if(mConnectedKeyFrameWeights[pKF->mnId]!=weight)
+            mConnectedKeyFrameWeights[pKF->mnId]=weight;
         else
             return;
     }
@@ -144,8 +146,8 @@ void KeyFrame::UpdateBestCovisibles()
     unique_lock<mutex> lock(mMutexConnections);
     vector<pair<int,KeyFrame*> > vPairs;
     vPairs.reserve(mConnectedKeyFrameWeights.size());
-    for(map<KeyFrame*,int>::iterator mit=mConnectedKeyFrameWeights.begin(), mend=mConnectedKeyFrameWeights.end(); mit!=mend; mit++)
-       vPairs.push_back(make_pair(mit->second,mit->first));
+    for(auto& mit: mConnectedKeyFrameWeights)
+       vPairs.push_back(make_pair(mit.second,mConnectedKeyFrames[mit.first]));
 
     sort(vPairs.begin(),vPairs.end(),KeyframeComparison);
     list<KeyFrame*> lKFs;
@@ -160,12 +162,12 @@ void KeyFrame::UpdateBestCovisibles()
     mvOrderedWeights = vector<int>(lWs.begin(), lWs.end());    
 }
 
-set<KeyFrame*> KeyFrame::GetConnectedKeyFrames()
+map<KeyframeId,Keyframe> KeyFrame::GetConnectedKeyFrames()
 {
     unique_lock<mutex> lock(mMutexConnections);
-    set<KeyFrame*> s;
-    for(map<KeyFrame*,int>::iterator mit=mConnectedKeyFrameWeights.begin();mit!=mConnectedKeyFrameWeights.end();mit++)
-        s.insert(mit->first);
+    map<KeyframeId,Keyframe> s;
+    for(auto mit: mConnectedKeyFrames)
+        s[mit.first] = mit.second;
     return s;
 }
 
@@ -205,8 +207,8 @@ vector<KeyFrame*> KeyFrame::GetCovisiblesByWeight(const int &w)
 int KeyFrame::GetWeight(KeyFrame *pKF)
 {
     unique_lock<mutex> lock(mMutexConnections);
-    if(mConnectedKeyFrameWeights.count(pKF))
-        return mConnectedKeyFrameWeights[pKF];
+    if(mConnectedKeyFrameWeights.count(pKF->mnId))
+        return mConnectedKeyFrameWeights[pKF->mnId];
     else
         return 0;
 }
@@ -252,17 +254,17 @@ void KeyFrame::ReplaceMapPointMatch(const size_t &idx, MapPoint* pMP)
     mvpMapPoints[idx]=pMP;
 }
 
-set<MapPoint*> KeyFrame::GetMapPoints()
+std::map<long unsigned int ,MapPoint*> KeyFrame::GetMapPoints()
 {
     unique_lock<mutex> lock(mMutexFeatures);
-    set<MapPoint*> s;
+    std::map<long unsigned int ,MapPoint*> s;
     for(size_t i=0, iend=mvpMapPoints.size(); i<iend; i++)
     {
         if(!mvpMapPoints[i])
             continue;
         MapPoint* pMP = mvpMapPoints[i];
         if(!pMP->isBad())
-            s.insert(pMP);
+            s[pMP->mnId] = pMP;
     }
     return s;
 }
@@ -308,8 +310,8 @@ MapPoint* KeyFrame::GetMapPoint(const size_t &idx)
 
 void KeyFrame::UpdateConnections()
 {
-    map<KeyFrame*,int> KFweightsCounter;
-    map<long unsigned int,KeyFrame*> KFcounter;
+    map<KeyframeId ,int> KFweightsCounter;
+    map<KeyframeId ,KeyFrame*> KFcounter;
 
     vector<MapPoint*> vpMP;
 
@@ -332,12 +334,12 @@ void KeyFrame::UpdateConnections()
 
         map<long unsigned int, Observation> observations = pMP->GetObservations();
 
-        for(map<long unsigned int, Observation>::iterator mit=observations.begin(), mend=observations.end(); mit!=mend; mit++)
+        for(auto& mit: observations)
         {
-            if(mit->first == mnId)
+            if(mit.first == mnId)
                 continue;
-            KFweightsCounter[mit->second.projKeyframe]++;
-            KFcounter[mit->first] = mit->second.projKeyframe;
+            KFweightsCounter[mit.first]++;
+            KFcounter[mit.first] = mit.second.projKeyframe;
         }
     }
 
@@ -353,17 +355,17 @@ void KeyFrame::UpdateConnections()
 
     vector<pair<int,KeyFrame*> > vPairs;
     vPairs.reserve(KFweightsCounter.size());
-    for(map<KeyFrame*,int>::iterator mit=KFweightsCounter.begin(), mend=KFweightsCounter.end(); mit!=mend; mit++)
+    for(auto& mit: KFweightsCounter)
     {
-        if(mit->second>nmax)
+        if(mit.second > nmax)
         {
-            nmax=mit->second;
-            pKFmax=mit->first;
+            nmax = mit.second;
+            pKFmax = KFcounter[mit.first];
         }
-        if(mit->second>=th)
+        if(mit.second>=th)
         {
-            vPairs.push_back(make_pair(mit->second,mit->first));
-            (mit->first)->AddConnection(this,mit->second);
+            vPairs.push_back(make_pair(mit.second,KFcounter[mit.first]));
+            KFcounter[mit.first]->AddConnection(this,mit.second);
         }
     }
 
@@ -486,12 +488,12 @@ void KeyFrame::SetBadFlag()
         }
     }
 
-    for(auto& connectedKeyFrameWeight: mConnectedKeyFrameWeights)
-        connectedKeyFrameWeight.first->EraseConnection(this);
+    for(auto& connectedKeyFrame: mConnectedKeyFrames)
+        connectedKeyFrame.second->EraseConnection(this);
 
     for(auto & mvpMapPoint : mvpMapPoints)
-    if(mvpMapPoint)
-        mvpMapPoint->EraseObservation(this);
+        if(mvpMapPoint)
+            mvpMapPoint->EraseObservation(this);
 
     {
         unique_lock<mutex> lock(mMutexConnections);
@@ -502,8 +504,8 @@ void KeyFrame::SetBadFlag()
         mvpOrderedConnectedKeyFrames.clear();
 
         // Update Spanning Tree
-        set<KeyFrame*> sParentCandidates;
-        sParentCandidates.insert(mpParent);
+        map<KeyframeId, Keyframe*> sParentCandidates;
+        sParentCandidates[mpParent->mnId] = &mpParent;
 
         // Assign at each iteration one children with a parent (the pair with highest covisibility weight)
         // Include that children as new parent candidate for the rest
@@ -527,7 +529,7 @@ void KeyFrame::SetBadFlag()
                 {
                     for(auto spcit:sParentCandidates)
                     {
-                        if(vpConnected[i]->mnId == spcit->mnId)
+                        if(vpConnected[i]->mnId == spcit.first)
                         {
                             int w = keyframe->GetWeight(vpConnected[i]);
                             if(w>max)
@@ -545,7 +547,7 @@ void KeyFrame::SetBadFlag()
             if(bContinue)
             {
                 pC->ChangeParent(pP);
-                sParentCandidates.insert(pC);
+                sParentCandidates[pC->mnId] = &pC;
                 mspChildrens.erase(pC->mnId);
             }
             else
@@ -580,9 +582,10 @@ void KeyFrame::EraseConnection(KeyFrame* pKF)
     bool bUpdate = false;
     {
         unique_lock<mutex> lock(mMutexConnections);
-        if(mConnectedKeyFrameWeights.count(pKF))
+        if(mConnectedKeyFrameWeights.count(pKF->mnId))
         {
-            mConnectedKeyFrameWeights.erase(pKF);
+            mConnectedKeyFrameWeights.erase(pKF->mnId);
+            mConnectedKeyFrames.erase(pKF->mnId);
             bUpdate=true;
         }
     }

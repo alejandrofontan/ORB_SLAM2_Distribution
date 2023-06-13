@@ -32,7 +32,7 @@ Map::Map():mnMaxKFid(0),mnBigChangeIdx(0)
 void Map::AddKeyFrame(KeyFrame *pKF)
 {
     unique_lock<mutex> lock(mMutexMap);
-    mspKeyFrames.insert(pKF);
+    mspKeyFrames.insert(make_pair(pKF->mnId,pKF));
     if(pKF->mnId>mnMaxKFid)
         mnMaxKFid=pKF->mnId;
 }
@@ -40,13 +40,13 @@ void Map::AddKeyFrame(KeyFrame *pKF)
 void Map::AddMapPoint(MapPoint *pMP)
 {
     unique_lock<mutex> lock(mMutexMap);
-    mspMapPoints.insert(pMP);
+    mspMapPoints.insert(make_pair(pMP->mnId,pMP));
 }
 
 void Map::EraseMapPoint(MapPoint *pMP)
 {
     unique_lock<mutex> lock(mMutexMap);
-    mspMapPoints.erase(pMP);
+    mspMapPoints.erase(pMP->mnId);
 
     // TODO: This only erase the pointer.
     // Delete the MapPoint
@@ -55,7 +55,7 @@ void Map::EraseMapPoint(MapPoint *pMP)
 void Map::EraseKeyFrame(KeyFrame *pKF)
 {
     unique_lock<mutex> lock(mMutexMap);
-    mspKeyFrames.erase(pKF);
+    mspKeyFrames.erase(pKF->mnId);
 
     // TODO: This only erase the pointer.
     // Delete the MapPoint
@@ -82,13 +82,20 @@ int Map::GetLastBigChangeIdx()
 vector<KeyFrame*> Map::GetAllKeyFrames()
 {
     unique_lock<mutex> lock(mMutexMap);
-    return vector<KeyFrame*>(mspKeyFrames.begin(),mspKeyFrames.end());
+    vector<KeyFrame*> keyframes{};
+    for(auto& keyframe: mspKeyFrames)
+        keyframes.push_back(keyframe.second);
+    return keyframes;
 }
 
 vector<MapPoint*> Map::GetAllMapPoints()
 {
     unique_lock<mutex> lock(mMutexMap);
-    return vector<MapPoint*>(mspMapPoints.begin(),mspMapPoints.end());
+    vector<MapPoint*> mapPoints{};
+    for(auto& mapPoint: mspMapPoints)
+        mapPoints.push_back(mapPoint.second);
+
+    return mapPoints;
 }
 
 long unsigned int Map::MapPointsInMap()
@@ -117,11 +124,11 @@ long unsigned int Map::GetMaxKFid()
 
 void Map::clear()
 {
-    for(set<MapPoint*>::iterator sit=mspMapPoints.begin(), send=mspMapPoints.end(); sit!=send; sit++)
-        delete *sit;
+    for(auto sit: mspMapPoints)
+        delete sit.second;
 
-    for(set<KeyFrame*>::iterator sit=mspKeyFrames.begin(), send=mspKeyFrames.end(); sit!=send; sit++)
-        delete *sit;
+    for(auto sit: mspKeyFrames)
+        delete sit.second;
 
     mspMapPoints.clear();
     mspKeyFrames.clear();

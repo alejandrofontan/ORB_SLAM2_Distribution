@@ -40,14 +40,26 @@ class Tracking;
 class LocalMapping;
 class KeyFrameDatabase;
 
+class LoopConnections{
+public:
+    KeyframeId keyframeId{};
+    Keyframe keyframe{};
+    map<KeyframeId,Keyframe> connections{};
+    LoopConnections() = default;
+    LoopConnections(const KeyframeId & keyframeId, const Keyframe& keyframe, const map<KeyframeId,Keyframe>& connections);
+};
 
 class LoopClosing
 {
 public:
 
-    typedef pair<set<KeyFrame*>,int> ConsistentGroup;
-    typedef map<KeyFrame*,g2o::Sim3,std::less<KeyFrame*>,
-            Eigen::aligned_allocator<std::pair<KeyFrame* const, g2o::Sim3> > > KeyFrameAndPose;
+    typedef pair<map<KeyframeId,Keyframe>,int> ConsistentGroup;
+    //typedef map<KeyFrame*,g2o::Sim3,std::less<KeyFrame*>,
+            //Eigen::aligned_allocator<std::pair<KeyFrame* const, g2o::Sim3> > > KeyFrameAndPose;
+    typedef map<KeyframeId,pair<Keyframe ,g2o::Sim3>,std::less<KeyframeId>,
+        Eigen::aligned_allocator<std::pair<KeyframeId const , pair<Keyframe ,g2o::Sim3>>>>KeyFrameAndPose;
+
+    //typedef map<KeyframeId, Eigen::aligned_allocator<std::pair<KeyFrame* , g2o::Sim3> > > KeyFrameAndPose;
 
 public:
 
