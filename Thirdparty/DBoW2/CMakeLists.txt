@@ -7,6 +7,17 @@ set(OPENCV_LOCAL_PATH "/home/alex/libraries/opencv-${OPENCV_LOCAL_VERSION}/insta
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall  -O3 -march=native ")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall  -O3 -march=native")
 
+# Check C++14
+include(CheckCXXCompilerFlag)
+CHECK_CXX_COMPILER_FLAG("-std=c++14" COMPILER_SUPPORTS_CXX14)
+if(COMPILER_SUPPORTS_CXX14)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+    add_definitions(-DCOMPILEDWITHC14)
+    message(STATUS "Using flag -std=c++14.")
+else()
+    message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++14 support. Please use a different C++ compiler.")
+endif()
+
 set(HDRS_DBOW2
   DBoW2/BowVector.h
   DBoW2/FORB.h 
