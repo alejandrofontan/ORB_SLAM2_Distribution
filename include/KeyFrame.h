@@ -29,6 +29,7 @@
 #include "Frame.h"
 #include "KeyFrameDatabase.h"
 #include "Utils.h"
+#include "SLAMGraph.h"
 
 #include <mutex>
 
@@ -47,6 +48,7 @@ public:
     KeyFrame(Frame &F, Map* pMap, KeyFrameDatabase* pKFDB);
 
     // Pose functions
+    static SLAM_GRAPH::SlamGraph slamGraph;
     void SetPose(const cv::Mat &Tcw);
     cv::Mat GetPose();
     cv::Mat GetPoseInverse();
@@ -121,7 +123,6 @@ public:
 
     // The following variables are accesed from only 1 thread or never change (no mutex needed).
 public:
-
     static long unsigned int nNextId;
     long unsigned int mnId;
     const long unsigned int mnFrameId;

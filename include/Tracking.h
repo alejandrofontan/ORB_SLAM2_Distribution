@@ -37,6 +37,7 @@
 #include "Initializer.h"
 #include "MapDrawer.h"
 #include "System.h"
+#include "SLAMGraph.h"
 
 #include <mutex>
 
@@ -54,7 +55,7 @@ class Tracking
 {  
 
 public:
-    Tracking(System* pSys, ORBVocabulary* pVoc, FrameDrawer* pFrameDrawer, MapDrawer* pMapDrawer, Map* pMap,
+    Tracking(System* pSys, ORBVocabulary* pVoc, FrameDrawer* pFrameDrawer, MapDrawer* pMapDrawer, Map* pMap, SLAM_GRAPH::SlamGraph& slamGraph,
              KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor);
 
     // Preprocess the input and call Track(). Extract features and performs stereo matching.
@@ -180,6 +181,9 @@ protected:
 
     //Map
     Map* mpMap;
+
+    //SLAM Graph
+    SLAM_GRAPH::SlamGraph slamGraph;
 
     //Calibration matrix
     cv::Mat mK;

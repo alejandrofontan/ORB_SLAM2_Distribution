@@ -25,7 +25,9 @@
 
 namespace ORB_SLAM2
 {
-    
+
+SLAM_GRAPH::SlamGraph KeyFrame::slamGraph{};
+
 static bool KeyframeComparison(pair<int , KeyFrame*> a, pair<int , KeyFrame*> b){
     return (a.second->mnId < b.second->mnId);
 }
@@ -57,7 +59,7 @@ KeyFrame::KeyFrame(Frame &F, Map *pMap, KeyFrameDatabase *pKFDB):
             mGrid[i][j] = F.mGrid[i][j];
     }
 
-    SetPose(F.mTcw);    
+    SetPose(F.mTcw);
 }
 
 void KeyFrame::ComputeBoW()
@@ -85,6 +87,8 @@ void KeyFrame::SetPose(const cv::Mat &Tcw_)
     Ow.copyTo(Twc.rowRange(0,3).col(3));
     cv::Mat center = (cv::Mat_<float>(4,1) << mHalfBaseline, 0 , 0, 1);
     Cw = Twc*center;
+
+    slamGraph->updateKeyframePose(mnId,Converter::toMatrix4d(Twc));
 }
 
 cv::Mat KeyFrame::GetPose()

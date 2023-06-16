@@ -43,10 +43,12 @@ using namespace std;
 namespace ORB_SLAM2
 {
 
-Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer, Map *pMap, KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor):
+Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer,
+                   Map *pMap,SLAM_GRAPH::SlamGraph& slamGraph,
+                   KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor):
     mState(NO_IMAGES_YET), mSensor(sensor), mbOnlyTracking(false), mbVO(false), mpORBVocabulary(pVoc),
     mpKeyFrameDB(pKFDB), mpInitializer(static_cast<Initializer*>(NULL)), mpSystem(pSys), mpViewer(NULL),
-    mpFrameDrawer(pFrameDrawer), mpMapDrawer(pMapDrawer), mpMap(pMap), mnLastRelocFrameId(0)
+    mpFrameDrawer(pFrameDrawer), mpMapDrawer(pMapDrawer), mpMap(pMap), slamGraph(slamGraph), mnLastRelocFrameId(0)
 {
     // Load camera parameters from settings file
 
@@ -731,6 +733,9 @@ void Tracking::CreateInitialMapMonocular()
 
     mpMap->mvpKeyFrameOrigins.push_back(pKFini);
 
+    slamGraph->initialize(pKFini->mnId,pKFini->mTimeStamp,ORB_SLAM2::Converter::toMatrix4d(pKFini->GetPoseInverse()),
+                          pKFcur->mnId,pKFcur->mTimeStamp,ORB_SLAM2::Converter::toMatrix4d(pKFcur->GetPoseInverse()));
+
     mState=OK;
 }
 
@@ -1064,6 +1069,7 @@ void Tracking::CreateNewKeyFrame()
         return;
 
     KeyFrame* pKF = new KeyFrame(mCurrentFrame,mpMap,mpKeyFrameDB);
+    slamGraph->addKeyframe(pKF->mnId,pKF->mTimeStamp,Converter::toMatrix4d(pKF->GetPoseInverse()),mCurrentFrame.mpReferenceKF->mnId);
 
     mpReferenceKF = pKF;
     mCurrentFrame.mpReferenceKF = pKF;
@@ -1131,6 +1137,7 @@ void Tracking::CreateNewKeyFrame()
 
     mnLastKeyFrameId = mCurrentFrame.mnId;
     mpLastKeyFrame = pKF;
+
 }
 
 void Tracking::SearchLocalPoints()

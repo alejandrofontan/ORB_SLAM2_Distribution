@@ -26,6 +26,7 @@
 #include "LoopClosing.h"
 #include "Tracking.h"
 #include "KeyFrameDatabase.h"
+#include "SLAMGraph.h"
 
 #include <mutex>
 
@@ -40,7 +41,7 @@ class Map;
 class LocalMapping
 {
 public:
-    LocalMapping(Map* pMap, const float bMonocular);
+    LocalMapping(Map* pMap, SLAM_GRAPH::SlamGraph& slamGraph, const float bMonocular);
 
     void SetLoopCloser(LoopClosing* pLoopCloser);
 
@@ -104,6 +105,7 @@ protected:
 
     LoopClosing* mpLoopCloser;
     Tracking* mpTracker;
+    SLAM_GRAPH::SlamGraph slamGraph;
 
     std::list<KeyFrame*> mlNewKeyFrames;
 

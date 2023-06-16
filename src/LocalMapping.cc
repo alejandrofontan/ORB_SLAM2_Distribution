@@ -22,14 +22,15 @@
 #include "LoopClosing.h"
 #include "ORBmatcher.h"
 #include "Optimizer.h"
+#include "Converter.h"
 
 #include<mutex>
 
 namespace ORB_SLAM2 {
 
-    LocalMapping::LocalMapping(Map *pMap, const float bMonocular) :
+    LocalMapping::LocalMapping(Map *pMap, SLAM_GRAPH::SlamGraph& slamGraph, const float bMonocular) :
             mbMonocular(bMonocular), mbResetRequested(false), mbFinishRequested(false), mbFinished(true), mpMap(pMap),
-            mbAbortBA(false), mbStopped(false), mbStopRequested(false), mbNotStop(false), mbAcceptKeyFrames(true) {
+            slamGraph(slamGraph), mbAbortBA(false), mbStopped(false), mbStopRequested(false), mbNotStop(false), mbAcceptKeyFrames(true) {
     }
 
     void LocalMapping::SetLoopCloser(LoopClosing *pLoopCloser) {
@@ -675,8 +676,13 @@ void LocalMapping::KeyFrameCulling()
             ++iMapPt;
         }  
 
-        if(nRedundantObservations > 0.9*nMPs)
+        if(nRedundantObservations > 0.9*nMPs){
+            if(keyframe->mnId != 0)
+                slamGraph->removeKeyframe(keyframe->mnId);
+
             keyframe->SetBadFlag();
+        }
+
     }
 }
 

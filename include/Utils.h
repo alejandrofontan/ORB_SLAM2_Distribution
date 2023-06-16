@@ -8,8 +8,6 @@
 #include <vector>
 #include <iostream>
 
-
-
 namespace ORB_SLAM2
 {
     using FrameId = long unsigned int;

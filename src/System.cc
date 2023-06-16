@@ -77,6 +77,10 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     }
     cout << "Vocabulary loaded!" << endl << endl;
 
+    // Create SLAM Grpah
+    slamGraph = make_shared<SLAM_GRAPH::SLAMGraph>();
+    KeyFrame::slamGraph = slamGraph;
+
     //Create KeyFrame Database
     mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
 
@@ -90,10 +94,10 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     //Initialize the Tracking thread
     //(it will live in the main thread of execution, the one that called this constructor)
     mpTracker = new Tracking(this, mpVocabulary, mpFrameDrawer, mpMapDrawer,
-                             mpMap, mpKeyFrameDatabase, strSettingsFile, mSensor);
+                             mpMap, slamGraph,mpKeyFrameDatabase, strSettingsFile, mSensor);
 
     //Initialize the Local Mapping thread and launch
-    mpLocalMapper = new LocalMapping(mpMap, mSensor==MONOCULAR);
+    mpLocalMapper = new LocalMapping(mpMap,slamGraph, mSensor==MONOCULAR);
 #ifndef COMPILED_SEQUENTIAL
     mptLocalMapping = new thread(&ORB_SLAM2::LocalMapping::Run,mpLocalMapper);
 #endif
@@ -312,6 +316,7 @@ void System::Reset()
 
 void System::Shutdown()
 {
+
     mpLocalMapper->RequestFinish();
     mpLoopCloser->RequestFinish();
     if(mpViewer)
@@ -400,32 +405,19 @@ void System::SaveKeyFrameTrajectoryTUM(const string &filename)
 {
     cout << endl << "Saving keyframe trajectory to " << filename << " ..." << endl;
 
-    vector<KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();
-    sort(vpKFs.begin(),vpKFs.end(),KeyFrame::lId);
-
-    // Transform all keyframes so that the first keyframe is at the origin.
-    // After a loop closure the first keyframe might not be at the origin.
-    //cv::Mat Two = vpKFs[0]->GetPoseInverse();
-
     ofstream f;
     f.open(filename.c_str());
     f << fixed;
 
-    for(size_t i=0; i<vpKFs.size(); i++)
-    {
-        KeyFrame* pKF = vpKFs[i];
-
-       // pKF->SetPose(pKF->GetPose()*Two);
-
-        if(pKF->isBad())
-            continue;
-
-        cv::Mat R = pKF->GetRotation().t();
-        vector<float> q = Converter::toQuaternion(R);
-        cv::Mat t = pKF->GetCameraCenter();
-        f << setprecision(6) << pKF->mTimeStamp << setprecision(7) << " " << t.at<float>(0) << " " << t.at<float>(1) << " " << t.at<float>(2)
-          << " " << q[0] << " " << q[1] << " " << q[2] << " " << q[3] << endl;
-
+    auto keyframes = slamGraph->getKeyframes();
+    for(const auto& keyframe: *keyframes){
+        SLAM_GRAPH::mat4 Twc = keyframe.second->getAbsolutePose();
+        SLAM_GRAPH::mat3 Rwc = Twc.block<3,3>(0,0);
+        SLAM_GRAPH::vec3 twc = Twc.block<3,1>(0,3);
+        SLAM_GRAPH::quat q(Rwc);
+        f << setprecision(6) << keyframe.second->getTimestamp() << setprecision(7)
+          << " " << twc(0) << " " << twc(1) << " " << twc(2)
+          << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
     }
 
     f.close();
