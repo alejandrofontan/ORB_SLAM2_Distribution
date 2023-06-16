@@ -1,7 +1,8 @@
 CMakeLists.txt.user
-Examples/Monocular/mono_euroc
-Examples/Monocular/mono_kitti
-Examples/Monocular/mono_tum
+Examples/mono/mono_euroc
+Examples/mono/mono_kitti
+Examples/mono/mono_monotum
+Examples/mono/mono_rgbdtum
 Examples/RGB-D/rgbd_tum
 Examples/ROS/ORB_SLAM2/CMakeLists.txt.user
 Examples/ROS/ORB_SLAM2/Mono
@@ -9,9 +10,10 @@ Examples/ROS/ORB_SLAM2/MonoAR
 Examples/ROS/ORB_SLAM2/RGBD
 Examples/ROS/ORB_SLAM2/Stereo
 Examples/ROS/ORB_SLAM2/build/
-Examples/Stereo/stereo_euroc
-Examples/Stereo/stereo_kitti
+Examples/stereo/stereo_euroc
+Examples/stereo/stereo_kitti
 KeyFrameTrajectory.txt
+FrameTrajectory.txt
 Thirdparty/DBoW2/build/
 Thirdparty/DBoW2/lib/
 Thirdparty/g2o/build/
@@ -22,4 +24,5 @@ build/
 *~
 lib/
 cmake-build-debug/
+cmake-build-release/
 .idea/
