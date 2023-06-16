@@ -1,0 +1,14 @@
+//
+// Created by fontan on 15/06/23.
+//
+
+#ifndef ORB_SLAM2_DETERMINISTIC_SLAMGRAPH_H
+#define ORB_SLAM2_DETERMINISTIC_SLAMGRAPH_H
+
+
+class SLAMGraph {
+
+};
+
+
+#endif //ORB_SLAM2_DETERMINISTIC_SLAMGRAPH_H
