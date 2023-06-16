@@ -6,15 +6,15 @@ PROJECT(g2o)
 set(EIGEN_LOCAL_VERSION "3.4.0")
 set(EIGEN_LOCAL_PATH "/home/alex/libraries/eigen-${EIGEN_LOCAL_VERSION}/install")
 
-# Check C++14
+# Check C++17
 include(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG("-std=c++14" COMPILER_SUPPORTS_CXX14)
-if(COMPILER_SUPPORTS_CXX14)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
-  add_definitions(-DCOMPILEDWITHC14)
-  message(STATUS "Using flag -std=c++14.")
+CHECK_CXX_COMPILER_FLAG("-std=c++17" COMPILER_SUPPORTS_CXX17)
+if(COMPILER_SUPPORTS_CXX17)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
+  add_definitions(-DCOMPILEDWITHC17)
+  message(STATUS "Using flag -std=c++17.")
 else()
-  message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++14 support. Please use a different C++ compiler.")
+  message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++17 support. Please use a different C++ compiler.")
 endif()
 
 SET(g2o_C_FLAGS)
