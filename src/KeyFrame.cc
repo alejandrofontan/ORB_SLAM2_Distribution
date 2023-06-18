@@ -88,7 +88,7 @@ void KeyFrame::SetPose(const cv::Mat &Tcw_)
     cv::Mat center = (cv::Mat_<float>(4,1) << mHalfBaseline, 0 , 0, 1);
     Cw = Twc*center;
 
-    slamGraph->updateKeyframePose(mnId,Converter::toMatrix4d(Twc));
+    slamGraph->updateTwc(mnFrameId,Converter::toMatrix4d(Twc));
 }
 
 cv::Mat KeyFrame::GetPose()

@@ -107,6 +107,7 @@ public:
     // This method works for all sensor input.
     // Call first Shutdown()
     // See format details at: http://vision.in.tum.de/data/datasets/rgbd-dataset
+    void SaveFrameTrajectoryTUM(const string &filename);
     void SaveKeyFrameTrajectoryTUM(const string &filename);
 
     // Save camera trajectory in the KITTI dataset format.

@@ -536,6 +536,7 @@ void LoopClosing::CorrectLoop()
             cv::Mat correctedTiw = Converter::toCvSE3(eigR,eigt);
 
             pKFi->SetPose(correctedTiw);
+            ORB_SLAM2::KeyFrame::slamGraph->correctFramesScale((1./s), pKFi->mnFrameId);
 
             // Make sure connections are updated
             pKFi->UpdateConnections();

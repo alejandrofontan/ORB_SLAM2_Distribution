@@ -127,7 +127,7 @@ int main(int argc, char **argv)
     cout << "mean tracking time: " << totaltime/nImages << endl;
 
     // Save camera trajectory
-    SLAM.SaveKeyFrameTrajectoryTUM(resultsPath + "_FrameTrajectory.txt");
+    SLAM.SaveFrameTrajectoryTUM(resultsPath + "_FrameTrajectory.txt");
     SLAM.SaveKeyFrameTrajectoryTUM(resultsPath + "_KeyFrameTrajectory.txt");
 
     return 0;

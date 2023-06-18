@@ -227,6 +227,30 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
     AssignFeaturesToGrid();
 }
 
+Eigen::Matrix<double,4,4> Frame::get_Twc()
+{
+    Eigen::Matrix<double,4,4> Twc{Eigen::Matrix<double,4,4>::Identity()};
+    Eigen::Matrix<double,3,1> twc = Converter::toVector3d(mOw);
+    Eigen::Matrix<double,3,3> Rwc = Converter::toMatrix3d(mRwc);
+
+    Twc.block<3,3>(0,0) = Rwc;
+    Twc.block<3,1>(0,3) = twc;
+
+    return Twc;
+}
+
+Eigen::Matrix<double,4,4> Frame::get_Tcw()
+{
+    Eigen::Matrix<double,4,4> Tcw{Eigen::Matrix<double,4,4>::Identity()};
+    Eigen::Matrix<double,3,1> tcw = Converter::toVector3d(mtcw);
+    Eigen::Matrix<double,3,3> Rcw = Converter::toMatrix3d(mRcw);
+
+    Tcw.block<3,3>(0,0) = Rcw;
+    Tcw.block<3,1>(0,3) = tcw;
+
+    return Tcw;
+}
+
 void Frame::AssignFeaturesToGrid()
 {
     int nReserve = 0.5f*N/(FRAME_GRID_COLS*FRAME_GRID_ROWS);

@@ -17,8 +17,6 @@
 
 using namespace std;
 
-
-
 namespace SLAM_GRAPH {
     using FrameId = long unsigned int;
     using Seconds = double;
@@ -29,63 +27,80 @@ namespace SLAM_GRAPH {
     typedef Eigen::Matrix<dataType,4,4> mat4;
     typedef Eigen::Quaterniond quat;
 
-    class KeyframeNODE {
-    private:
-        FrameId frameId{};
-        Seconds timestamp{};
-        mat4 Twc{};
-        map<FrameId,shared_ptr<KeyframeNODE>> covisibleKeyframes{};
-
-    public:
-        KeyframeNODE(const FrameId& frameId_, const Seconds& timestamp_, const mat4& Twc_);
-        void addCovisibleKeyframe(const shared_ptr<KeyframeNODE>& covKeyframe);
-        void removeCovisibleKeyframe(const FrameId& covKeyframeId, const shared_ptr<KeyframeNODE>& auxKeyframe);
-        shared_ptr<KeyframeNODE> getAuxiliaryCovisibleKeyframe();
-        map<FrameId,shared_ptr<KeyframeNODE>> getCovisibleKeyframes(){return covisibleKeyframes;};
-        void updatePose(const mat4& Twc_);
-        [[nodiscard]] mat4 getAbsolutePose() const{return Twc;};
-        [[nodiscard]] Seconds getTimestamp() const{return timestamp;};
-
-        //void addFrame(const FrameId& frameId);
-        //void addCovisibleKeyframe(const shared_ptr<KeyframeNode>& covKeyframe);
-        //shared_ptr<KeyframeNode> getOldestCovisibleKeyframe();
-        //set<FrameId> frames{};
-    };
+    class KeyframeNODE;
+    class FrameNODE;
     typedef shared_ptr<KeyframeNODE> KeyframeNode;
-
-    class FrameNODE {
-
-    public:
-        FrameId frameId{};
-        Seconds timestamp{};
-        bool nodeIsKeyframe{false};
-        unordered_map<shared_ptr<KeyframeNODE>, vector<mat4>> Tr{}; // Relative Transformations
-
-    public:
-        FrameNODE(const FrameId& frameId, const Seconds& timestamp, const mat4& Tr_, const shared_ptr<KeyframeNODE>& refKeyframe);
-        //void convertToKeyframe(const shared_ptr<KeyframeNode>& refKeyframe);
-        bool isKeyframe() const;
-    };
     typedef shared_ptr<FrameNODE> FrameNode;
 
+    class KeyframeNODE {
+    private:
+        FrameId id{};
+        Seconds timestamp{};
+        mat4 Twc{mat4::Identity()};
+        map<FrameId,FrameNode> frames{};
+
+    public:
+        KeyframeNODE(const FrameId& id_, const Seconds& timestamp_, mat4  Twc_);
+
+        void updateTwc(const mat4& Twc_);
+        void addFrame(FrameNode& frame);
+
+        [[nodiscard]] map<FrameId,FrameNode> getFrames()const {return frames;};
+        [[nodiscard]] mat4 getTwc() const{return Twc;};
+        [[nodiscard]] mat4 getTcw() const{return Twc.inverse();};
+        [[nodiscard]] Seconds getTimestamp() const{return timestamp;};
+        [[nodiscard]] FrameId getId() const{return id;};
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    class FrameNODE {
+
+    private:
+        FrameId id{};
+        Seconds timestamp{};
+        unordered_map<KeyframeNode, mat4> Tr{}; // Relative Transformations
+
+    public:
+        FrameNODE(const FrameId& id_, const Seconds& timestamp_, const mat4& Tr_, const KeyframeNode& refKeyframe);
+
+        void addTr(const KeyframeNode& refkeyframe,  const mat4& Tr_);
+        void removeTr(const KeyframeNode& refkeyframe);
+        void correctScale(const double& scale, const KeyframeNode &refKeyframe);
+
+        [[nodiscard]] Seconds getTimestamp() const{return timestamp;};
+        [[nodiscard]] FrameId getId() const{return id;};
+        [[nodiscard]] size_t amountOfRelativePoses() const{return Tr.size();};
+        [[nodiscard]] mat4 getTr(const KeyframeNode& keyframe) const;
+        [[nodiscard]] mat4 getTwc() const;
+    };
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     class SLAMGraph {
     public:
         SLAMGraph() = default;
-        void initialize(const FrameId& frameId_1, const Seconds& timestamp_1, const mat4& Twc_1,
-                        const FrameId& frameId_2, const Seconds& timestamp_2, const mat4& Twc_2);
-        void addKeyframe(const FrameId& frameId, const Seconds& timestamp, const mat4& Twc, const FrameId& refKeyframeId);
-        void removeKeyframe(const FrameId& keyframeToRemoveId);
-        void updateKeyframePose(const FrameId& frameId,const mat4& Twc);
+        void initialize(const FrameId& id_1, const Seconds& timestamp_1, const mat4& Twc_1,
+                        const FrameId& id_2, const Seconds& timestamp_2, const mat4& Twc_2);
 
+        void addKeyframe(const FrameId& keyframeId, const Seconds& timestamp, const mat4& Twc);
+        void addFrame(const FrameId &frameId, const Seconds& timestamp, const mat4& Tcw, const FrameId& refKeyframeId);
+        void removeKeyframe(const FrameId& keyframeToRemoveId);
+        void updateTwc(const FrameId& frameId,const mat4& Twc);
+        void correctFramesScale(const double& scale, const FrameId &keyframeId);
+
+        KeyframeNode getNewReferenceKeyframe(const FrameId & frameId);
+
+        map<FrameId,shared_ptr<FrameNODE>> const * getFrames(){return &frames;};
         map<FrameId,shared_ptr<KeyframeNODE>> const * getKeyframes(){return &keyframes;};
-        //void addFrame(const FrameId &frameId, const Seconds& timestamp, const mat4& Tr_, const FrameId& refKeyframeId);
+        set<FrameId> getIds(){return ids;};
+
+        [[nodiscard]] mat4 getTwc(const FrameId &frameId) const;
+        [[nodiscard]] Seconds getTimestamp(const FrameId &frameId) const;
 
     private:
-        std::mutex mutexSlamGraph;
         map<FrameId,shared_ptr<KeyframeNODE>> keyframes{};
-        map<FrameId,FrameNODE> frames{};
-
-        static void linkKeyframes(KeyframeNode& keyframe1, KeyframeNode& keyframe2);
+        map<FrameId,shared_ptr<FrameNODE>> frames{};
+        set<FrameId> ids{};
 
     };
     typedef shared_ptr<SLAMGraph> SlamGraph;

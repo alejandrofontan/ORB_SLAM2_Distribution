@@ -677,9 +677,9 @@ void LocalMapping::KeyFrameCulling()
         }  
 
         if(nRedundantObservations > 0.9*nMPs){
-            if(keyframe->mnId != 0)
-                slamGraph->removeKeyframe(keyframe->mnId);
-
+            if(keyframe->mnId != 0){
+                slamGraph->removeKeyframe(keyframe->mnFrameId);
+            }
             keyframe->SetBadFlag();
         }
 

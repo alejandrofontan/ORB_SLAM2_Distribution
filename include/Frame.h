@@ -31,6 +31,7 @@
 #include "ORBextractor.h"
 
 #include <opencv2/opencv.hpp>
+#include<Eigen/Dense>
 
 namespace ORB_SLAM2
 {
@@ -78,6 +79,9 @@ public:
     inline cv::Mat GetRotationInverse(){
         return mRwc.clone();
     }
+
+    Eigen::Matrix<double,4,4> get_Twc();
+    Eigen::Matrix<double,4,4> get_Tcw();
 
     // Check if a MapPoint is in the frustum of the camera
     // and fill variables of the MapPoint to be used by the tracking

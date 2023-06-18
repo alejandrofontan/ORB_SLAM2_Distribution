@@ -1009,6 +1009,7 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
         cv::Mat Tiw = Converter::toCvSE3(eigR,eigt);
 
         pKFi->SetPose(Tiw);
+        ORB_SLAM2::KeyFrame::slamGraph->correctFramesScale((1./s), pKFi->mnFrameId);
     }
 
     // Correct points. Transform to "non-optimized" reference keyframe pose and transform back with optimized pose

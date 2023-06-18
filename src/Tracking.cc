@@ -497,6 +497,10 @@ void Tracking::Track()
         mlpReferences.push_back(mpReferenceKF);
         mlFrameTimes.push_back(mCurrentFrame.mTimeStamp);
         mlbLost.push_back(mState==LOST);
+
+        slamGraph->addFrame(mCurrentFrame.mnId,mCurrentFrame.mTimeStamp,
+                            mCurrentFrame.get_Tcw(),
+                            mCurrentFrame.mpReferenceKF->mnFrameId);
     }
     else
     {
@@ -733,8 +737,8 @@ void Tracking::CreateInitialMapMonocular()
 
     mpMap->mvpKeyFrameOrigins.push_back(pKFini);
 
-    slamGraph->initialize(pKFini->mnId,pKFini->mTimeStamp,ORB_SLAM2::Converter::toMatrix4d(pKFini->GetPoseInverse()),
-                          pKFcur->mnId,pKFcur->mTimeStamp,ORB_SLAM2::Converter::toMatrix4d(pKFcur->GetPoseInverse()));
+    slamGraph->initialize(pKFini->mnFrameId,pKFini->mTimeStamp,ORB_SLAM2::Converter::toMatrix4d(pKFini->GetPoseInverse()),
+                          pKFcur->mnFrameId,pKFcur->mTimeStamp,ORB_SLAM2::Converter::toMatrix4d(pKFcur->GetPoseInverse()));
 
     mState=OK;
 }
@@ -1069,7 +1073,7 @@ void Tracking::CreateNewKeyFrame()
         return;
 
     KeyFrame* pKF = new KeyFrame(mCurrentFrame,mpMap,mpKeyFrameDB);
-    slamGraph->addKeyframe(pKF->mnId,pKF->mTimeStamp,Converter::toMatrix4d(pKF->GetPoseInverse()),mCurrentFrame.mpReferenceKF->mnId);
+    slamGraph->addKeyframe(pKF->mnFrameId,pKF->mTimeStamp,Converter::toMatrix4d(pKF->GetPoseInverse()));
 
     mpReferenceKF = pKF;
     mCurrentFrame.mpReferenceKF = pKF;

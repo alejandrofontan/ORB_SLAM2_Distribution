@@ -400,6 +400,27 @@ void System::SaveTrajectoryTUM(const string &filename)
     cout << endl << "trajectory saved!" << endl;
 }
 
+void System::SaveFrameTrajectoryTUM(const string &filename)
+{
+    cout << endl << "Saving frame trajectory to " << filename << " ..." << endl;
+
+    ofstream f;
+    f.open(filename.c_str());
+    f << fixed;
+
+    for(const auto& frameId: slamGraph->getIds()){
+        SLAM_GRAPH::mat4 Twc = slamGraph->getTwc(frameId);
+        SLAM_GRAPH::mat3 Rwc = Twc.block<3,3>(0,0);
+        SLAM_GRAPH::vec3 twc = Twc.block<3,1>(0,3);
+        SLAM_GRAPH::quat q(Rwc);
+        f << setprecision(6) << slamGraph->getTimestamp(frameId) << setprecision(7)
+        << " " << twc(0) << " " << twc(1) << " " << twc(2)
+        << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
+    }
+
+    f.close();
+    cout << endl << "trajectory saved!" << endl;
+}
 
 void System::SaveKeyFrameTrajectoryTUM(const string &filename)
 {
@@ -411,7 +432,7 @@ void System::SaveKeyFrameTrajectoryTUM(const string &filename)
 
     auto keyframes = slamGraph->getKeyframes();
     for(const auto& keyframe: *keyframes){
-        SLAM_GRAPH::mat4 Twc = keyframe.second->getAbsolutePose();
+        SLAM_GRAPH::mat4 Twc = keyframe.second->getTwc();
         SLAM_GRAPH::mat3 Rwc = Twc.block<3,3>(0,0);
         SLAM_GRAPH::vec3 twc = Twc.block<3,1>(0,3);
         SLAM_GRAPH::quat q(Rwc);
