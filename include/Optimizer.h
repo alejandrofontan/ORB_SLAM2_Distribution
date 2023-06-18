@@ -33,10 +33,13 @@ namespace ORB_SLAM2
 {
 
 class LoopClosing;
+class OptimizerParameters;
 
 class Optimizer
 {
 public:
+    static OptimizerParameters parameters;
+
     void static BundleAdjustment(const std::vector<KeyFrame*> &vpKF, const std::vector<MapPoint*> &vpMP,
                                  int nIterations = 5, bool *pbStopFlag=NULL, const unsigned long nLoopKF=0,
                                  const bool bRobust = true);
@@ -54,7 +57,84 @@ public:
 
     // if bFixScale is true, optimize SE3 (stereo,rgbd), Sim3 otherwise (mono)
     static int OptimizeSim3(KeyFrame* pKF1, KeyFrame* pKF2, std::vector<MapPoint *> &vpMatches1,
-                            g2o::Sim3 &g2oS12, const float th2, const bool bFixScale);
+                            g2o::Sim3 &g2oS12, const bool bFixScale);
+};
+
+class OptimizerParameters {
+
+public:
+    struct PoseOptimizationParameters{
+        int nInitialCorrespondences{3};
+        int optimizerIts{10};
+        int its{4};
+        int minimumNumberOfEdges{10};
+        PoseOptimizationParameters() = default;
+        PoseOptimizationParameters(const int& nInitialCorrespondences, const int& optimizerIts, const int& its, const int& minimumNumberOfEdges):
+        nInitialCorrespondences(nInitialCorrespondences),optimizerIts(optimizerIts),its(its),minimumNumberOfEdges(minimumNumberOfEdges){};
+    };
+
+    struct LocalBundleAdjustmentParameters{
+        int optimizerItsCoarse{5};
+        int optimizerItsFine{10};
+        LocalBundleAdjustmentParameters() = default;
+        LocalBundleAdjustmentParameters(const int& optimizerItsCoarse, const int& optimizerItsFine):
+        optimizerItsCoarse(optimizerItsCoarse),optimizerItsFine(optimizerItsFine){};
+    };
+
+    struct OptimizeEssentialGraph{
+        double solverLambdaInit{1e-16};
+        int minFeat{100};
+        int optimizerIts{20};
+        OptimizeEssentialGraph() = default;
+        OptimizeEssentialGraph(const double& solverLambdaInit, const int& minFeat, const int& optimizerIts):
+        solverLambdaInit(solverLambdaInit),minFeat(minFeat),optimizerIts(optimizerIts){};
+    };
+
+    struct OptimizeSim3{
+        int optimizerIts{5};
+        int nMoreIterationsHigh{10};
+        int nMoreIterationsLow{5};
+        int nBad{10};
+        float th2{10.0};
+
+        OptimizeSim3() = default;
+        OptimizeSim3(const int& optimizerIts, const int& nMoreIterationsHigh, const int& nMoreIterationsLow, const int& nBad, const float& th2):
+        optimizerIts(optimizerIts),nMoreIterationsHigh(nMoreIterationsHigh),
+        nMoreIterationsLow(nMoreIterationsLow),nBad(nBad),th2(th2){};
+    };
+
+private:
+    friend std::ostream& operator<<(std::ostream& outstream, const OptimizerParameters& parameters);
+    friend class Optimizer;
+
+    float chi2_2dof{5.991}; // Chi2 , 2 dof, 95%
+    float chi2_3dof{7.815}; // Chi2 , 3 dof, 95%
+    float deltaMono{sqrtf(chi2_2dof)};
+    float deltaStereo{sqrtf(chi2_3dof)};
+
+    PoseOptimizationParameters poseOptimization{};
+    LocalBundleAdjustmentParameters localBundleAdjustment{};
+    OptimizeEssentialGraph optimizeEssentialGraph{};
+    OptimizeSim3 optimizeSim3{};
+
+public:
+    void setParameters(
+            const float& chi2_2dof_, const float& chi2_3dof_,
+            const PoseOptimizationParameters& poseOptimization_,
+            const LocalBundleAdjustmentParameters& localBundleAdjustment_,
+            const OptimizeEssentialGraph& optimizeEssentialGraph_,
+            const OptimizeSim3& optimizeSim3_){
+
+        chi2_2dof = chi2_2dof_;
+        chi2_3dof = chi2_3dof_;
+        deltaMono = sqrt(chi2_2dof);
+        deltaStereo = sqrt(chi2_3dof);
+
+        poseOptimization = poseOptimization_;
+        localBundleAdjustment = localBundleAdjustment_;
+        optimizeEssentialGraph = optimizeEssentialGraph_;
+        optimizeSim3 = optimizeSim3_;
+    }
 };
 
 } //namespace ORB_SLAM

@@ -37,6 +37,7 @@
 namespace ORB_SLAM2
 {
 
+OptimizerParameters Optimizer::parameters{};
 
 void Optimizer::GlobalBundleAdjustemnt(Map* pMap, int nIterations, bool* pbStopFlag, const unsigned long nLoopKF, const bool bRobust)
 {
@@ -82,8 +83,8 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
             maxKFid=pKF->mnId;
     }
 
-    const float thHuber2D = sqrt(5.99);
-    const float thHuber3D = sqrt(7.815);
+    const float thHuber2D = parameters.deltaMono;
+    const float thHuber3D = parameters.deltaStereo;
 
     // Set MapPoint vertices
     for(size_t i=0; i<vpMP.size(); i++)
@@ -270,9 +271,8 @@ int Optimizer::PoseOptimization(Frame *pFrame)
     vpEdgesStereo.reserve(N);
     vnIndexEdgeStereo.reserve(N);
 
-    const float deltaMono = sqrt(5.991);
-    const float deltaStereo = sqrt(7.815);
-
+    const float deltaMono = parameters.deltaMono;
+    const float deltaStereo = parameters.deltaStereo;
 
     {
     unique_lock<mutex> lock(MapPoint::mGlobalMutex);
@@ -361,17 +361,17 @@ int Optimizer::PoseOptimization(Frame *pFrame)
     }
 
 
-    if(nInitialCorrespondences<3)
+    if(nInitialCorrespondences < parameters.poseOptimization.nInitialCorrespondences)
         return 0;
 
     // We perform 4 optimizations, after each optimization we classify observation as inlier/outlier
     // At the next optimization, outliers are not included, but at the end they can be classified as inliers again.
-    const float chi2Mono[4]={5.991,5.991,5.991,5.991};
-    const float chi2Stereo[4]={7.815,7.815,7.815, 7.815};
-    const int its[4]={10,10,10,10};    
+    std::vector<float> chi2Mono(parameters.poseOptimization.its, parameters.chi2_2dof);
+    std::vector<float> chi2Stereo(parameters.poseOptimization.its, parameters.chi2_3dof);
+    std::vector<int> its(parameters.poseOptimization.its, parameters.poseOptimization.optimizerIts);
 
     int nBad=0;
-    for(size_t it=0; it<4; it++)
+    for(size_t it = 0; it < parameters.poseOptimization.its; it++)
     {
 
         vSE3->setEstimate(Converter::toSE3Quat(pFrame->mTcw));
@@ -437,7 +437,7 @@ int Optimizer::PoseOptimization(Frame *pFrame)
                 e->setRobustKernel(0);
         }
 
-        if(optimizer.edges().size()<10)
+        if(optimizer.edges().size() < parameters.poseOptimization.minimumNumberOfEdges)
             break;
     }    
 
@@ -567,8 +567,8 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
     vector<MapPoint*> vpMapPointEdgeStereo;
     vpMapPointEdgeStereo.reserve(nExpectedSize);
 
-    const float thHuberMono = sqrt(5.991);
-    const float thHuberStereo = sqrt(7.815);
+    const float thHuberMono = parameters.deltaMono;
+    const float thHuberStereo = parameters.deltaStereo;
 
     for(list<MapPoint*>::iterator lit=lLocalMapPoints.begin(), lend=lLocalMapPoints.end(); lit!=lend; lit++)
     {
@@ -658,7 +658,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
             return;
 
     optimizer.initializeOptimization();
-    optimizer.optimize(5);
+    optimizer.optimize(parameters.localBundleAdjustment.optimizerItsCoarse);
 
     bool bDoMore= true;
 
@@ -678,7 +678,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
         if(pMP->isBad())
             continue;
 
-        if(e->chi2()>5.991 || !e->isDepthPositive())
+        if(e->chi2() > parameters.chi2_2dof || !e->isDepthPositive())
         {
             e->setLevel(1);
         }
@@ -694,7 +694,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
         if(pMP->isBad())
             continue;
 
-        if(e->chi2()>7.815 || !e->isDepthPositive())
+        if(e->chi2() > parameters.chi2_3dof || !e->isDepthPositive())
         {
             e->setLevel(1);
         }
@@ -705,7 +705,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
     // Optimize again without the outliers
 
     optimizer.initializeOptimization(0);
-    optimizer.optimize(10);
+    optimizer.optimize(parameters.localBundleAdjustment.optimizerItsFine);
 
     }
 
@@ -721,7 +721,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
         if(pMP->isBad())
             continue;
 
-        if(e->chi2()>5.991 || !e->isDepthPositive())
+        if(e->chi2() > parameters.chi2_2dof || !e->isDepthPositive())
         {
             KeyFrame* pKFi = vpEdgeKFMono[i];
             vToErase.push_back(make_pair(pKFi,pMP));
@@ -736,7 +736,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
         if(pMP->isBad())
             continue;
 
-        if(e->chi2()>7.815 || !e->isDepthPositive())
+        if(e->chi2() > parameters.chi2_3dof || !e->isDepthPositive())
         {
             KeyFrame* pKFi = vpEdgeKFStereo[i];
             vToErase.push_back(make_pair(pKFi,pMP));
@@ -793,7 +793,7 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
     g2o::BlockSolver_7_3 * solver_ptr= new g2o::BlockSolver_7_3(linearSolver);
     g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg(solver_ptr);
 
-    solver->setUserLambdaInit(1e-16);
+    solver->setUserLambdaInit(parameters.optimizeEssentialGraph.solverLambdaInit);
     optimizer.setAlgorithm(solver);
 
     const vector<KeyFrame*> vpKFs = pMap->GetAllKeyFrames();
@@ -805,7 +805,7 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
     vector<g2o::Sim3,Eigen::aligned_allocator<g2o::Sim3> > vCorrectedSwc(nMaxKFid+1);
     vector<g2o::VertexSim3Expmap*> vpVertices(nMaxKFid+1);
 
-    const int minFeat = 100;
+    const int minFeat = parameters.optimizeEssentialGraph.minFeat;
 
     // Set KeyFrame vertices
     for(size_t i=0, iend=vpKFs.size(); i<iend;i++)
@@ -986,7 +986,7 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
 
     // Optimize!
     optimizer.initializeOptimization();
-    optimizer.optimize(20);
+    optimizer.optimize(parameters.optimizeEssentialGraph.optimizerIts);
 
     unique_lock<mutex> lock(pMap->mMutexMapUpdate);
 
@@ -1046,7 +1046,7 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
     }
 }
 
-int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &vpMatches1, g2o::Sim3 &g2oS12, const float th2, const bool bFixScale)
+int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &vpMatches1, g2o::Sim3 &g2oS12, const bool bFixScale)
 {
     g2o::SparseOptimizer optimizer;
     g2o::BlockSolverX::LinearSolverType * linearSolver;
@@ -1095,7 +1095,7 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
     vpEdges12.reserve(2*N);
     vpEdges21.reserve(2*N);
 
-    const float deltaHuber = sqrt(th2);
+    const float deltaHuber = sqrt(parameters.optimizeSim3.th2);
 
     int nCorrespondences = 0;
 
@@ -1182,7 +1182,7 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
 
     // Optimize!
     optimizer.initializeOptimization();
-    optimizer.optimize(5);
+    optimizer.optimize(parameters.optimizeSim3.optimizerIts);
 
     // Check inliers
     int nBad=0;
@@ -1193,7 +1193,7 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
         if(!e12 || !e21)
             continue;
 
-        if(e12->chi2()>th2 || e21->chi2()>th2)
+        if(e12->chi2() > parameters.optimizeSim3.th2 || e21->chi2() > parameters.optimizeSim3.th2)
         {
             size_t idx = vnIndexEdge[i];
             vpMatches1[idx]=static_cast<MapPoint*>(NULL);
@@ -1207,11 +1207,11 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
 
     int nMoreIterations;
     if(nBad>0)
-        nMoreIterations=10;
+        nMoreIterations = parameters.optimizeSim3.nMoreIterationsHigh;
     else
-        nMoreIterations=5;
+        nMoreIterations = parameters.optimizeSim3.nMoreIterationsLow;
 
-    if(nCorrespondences-nBad<10)
+    if(nCorrespondences-nBad < parameters.optimizeSim3.nBad)
         return 0;
 
     // Optimize again only with inliers
@@ -1227,7 +1227,7 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
         if(!e12 || !e21)
             continue;
 
-        if(e12->chi2()>th2 || e21->chi2()>th2)
+        if(e12->chi2() > parameters.optimizeSim3.th2 || e21->chi2() > parameters.optimizeSim3.th2)
         {
             size_t idx = vnIndexEdge[i];
             vpMatches1[idx]=static_cast<MapPoint*>(NULL);
@@ -1243,5 +1243,37 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
     return nIn;
 }
 
+std::ostream &operator<<(std::ostream &outstream, const OptimizerParameters &parameters) {
+    cout << "\nOptimizer parameters : "<< endl;
+
+    outstream << "- chi2_2dof: "        << parameters.chi2_2dof << endl;
+    outstream << "- chi2_3dof: "        << parameters.chi2_3dof << endl;
+    outstream << "- deltaMono: "        << parameters.deltaMono << endl;
+    outstream << "- deltaStereo: "      << parameters.deltaStereo << endl;
+
+    outstream << "- PoseOptimization : "<< endl;
+    outstream << "    - nInitialCorrespondences: " << parameters.poseOptimization.nInitialCorrespondences << endl;
+    outstream << "    - optimizer_its: "           << parameters.poseOptimization.optimizerIts << endl;
+    outstream << "    - its : "                    << parameters.poseOptimization.its << endl;
+    outstream << "    - minimumNumberOfEdges : "   << parameters.poseOptimization.minimumNumberOfEdges << endl;
+
+    outstream << "- Local Bundle Adjustment : " << endl;
+    outstream << "    - optimizerItsCoarse: "   << parameters.localBundleAdjustment.optimizerItsCoarse << endl;
+    outstream << "    - optimizerItsFine : "    << parameters.localBundleAdjustment.optimizerItsFine << endl;
+
+    outstream << "- Optimize Essential Graph : " << endl;
+    outstream << "    - solverLambdaInit: "      << parameters.optimizeEssentialGraph.solverLambdaInit << endl;
+    outstream << "    - minFeat : "              << parameters.optimizeEssentialGraph.minFeat << endl;
+    outstream << "    - optimizerIts : "         << parameters.optimizeEssentialGraph.optimizerIts << endl;
+
+    outstream << "- Optimize Sim3 : "<< endl;
+    outstream << "    - optimizerIts: "          << parameters.optimizeSim3.optimizerIts << endl;
+    outstream << "    - nMoreIterationsHigh : "  << parameters.optimizeSim3.nMoreIterationsHigh << endl;
+    outstream << "    - nMoreIterationsLow : "   << parameters.optimizeSim3.nMoreIterationsLow << endl;
+    outstream << "    - nBad : "                 << parameters.optimizeSim3.nBad << endl;
+    outstream << "    - th2 : "                  << parameters.optimizeSim3.th2 << endl;
+
+    return outstream;
+}
 
 } //namespace ORB_SLAM

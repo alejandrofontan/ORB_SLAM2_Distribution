@@ -44,187 +44,40 @@ ORBextractor.iniThFAST: 20
 ORBextractor.minThFAST: 7
 
 #--------------------------------------------------------------------------------------------
+# Optimizer Parameters
+#--------------------------------------------------------------------------------------------
+Optimizer.chi2_2dof: 5.991
+Optimizer.chi2_3dof: 7.815
+
+Optimizer.poseOptimization.nInitialCorrespondences: 3
+Optimizer.poseOptimization.optimizerIts: 10
+Optimizer.poseOptimization.its: 4
+Optimizer.poseOptimization.minimumNumberOfEdges: 10
+
+Optimizer.localBundleAdjustment.optimizerItsCoarse: 5
+Optimizer.localBundleAdjustment.optimizerItsFine: 10
+
+Optimizer.optimizeEssentialGraph.solverLambdaInit: 1e-16
+Optimizer.optimizeEssentialGraph.minFeat: 100
+Optimizer.optimizeEssentialGraph.optimizerIts: 20
+
+Optimizer.optimizeSim3.optimizerIts: 5
+Optimizer.optimizeSim3.nMoreIterationsHigh: 10
+Optimizer.optimizeSim3.nMoreIterationsLow: 5
+Optimizer.optimizeSim3.nBad: 10
+Optimizer.optimizeSim3.th2: 10.0
+
+
+#--------------------------------------------------------------------------------------------
 # Viewer Parameters
 #--------------------------------------------------------------------------------------------
 Viewer.KeyFrameSize: 0.05
 Viewer.KeyFrameLineWidth: 1
 Viewer.GraphLineWidth: 0.9
-Viewer.PointSize:2
+Viewer.PointSize: 2
 Viewer.CameraSize: 0.08
 Viewer.CameraLineWidth: 3
 Viewer.ViewpointX: 0
 Viewer.ViewpointY: -0.7
 Viewer.ViewpointZ: -1.8
 Viewer.ViewpointF: 500
-
-#--------------------------------------------------------------------------------------------
-# Tracking Parameters
-#--------------------------------------------------------------------------------------------
-Tracking.tracking_nFeatures_mono: 2
-Tracking.tracking_mMinFrames : 0
-Tracking.tracking_mMaxFrames : 0
-
-Tracking.track_keyFramesInMap: 5
-
-Tracking.stereoInitialization_N : 500
-
-Tracking.monocularInitialization_mvKeys : 100
-Tracking.monocularInitialization.initializer_sigma : 1.0
-Tracking.monocularInitialization.initializer_iterations : 200
-Tracking.monocularInitialization.matcher_nnratio : 0.9
-Tracking.monocularInitialization.matcher.SearchForInitialization_windowSize: 100
-Tracking.monocularInitialization_nmatches: 100
-
-Tracking.createInitialMapMonocular.GlobalBundleAdjustemnt_nIterations : 20
-Tracking.createInitialMapMonocular.ComputeSceneMedianDepth_q : 2
-Tracking.createInitialMapMonocular.TrackedMapPoints_minObs : 1
-Tracking.createInitialMapMonocular_TrackedMapPoints : 100
-
-Tracking.TrackReferenceKeyFrame.matcher_nnratio : 0.7
-Tracking.TrackReferenceKeyFrame.matcher_nmatches : 15
-Tracking.TrackReferenceKeyFrame.matcher_nmatchesMap : 10
-
-Tracking.updateLastFrame_nPoints : 100
-
-Tracking.TrackWithMotionModel.matcher_nnratio : 0.9
-Tracking.TrackWithMotionModel.matcher.searchByProjection_th : 15
-Tracking.TrackWithMotionModel.matcher.searchByProjection_th_stereo : 7
-Tracking.TrackWithMotionModel.nmatches_th : 20
-Tracking.TrackWithMotionModel.nmatchesMap_th : 10
-
-Tracking.TrackLocalMap.mnMatchesInliers_th : 50
-Tracking.TrackLocalMap.mnMatchesInliers_reloc_th : 30
-
-Tracking.NeedNewKeyFrame.nMinObs: 3
-Tracking.NeedNewKeyFrame.nTrackedClose: 100
-Tracking.NeedNewKeyFrame.nNonTrackedClose: 70
-Tracking.NeedNewKeyFrame.thRefRatio1: 0.75
-Tracking.NeedNewKeyFrame.thRefRatio2: 0.4
-Tracking.NeedNewKeyFrame.thRefRatio_mono: 0.9
-Tracking.NeedNewKeyFrame.nRefMatches_perc: 0.25
-Tracking.NeedNewKeyFrame.mnMatchesInliers: 15
-Tracking.NeedNewKeyFrame.keyFramesInQueue: 3
-
-Tracking.CreateNewKeyFrame.nPoints: 100
-
-Tracking.searchLocalPointsviewCosLimit: 0.5
-Tracking.searchLocalPoints.matcher_nnratio: 0.8
-Tracking.searchLocalPoints.matcher_th: 1
-Tracking.searchLocalPoints.matcher_th_stereo: 3
-Tracking.searchLocalPoints.matcher_reloc_th: 5
-Tracking.searchLocalPoints_mnLastRelocFrameId: 2
-
-Tracking.updateLocalKeyFrames_mvpLocalKeyFrames: 80
-Tracking.updateLocalKeyFrames_GetBestCovisibilityKeyFrames: 10
-
-Tracking.relocalization.matcher_nnratio: 0.75
-Tracking.relocalization.matcher2_nnratio: 0.9
-Tracking.relocalization.matcher_nmatches: 15
-
-Tracking.relocalization.ransac_probability: 0.99
-Tracking.relocalization.ransac_minInliers: 10
-Tracking.relocalization.ransac_maxIterations: 300
-Tracking.relocalization.ransac_minSet: 4
-Tracking.relocalization.ransac_epsilon: 0.5
-Tracking.relocalization.ransac_th2: 5.991
-
-Tracking.relocalization.psolver_nIterations: 5
-
-Tracking.relocalization_ngood1: 10
-Tracking.relocalization_ngood2: 50
-Tracking.relocalization_ngood_min: 30
-Tracking.relocalization_ngood_max: 50
-Tracking.relocalization_nadditional_ngood: 50
-Tracking.relocalization_ngood3: 50
-
-Tracking.SearchByProjection_th1: 10.0
-Tracking.SearchByProjection_ORBdist1: 100
-Tracking.SearchByProjection_th2: 3.0
-Tracking.SearchByProjection_ORBdist2: 64
-
-#--------------------------------------------------------------------------------------------
-# Local Mapping Parameters
-#--------------------------------------------------------------------------------------------
-
-LocalMapping.mapPointCulling_nThObs_mono: 2
-LocalMapping.mapPointCulling_nThObs: 3
-LocalMapping.mapPointCulling_foundRatio: 0.25
-LocalMapping.mapPointCulling_KFidIncrement1: 2
-LocalMapping.mapPointCulling_KFidIncrement2: 3
-
-LocalMapping.createNewMapPoints_nn: 10
-LocalMapping.createNewMapPoints_nn_mono: 20
-LocalMapping.createNewMapPoints.matcher_nnratio: 0.6
-LocalMapping.createNewMapPoints.matcher_ratioFactor: 1.5
-LocalMapping.createNewMapPoints_ratioBaselineDepth: 0.01
-LocalMapping.createNewMapPoints_cosParallaxRays: 0.9998
-LocalMapping.createNewMapPoints_chi2_2dof_95: 5.991
-LocalMapping.createNewMapPoints_chi2_3dof_95: 7.8
-
-LocalMapping.searchInNeighbors_nn: 10
-LocalMapping.searchInNeighbors_nn_mono: 20
-LocalMapping.searchInNeighbors_bestCovisibilityKeyFrames: 5
-
-LocalMapping.keyFrameCulling_nObs: 3
-LocalMapping.keyFrameCulling_nRedundantObservations: 0.9
-
-#--------------------------------------------------------------------------------------------
-# Optimizer Parameters
-#--------------------------------------------------------------------------------------------
-Optimizer.chi2_2dof: 7.0
-Optimizer.chi2_3dof: 7.815
-
-Optimizer.poseOptimization_optimizer_its: 10
-Optimizer.poseOptimization_its: 4
-Optimizer.poseOptimization_minimumNumberOfEdges: 10
-
-Optimizer.localBundleAdjustment_optimizer_its_coarse: 5
-Optimizer.localBundleAdjustment_optimizer_its_fine: 10
-
-Optimizer.optimizeEssentialGraph_solver_lambdaInit: 1e-16
-Optimizer.optimizeEssentialGraph_minFeat: 100
-Optimizer.optimizeEssentialGraph_optimizer_its: 20
-
-Optimizer.optimizeSim3_optimizer_its: 5
-Optimizer.optimizeSim3_optimizer_nMoreIterations_high: 10
-Optimizer.optimizeSim3_optimizer_nMoreIterations_low: 5
-Optimizer.optimizeSim3_nBad: 10
-
-#--------------------------------------------------------------------------------------------
-# ORBmatcher Parameters
-#--------------------------------------------------------------------------------------------
-ORBmatcher.TH_LOW: 50
-ORBmatcher.TH_HIGH: 100
-ORBmatcher.HISTO_LENGTH: 30
-
-ORBmatcher.radiusByViewingCos_viewCos: 0.998
-ORBmatcher.radiusByViewingCos_radiusLow: 2.5
-ORBmatcher.radiusByViewingCos_radiusHigh: 4.0
-
-ORBmatcher.chi2_1dof: 3.841
-ORBmatcher.chi2_2dof: 5.991
-ORBmatcher.cosMaxAngle: 0.5
-
-ORBmatcher.SearchForTriangulation_diste: 100.0
-ORBmatcher.ComputeThreeMaxima_max: 0.1
-
-#--------------------------------------------------------------------------------------------
-# MapPoint Parameters
-#--------------------------------------------------------------------------------------------
-MapPoint.eraseObservation_nObs: 2
-MapPoint.getMinDistanceInvariance_mfMinDistance: 0.8
-MapPoint.getMaxDistanceInvariance_mfMaxDistance: 1.2
-
-#--------------------------------------------------------------------------------------------
-# ORBExtractor Parameters
-#--------------------------------------------------------------------------------------------
-ORBextractor.PATCH_SIZE: 31
-ORBextractor.HALF_PATCH_SIZE: 15
-ORBextractor.EDGE_THRESHOLD: 19
-ORBextractor.descriptorSize: 32
-ORBextractor.npoints: 512
-ORBextractor.W: 30
-ORBextractor.gaussianBlur_width: 7
-ORBextractor.gaussianBlur_height: 7
-ORBextractor.gaussianBlur_sigmaX: 2
-ORBextractor.gaussianBlur_sigmaY: 2

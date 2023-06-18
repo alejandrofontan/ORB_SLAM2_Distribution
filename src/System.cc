@@ -22,6 +22,8 @@
 
 #include "System.h"
 #include "Converter.h"
+#include "Optimizer.h"
+
 #include <thread>
 #include <iomanip>
 
@@ -56,8 +58,8 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
         cout << "RGB-D" << endl;
 
     //Check settings file
-    cv::FileStorage fsSettings(strSettingsFile.c_str(), cv::FileStorage::READ);
-    if(!fsSettings.isOpened())
+    cv::FileStorage settingsFile(strSettingsFile.c_str(), cv::FileStorage::READ);
+    if(!settingsFile.isOpened())
     {
        cerr << "Failed to open settings file at: " << strSettingsFile << endl;
        exit(-1);
@@ -77,6 +79,39 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     }
     cout << "Vocabulary loaded!" << endl << endl;
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Load SLAM parameters
+
+    // Load Optimizer parameters
+    OptimizerParameters::PoseOptimizationParameters poseOptimizationParameters(
+            settingsFile["Optimizer.poseOptimization.nInitialCorrespondences"],
+            settingsFile["Optimizer.poseOptimization.optimizerIts"],
+            settingsFile["Optimizer.poseOptimization.its"],
+            settingsFile["Optimizer.poseOptimization.minimumNumberOfEdges"]);
+
+    OptimizerParameters::LocalBundleAdjustmentParameters localBundleAdjustmentParameters(
+            settingsFile["Optimizer.localBundleAdjustment.optimizerItsCoarse"],
+            settingsFile["Optimizer.localBundleAdjustment.optimizerItsFine"]);
+
+    OptimizerParameters::OptimizeEssentialGraph optimizeEssentialGraph(
+            settingsFile["Optimizer.optimizeEssentialGraph.solverLambdaInit"],
+            settingsFile["Optimizer.optimizeEssentialGraph.minFeat"],
+            settingsFile["Optimizer.optimizeEssentialGraph.optimizerIts"]);
+
+    OptimizerParameters::OptimizeSim3 optimizeSim3(
+            settingsFile["Optimizer.optimizeSim3.optimizerIts"],
+            settingsFile["Optimizer.optimizeSim3.nMoreIterationsHigh"],
+            settingsFile["Optimizer.optimizeSim3.nMoreIterationsLow"],
+            settingsFile["Optimizer.optimizeSim3.nBad"],
+            settingsFile["Optimizer.optimizeSim3.th2"]);
+
+    Optimizer::parameters.setParameters(settingsFile["Optimizer.chi2_2dof"], settingsFile["Optimizer.chi2_3dof"],
+                                        poseOptimizationParameters,
+                                        localBundleAdjustmentParameters,
+                                        optimizeEssentialGraph,
+                                        optimizeSim3);
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Create SLAM Grpah
     slamGraph = make_shared<SLAM_GRAPH::SLAMGraph>();
     KeyFrame::slamGraph = slamGraph;
@@ -127,6 +162,11 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
 
     mpLoopCloser->SetTracker(mpTracker);
     mpLoopCloser->SetLocalMapper(mpLocalMapper);
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Print parameters
+    cout << Optimizer::parameters;
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 }
 
 cv::Mat System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timestamp)
