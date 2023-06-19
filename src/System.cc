@@ -35,8 +35,9 @@ namespace ORB_SLAM2
 {
 
 System::System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor,
+               const int expId,
                const bool bUseViewer):mSensor(sensor), mpViewer(static_cast<Viewer*>(NULL)), mbReset(false),mbActivateLocalizationMode(false),
-        mbDeactivateLocalizationMode(false)
+        mbDeactivateLocalizationMode(false), expId(expId)
 {
 
     RandomIntegerGenerator::seedRandomGenerator();
@@ -56,6 +57,8 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
         cout << "Stereo" << endl;
     else if(mSensor==RGBD)
         cout << "RGB-D" << endl;
+
+    cout << "Experiment Index is : " << expId << endl;
 
     //Check settings file
     cv::FileStorage settingsFile(strSettingsFile.c_str(), cv::FileStorage::READ);
@@ -113,7 +116,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Create SLAM Grpah
-    slamGraph = make_shared<SLAM_GRAPH::SLAMGraph>();
+    slamGraph = make_shared<SLAM_GRAPH::SLAMGraph>(SLAM_GRAPH::SLAMGraph::LOW);
     KeyFrame::slamGraph = slamGraph;
 
     //Create KeyFrame Database
