@@ -55,7 +55,6 @@ void Optimizer::GlobalRobustBundleAdjustment(Map* pMap)
 
 void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const vector<MapPt> &mapPoints)
 {
-    int nIterations{50};
 
     // Set optimizer
     g2o::SparseOptimizer optimizer;
