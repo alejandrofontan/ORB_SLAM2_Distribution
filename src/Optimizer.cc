@@ -93,8 +93,11 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
     vector<MapPt> mapPointsMono{},mapPointsStereo{};
     for(const auto& mapPt: mapPoints)
     {
-        if(mapPt->isBad())
+        if(mapPt->isBad()){
+            ++jMapPt;
             continue;
+        }
+
         g2o::VertexSBAPointXYZ* vPoint = new g2o::VertexSBAPointXYZ();
         vPoint->setEstimate(Converter::toVector3d(mapPt->GetWorldPos()));
         const int id = mapPt->mnId + maxKeyId + 1;
@@ -110,7 +113,6 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
         {
             Keyframe keyframe = obs.second.projKeyframe;
             if(keyframe->isBad() || keyframe->mnId > maxKeyId){
-                ++jMapPt;
                 continue;
             }
 
