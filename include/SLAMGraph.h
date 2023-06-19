@@ -78,7 +78,13 @@ namespace SLAM_GRAPH {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     class SLAMGraph {
     public:
-        SLAMGraph() = default;
+        enum VerbosityLevel{
+            LOW = 0,
+            MEDIUM = 1,
+            HIGH = 2
+        };
+
+        SLAMGraph(const VerbosityLevel& verbosity): verbosity(verbosity){};
         void initialize(const FrameId& id_1, const Seconds& timestamp_1, const mat4& Twc_1,
                         const FrameId& id_2, const Seconds& timestamp_2, const mat4& Twc_2);
 
@@ -98,6 +104,7 @@ namespace SLAM_GRAPH {
         [[nodiscard]] Seconds getTimestamp(const FrameId &frameId) const;
 
     private:
+        VerbosityLevel verbosity{};
         map<FrameId,shared_ptr<KeyframeNODE>> keyframes{};
         map<FrameId,shared_ptr<FrameNODE>> frames{};
         set<FrameId> ids{};
