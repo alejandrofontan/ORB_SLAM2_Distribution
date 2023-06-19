@@ -35,29 +35,51 @@ namespace ORB_SLAM2
 class LoopClosing;
 class OptimizerParameters;
 
-class Optimizer
-{
+class Optimizer {
 public:
     static OptimizerParameters parameters;
 
-    void static BundleAdjustment(const std::vector<KeyFrame*> &vpKF, const std::vector<MapPoint*> &vpMP,
-                                 int nIterations = 5, bool *pbStopFlag=NULL, const unsigned long nLoopKF=0,
+    void static BundleAdjustment(const std::vector<Keyframe> &vpKF, const std::vector<MapPt> &vpMP,
+                                 int nIterations = 5, bool *pbStopFlag = nullptr, const unsigned long nLoopKF = 0,
                                  const bool bRobust = true);
-    void static GlobalBundleAdjustemnt(Map* pMap, int nIterations=5, bool *pbStopFlag=NULL,
-                                       const unsigned long nLoopKF=0, const bool bRobust = true);
-    void static LocalBundleAdjustment(KeyFrame* pKF, bool *pbStopFlag, Map *pMap);
-    int static PoseOptimization(Frame* pFrame);
+
+    void static RobustBundleAdjustment(const std::vector<Keyframe> &vpKF, const std::vector<MapPt> &vpMP);
+
+    void static GlobalBundleAdjustment(Map *pMap, int nIterations = 5, bool *pbStopFlag = NULL,
+                                       const unsigned long nLoopKF = 0, const bool bRobust = true);
+
+    void static GlobalRobustBundleAdjustment(Map *pMap);
+
+    void static LocalBundleAdjustment(KeyFrame *pKF, bool *pbStopFlag, Map *pMap);
+
+    int static PoseOptimization(Frame *pFrame);
 
     // if bFixScale is true, 6DoF optimization (stereo,rgbd), 7DoF otherwise (mono)
-    void static OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* pCurKF,
+    void static OptimizeEssentialGraph(Map *pMap, KeyFrame *pLoopKF, KeyFrame *pCurKF,
                                        const LoopClosing::KeyFrameAndPose &NonCorrectedSim3,
                                        const LoopClosing::KeyFrameAndPose &CorrectedSim3,
-                                       map<KeyframeId,LoopConnections> &loopConnections,
+                                       map<KeyframeId, LoopConnections> &loopConnections,
                                        const bool &bFixScale);
 
     // if bFixScale is true, optimize SE3 (stereo,rgbd), Sim3 otherwise (mono)
-    static int OptimizeSim3(KeyFrame* pKF1, KeyFrame* pKF2, std::vector<MapPoint *> &vpMatches1,
+    static int OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, std::vector<MapPoint *> &vpMatches1,
                             g2o::Sim3 &g2oS12, const bool bFixScale);
+
+    template <typename Edge_, typename Frame_>
+    static void setEdgeMonoIntrinsics(Edge_* e, Frame_ frame );
+
+    template <typename Edge_, typename Frame_>
+    static void setEdgeStereoIntrinsics(Edge_* e, Frame_ frame );
+
+    template <typename Edge_>
+    static void setEdgeRobustKernel(Edge_* e, const float& thHuber);
+
+    template <typename Edge_, typename Optimizer_, typename obs_>
+    static void setVertex(Edge_* e, Optimizer_* optimizer, const obs_& obs, const int& mapPtId, const KeyframeId& keyframeId);
+
+    template <typename Edge_>
+    static void setInliers(vector<Edge_*>& edgesMono, vector<MapPt>& mapPointsMono, const float& chi2);
+
 };
 
 class OptimizerParameters {
@@ -103,6 +125,15 @@ public:
         nMoreIterationsLow(nMoreIterationsLow),nBad(nBad),th2(th2){};
     };
 
+    struct GlobalRobustBundleAdjustment{
+        int optimizerItsCoarse{100};
+        int optimizerItsFine{100};
+
+        GlobalRobustBundleAdjustment() = default;
+        GlobalRobustBundleAdjustment(const int& optimizerItsCoarse, const int& optimizerItsFine):
+                optimizerItsCoarse(optimizerItsCoarse),optimizerItsFine(optimizerItsFine){};
+    };
+
 private:
     friend std::ostream& operator<<(std::ostream& outstream, const OptimizerParameters& parameters);
     friend class Optimizer;
@@ -116,6 +147,7 @@ private:
     LocalBundleAdjustmentParameters localBundleAdjustment{};
     OptimizeEssentialGraph optimizeEssentialGraph{};
     OptimizeSim3 optimizeSim3{};
+    GlobalRobustBundleAdjustment globalRobustBundleAdjustment{};
 
 public:
     void setParameters(
@@ -123,7 +155,8 @@ public:
             const PoseOptimizationParameters& poseOptimization_,
             const LocalBundleAdjustmentParameters& localBundleAdjustment_,
             const OptimizeEssentialGraph& optimizeEssentialGraph_,
-            const OptimizeSim3& optimizeSim3_){
+            const OptimizeSim3& optimizeSim3_,
+            const GlobalRobustBundleAdjustment& globalRobustBundleAdjustment_){
 
         chi2_2dof = chi2_2dof_;
         chi2_3dof = chi2_3dof_;
@@ -134,6 +167,14 @@ public:
         localBundleAdjustment = localBundleAdjustment_;
         optimizeEssentialGraph = optimizeEssentialGraph_;
         optimizeSim3 = optimizeSim3_;
+        globalRobustBundleAdjustment = globalRobustBundleAdjustment_;
+    }
+
+    void updateChi2(const float& chi2_2dof_, const float& chi2_3dof_){
+        chi2_2dof = chi2_2dof_;
+        chi2_3dof = chi2_3dof_;
+        deltaMono = sqrt(chi2_2dof);
+        deltaStereo = sqrt(chi2_3dof);
     }
 };
 

@@ -66,6 +66,8 @@ Optimizer.optimizeSim3.nMoreIterationsLow: 5
 Optimizer.optimizeSim3.nBad: 10
 Optimizer.optimizeSim3.th2: 10.0
 
+Optimizer.globalRobustBundleAdjustment.optimizerItsCoarse: 100
+Optimizer.globalRobustBundleAdjustment.optimizerItsFine: 100
 
 #--------------------------------------------------------------------------------------------
 # Viewer Parameters

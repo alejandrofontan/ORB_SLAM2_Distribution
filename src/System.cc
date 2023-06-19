@@ -108,11 +108,16 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
             settingsFile["Optimizer.optimizeSim3.nBad"],
             settingsFile["Optimizer.optimizeSim3.th2"]);
 
+    OptimizerParameters::GlobalRobustBundleAdjustment globalRobustBundleAdjustment(
+            settingsFile["Optimizer.globalRobustBundleAdjustment.optimizerItsCoarse"],
+            settingsFile["Optimizer.globalRobustBundleAdjustment.optimizerItsFine"]);
+
     Optimizer::parameters.setParameters(settingsFile["Optimizer.chi2_2dof"], settingsFile["Optimizer.chi2_3dof"],
                                         poseOptimizationParameters,
                                         localBundleAdjustmentParameters,
                                         optimizeEssentialGraph,
-                                        optimizeSim3);
+                                        optimizeSim3,
+                                        globalRobustBundleAdjustment);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Create SLAM Grpah
@@ -336,6 +341,11 @@ void System::DeactivateLocalizationMode()
 {
     unique_lock<mutex> lock(mMutexMode);
     mbDeactivateLocalizationMode = true;
+}
+
+void System::GlobalRobustBundleAdjustment(){
+    cout << "GlobalRobustBundleAdjustment ... "<< endl;
+    Optimizer::GlobalRobustBundleAdjustment(mpMap);
 }
 
 bool System::MapChanged()
