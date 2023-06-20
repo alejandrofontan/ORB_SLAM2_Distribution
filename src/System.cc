@@ -23,6 +23,7 @@
 #include "System.h"
 #include "Converter.h"
 #include "Optimizer.h"
+#include "DistributionFitter.h"
 
 #include <thread>
 #include <iomanip>
@@ -110,7 +111,8 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
 
     OptimizerParameters::GlobalRobustBundleAdjustment globalRobustBundleAdjustment(
             settingsFile["Optimizer.globalRobustBundleAdjustment.optimizerItsCoarse"],
-            settingsFile["Optimizer.globalRobustBundleAdjustment.optimizerItsFine"]);
+            settingsFile["Optimizer.globalRobustBundleAdjustment.optimizerItsFine"],
+            settingsFile["Optimizer.globalRobustBundleAdjustment.inlierProbability"]);
 
     Optimizer::parameters.setParameters(settingsFile["Optimizer.chi2_2dof"], settingsFile["Optimizer.chi2_3dof"],
                                         poseOptimizationParameters,
@@ -120,9 +122,17 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
                                         globalRobustBundleAdjustment);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Create SLAM Grpah
+    // Create SLAM Graph
     slamGraph = make_shared<SLAM_GRAPH::SLAMGraph>(SLAM_GRAPH::SLAMGraph::LOW);
     KeyFrame::slamGraph = slamGraph;
+
+    // Distribution Fitter
+    DIST_FITTER::DistributionFitterParameters::LogNormal logNormal(
+            settingsFile["DistributionFitter.logNormal.maxNumberIterations"],
+            settingsFile["DistributionFitter.logNormal.stepSize"],
+            settingsFile["DistributionFitter.logNormal.tolerance"]);
+    DIST_FITTER::DistributionFitter::verbosity = DIST_FITTER::DistributionFitter::VerbosityLevel::MEDIUM;
+    DIST_FITTER::DistributionFitter::parameters.setParameters(logNormal);
 
     //Create KeyFrame Database
     mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
@@ -174,6 +184,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Print parameters
     cout << Optimizer::parameters;
+    cout << DIST_FITTER::DistributionFitter::parameters;
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 }
 
