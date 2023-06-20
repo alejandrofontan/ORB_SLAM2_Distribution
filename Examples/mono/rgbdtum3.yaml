@@ -67,6 +67,14 @@ Optimizer.optimizeSim3.th2: 10.0
 
 Optimizer.globalRobustBundleAdjustment.optimizerItsCoarse: 100
 Optimizer.globalRobustBundleAdjustment.optimizerItsFine: 100
+Optimizer.globalRobustBundleAdjustment.inlierProbability: 0.85
+
+#--------------------------------------------------------------------------------------------
+# DistributionFitter Parameters
+#--------------------------------------------------------------------------------------------
+DistributionFitter.logNormal.maxNumberIterations: 60
+DistributionFitter.logNormal.stepSize: 0.1
+DistributionFitter.logNormal.tolerance: 1e-4
 
 #--------------------------------------------------------------------------------------------
 # Viewer Parameters

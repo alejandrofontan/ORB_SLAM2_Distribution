@@ -31,6 +31,7 @@
 #include<Eigen/StdVector>
 
 #include "Converter.h"
+#include "DistributionFitter.h"
 
 #include<mutex>
 
@@ -177,9 +178,32 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
     optimizer.initializeOptimization();
     optimizer.optimize(parameters.globalRobustBundleAdjustment.optimizerItsCoarse);
 
+    vector<double> mahalanobisDistancesMono{};
+    for(const auto& edge: edgesMono){
+        edge->computeError();
+        mahalanobisDistancesMono.push_back(edge->chi2());
+    }
+    vector<double> mahalanobisDistancesStereo{};
+    for(const auto& edge: edgesStereo){
+        edge->computeError();
+        mahalanobisDistancesStereo.push_back(edge->chi2());
+    }
+
+    std::vector<double> mahalanobisDistances(mahalanobisDistancesMono.begin(), mahalanobisDistancesMono.end());
+    mahalanobisDistances.insert(mahalanobisDistances.end(), mahalanobisDistancesStereo.begin(), mahalanobisDistancesStereo.end());
+
+    double mu{1.0}, sigma{1.0};
+    DIST_FITTER::DistributionFitter::fitLogNormal(mahalanobisDistances,mu,sigma);
+    vector<bool> isInlierMono = DIST_FITTER::DistributionFitter::inliersLogNormal(mahalanobisDistancesMono,mu, sigma,
+                                                                                  parameters.globalRobustBundleAdjustment.inlierProbability);
+    vector<bool> isInlierStereo = DIST_FITTER::DistributionFitter::inliersLogNormal(mahalanobisDistancesStereo,mu, sigma,
+                                                                                    parameters.globalRobustBundleAdjustment.inlierProbability);
+
     // Check inlier observations
-    setInliers(edgesMono, mapPointsMono, parameters.chi2_2dof);
-    setInliers(edgesStereo, mapPointsStereo, parameters.chi2_3dof);
+    setInliers(edgesMono, isInlierMono);
+    setInliers(edgesStereo, isInlierStereo);
+    deactivateRobustKernel(edgesMono);
+    deactivateRobustKernel(edgesStereo);
 
     // Optimize again without the outliers
     optimizer.initializeOptimization();
@@ -1444,6 +1468,7 @@ std::ostream &operator<<(std::ostream &outstream, const OptimizerParameters &par
     outstream << "- Global Robust Bundle Adjustment : "<< endl;
     outstream << "    - optimizerItsCoarse: " << parameters.globalRobustBundleAdjustment.optimizerItsCoarse << endl;
     outstream << "    - optimizerItsFine : "  << parameters.globalRobustBundleAdjustment.optimizerItsFine << endl;
+    outstream << "    - inlierProbability : "  << parameters.globalRobustBundleAdjustment.inlierProbability << endl;
 
     return outstream;
 }
@@ -1479,20 +1504,18 @@ void Optimizer::setVertex(Edge_* e, Optimizer_* optimizer,
 }
 
 template <typename Edge_>
-void Optimizer::setInliers(vector<Edge_*>& edges, vector<MapPt>& mapPoints, const float& chi2){
+void Optimizer::setInliers(vector<Edge_*>& edges, const vector<bool>& isInlier){
     for(size_t iEdge{0}; iEdge < edges.size(); iEdge++)
     {
         Edge_* e = edges[iEdge];
-        MapPt mapPt = mapPoints[iEdge];
-
-        if(mapPt->isBad())
-            continue;
-
-        if(e->chi2() > chi2 || !e->isDepthPositive())
-            e->setLevel(1);
-
-        e->setRobustKernel(0);
+        e->setLevel(!isInlier[iEdge]);
     }
+}
+
+template <typename Edge_>
+void Optimizer::deactivateRobustKernel(vector<Edge_*>& edges){
+    for(auto& e: edges)
+        e->setRobustKernel(nullptr);
 }
 
 } //namespace ORB_SLAM

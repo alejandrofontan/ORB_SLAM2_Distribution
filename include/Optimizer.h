@@ -78,7 +78,10 @@ public:
     static void setVertex(Edge_* e, Optimizer_* optimizer, const obs_& obs, const int& mapPtId, const KeyframeId& keyframeId);
 
     template <typename Edge_>
-    static void setInliers(vector<Edge_*>& edgesMono, vector<MapPt>& mapPointsMono, const float& chi2);
+    static void setInliers(vector<Edge_*>& edges, const vector<bool>& isInlier);
+
+    template <typename Edge_>
+    static void deactivateRobustKernel(vector<Edge_*>& edges);
 
 };
 
@@ -128,10 +131,11 @@ public:
     struct GlobalRobustBundleAdjustment{
         int optimizerItsCoarse{100};
         int optimizerItsFine{100};
+        double inlierProbability{0.85};
 
         GlobalRobustBundleAdjustment() = default;
-        GlobalRobustBundleAdjustment(const int& optimizerItsCoarse, const int& optimizerItsFine):
-                optimizerItsCoarse(optimizerItsCoarse),optimizerItsFine(optimizerItsFine){};
+        GlobalRobustBundleAdjustment(const int& optimizerItsCoarse, const int& optimizerItsFine, const double& inlierProbability):
+                optimizerItsCoarse(optimizerItsCoarse),optimizerItsFine(optimizerItsFine),inlierProbability(inlierProbability){};
     };
 
 private:
