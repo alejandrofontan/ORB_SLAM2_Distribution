@@ -121,6 +121,10 @@ public:
     // See format details at: http://www.cvlibs.net/datasets/kitti/eval_odometry.php
     void SaveTrajectoryKITTI(const string &filename);
 
+    //
+    void SaveStatisticsToFiles(const string& pathToFiles);
+
+
     void readImage(cv::Mat& im, const string& imagePath) const;
 
     // TODO: Save/Load functions

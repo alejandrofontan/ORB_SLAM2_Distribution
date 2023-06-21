@@ -592,4 +592,14 @@ void System::readImage(cv::Mat& im, const string& imagePath) const{
     //cv::resize(im.clone(),im, cv::Size(), resolutionFactor, resolutionFactor, cv::INTER_LINEAR);
 }
 
+void System::SaveStatisticsToFiles(const string& pathToFiles){
+    cout << "Saving Statistics Files: "<< pathToFiles << endl;
+#ifdef COMPILED_DEBUG
+    cout << "    "<< "mahalanobisDistances.txt" << endl;
+    saveVectorToFile(Optimizer::mahalanobisDistancesToSave,pathToFiles + "mahalanobisDistances.txt");
+#endif
+}
+
+
 } //namespace ORB_SLAM
+

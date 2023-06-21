@@ -52,3 +52,12 @@ int ORB_SLAM2::RandomIntegerGenerator::getRandomNumber(){
 int ORB_SLAM2::RandomIntegerGenerator::getRandomNumber(const int& maxNumber) {
     return int((((double)getRandomNumber())/((double)RAND_MAX)) * maxNumber) ;
 }
+
+void ORB_SLAM2::saveVectorToFile(std::vector<double>& vectorToSave, const std::string& file, const int& precision){
+    std::ofstream f;
+    f.open(file.c_str());
+    f << std::fixed;
+
+    for (auto &element: vectorToSave)
+        f << std::setprecision(precision) << element << std::endl;
+}

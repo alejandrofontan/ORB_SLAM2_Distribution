@@ -38,7 +38,9 @@ class OptimizerParameters;
 class Optimizer {
 public:
     static OptimizerParameters parameters;
-
+#ifdef COMPILED_DEBUG
+    static vector<double> mahalanobisDistancesToSave;
+#endif
     void static BundleAdjustment(const std::vector<Keyframe> &vpKF, const std::vector<MapPt> &vpMP,
                                  int nIterations = 5, bool *pbStopFlag = nullptr, const unsigned long nLoopKF = 0,
                                  const bool bRobust = true);

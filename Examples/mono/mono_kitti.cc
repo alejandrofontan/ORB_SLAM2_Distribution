@@ -115,6 +115,8 @@ int main(int argc, char **argv)
 #endif
     }
 
+    //
+    SLAM.GlobalRobustBundleAdjustment();
     // Stop all threads
     SLAM.Shutdown();
 
@@ -128,6 +130,9 @@ int main(int argc, char **argv)
     cout << "-------" << endl << endl;
     cout << "median tracking time: " << timesTrack[nImages/2] << endl;
     cout << "mean tracking time: " << totaltime/nImages << endl;
+
+    //
+    SLAM.SaveStatisticsToFiles(resultsPath + "_");
 
     // Save camera trajectory
     SLAM.SaveFrameTrajectoryTUM(resultsPath + "_FrameTrajectory.txt");

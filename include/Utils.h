@@ -7,6 +7,8 @@
 
 #include <vector>
 #include <iostream>
+#include <fstream>
+#include <iomanip>
 
 namespace ORB_SLAM2
 {
@@ -34,6 +36,7 @@ namespace ORB_SLAM2
 
     };
 
+    void saveVectorToFile(std::vector<double>& vectorToSave, const std::string& file, const int& precision = 10);;
 }
 
 #endif //ORB_SLAM2_DETERMINISTIC_UTILS_H

@@ -39,6 +39,9 @@ namespace ORB_SLAM2
 {
 
 OptimizerParameters Optimizer::parameters{};
+#ifdef COMPILED_DEBUG
+    vector<double> Optimizer::mahalanobisDistancesToSave{};
+#endif
 
 void Optimizer::GlobalBundleAdjustment(Map* pMap, int nIterations, bool* pbStopFlag, const unsigned long nLoopKF, const bool bRobust)
 {
@@ -191,6 +194,9 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
 
     std::vector<double> mahalanobisDistances(mahalanobisDistancesMono.begin(), mahalanobisDistancesMono.end());
     mahalanobisDistances.insert(mahalanobisDistances.end(), mahalanobisDistancesStereo.begin(), mahalanobisDistancesStereo.end());
+#ifdef COMPILED_DEBUG
+    mahalanobisDistancesToSave = mahalanobisDistances;
+#endif
 
     double mu{1.0}, sigma{1.0};
     DIST_FITTER::DistributionFitter::fitLogNormal(mahalanobisDistances,mu,sigma);
