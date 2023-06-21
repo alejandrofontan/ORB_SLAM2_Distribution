@@ -35,6 +35,25 @@ then
 		)
 	fi
 	
+	if [ $sequenceGroup == 'testGroup' ]
+	then 
+		sequenceNames=(
+			"rgbd_dataset_freiburg1_desk" 
+			"rgbd_dataset_freiburg1_xyz"
+			"rgbd_dataset_freiburg2_desk"
+			"rgbd_dataset_freiburg2_xyz"
+			"rgbd_dataset_freiburg3_long_office_household"
+			"rgbd_dataset_freiburg3_nostructure_texture_near_withloop"
+			"rgbd_dataset_freiburg3_structure_texture_far"
+			"rgbd_dataset_freiburg3_structure_texture_near"
+		)
+		sequenceSettings=(
+			"rgbdtum1.yaml" "rgbdtum1.yaml"
+			"rgbdtum2.yaml" "rgbdtum2.yaml"
+			"rgbdtum3.yaml" "rgbdtum3.yaml" "rgbdtum3.yaml" "rgbdtum3.yaml" 
+		)
+	fi
+	
 	if [ $sequenceGroup == 'fr1' ]
 	then 
 		sequenceNames=(
