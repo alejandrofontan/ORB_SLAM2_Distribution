@@ -198,13 +198,13 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
     mahalanobisDistancesToSave = mahalanobisDistances;
 #endif
 
-    double mu{1.0}, sigma{1.0};
-    DIST_FITTER::DistributionFitter::fitLogNormal(mahalanobisDistances,mu,sigma);
-    vector<bool> isInlierMono = DIST_FITTER::DistributionFitter::inliersLogNormal(mahalanobisDistancesMono,mu, sigma,
-                                                                                  parameters.globalRobustBundleAdjustment.inlierProbability);
-    vector<bool> isInlierStereo = DIST_FITTER::DistributionFitter::inliersLogNormal(mahalanobisDistancesStereo,mu, sigma,
-                                                                                    parameters.globalRobustBundleAdjustment.inlierProbability);
+    double k{1.0}, alpha{1.0}, beta{1.0};
+    DIST_FITTER::DistributionFitter::fitBurr(mahalanobisDistances,k,alpha,beta);
 
+    vector<bool> isInlierMono =  DIST_FITTER::DistributionFitter::inliersBurr(mahalanobisDistancesMono,k, alpha,beta,
+                                                                               parameters.globalRobustBundleAdjustment.inlierProbability);
+    vector<bool> isInlierStereo =  DIST_FITTER::DistributionFitter::inliersBurr(mahalanobisDistancesStereo,k, alpha,beta,
+                                                                               parameters.globalRobustBundleAdjustment.inlierProbability);
     // Check inlier observations
     setInliers(edgesMono, isInlierMono);
     setInliers(edgesStereo, isInlierStereo);

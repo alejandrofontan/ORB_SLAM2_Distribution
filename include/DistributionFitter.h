@@ -17,6 +17,8 @@
 #include <gsl/gsl_histogram.h>
 #include <gsl/gsl_min.h>
 #include <gsl/gsl_statistics.h>
+#include <gsl/gsl_math.h>
+#include <gsl/gsl_roots.h>
 
 using namespace std;
 namespace DIST_FITTER {
@@ -33,8 +35,11 @@ namespace DIST_FITTER {
         static DistributionFitterParameters parameters;
 
         void static fitLogNormal(vector<double>& data, double& mu, double& sigma);
+        void static fitBurr(vector<double>& data, double& k, double& alpha, double& beta);
+
         vector<bool> static inliersLogNormal(const vector<double>& data, const double& mu, const double& sigma,
                                      const double& probability);
+        vector<bool> static inliersBurr(const vector<double>& data, const double& k, const double& alpha, const double& beta, const double& probability);
 
         double static calculateKS(const std::vector<double>& data, const double& mu, const double& sigma);
 
@@ -42,7 +47,11 @@ namespace DIST_FITTER {
 
     private:
         double static lognormal_pdf(double x, double mu, double sigma);
-        double static loglikelihood(const gsl_vector* params, void* data);
+        double static logNormal_loglikelihood(const gsl_vector* params, void* data);
+
+        double static burr_pdf(double x, double k, double alpha, double beta);
+        double static burr_loglikelihood(const gsl_vector* params, void* data);
+        double static burr_icdf(const double& k, const double& alpha, const double& beta, const double& probability);
 
     };
 
