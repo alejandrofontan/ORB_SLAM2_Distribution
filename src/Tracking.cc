@@ -442,7 +442,7 @@ void Tracking::Track()
             {
                 MapPoint* pMP = mCurrentFrame.mvpMapPoints[i];
                 if(pMP)
-                    if(pMP->Observations()<1)
+                    if(pMP->GetPointObservability() < 1)
                     {
                         mCurrentFrame.mvbOutlier[i] = false;
                         mCurrentFrame.mvpMapPoints[i]=static_cast<MapPoint*>(NULL);
@@ -797,7 +797,7 @@ bool Tracking::TrackReferenceKeyFrame()
                 pMP->mnLastFrameSeen = mCurrentFrame.mnId;
                 nmatches--;
             }
-            else if(mCurrentFrame.mvpMapPoints[i]->Observations()>0)
+            else if(mCurrentFrame.mvpMapPoints[i]->GetPointObservability() > 0)
                 nmatchesMap++;
         }
     }
@@ -846,7 +846,7 @@ void Tracking::UpdateLastFrame()
         MapPoint* pMP = mLastFrame.mvpMapPoints[i];
         if(!pMP)
             bCreateNew = true;
-        else if(pMP->Observations()<1)
+        else if(pMP->GetPointObservability() < 1)
         {
             bCreateNew = true;
         }
@@ -920,7 +920,7 @@ bool Tracking::TrackWithMotionModel()
                 pMP->mnLastFrameSeen = mCurrentFrame.mnId;
                 nmatches--;
             }
-            else if(mCurrentFrame.mvpMapPoints[i]->Observations()>0)
+            else if(mCurrentFrame.mvpMapPoints[i]->GetPointObservability() > 0)
                 nmatchesMap++;
         }
     }    
@@ -957,7 +957,7 @@ bool Tracking::TrackLocalMap()
                 mCurrentFrame.mvpMapPoints[i]->IncreaseFound();
                 if(!mbOnlyTracking)
                 {
-                    if(mCurrentFrame.mvpMapPoints[i]->Observations()>0)
+                    if(mCurrentFrame.mvpMapPoints[i]->GetPointObservability() > 0)
                         mnMatchesInliers++;
                 }
                 else
@@ -1110,7 +1110,7 @@ void Tracking::CreateNewKeyFrame()
                 MapPoint* pMP = mCurrentFrame.mvpMapPoints[i];
                 if(!pMP)
                     bCreateNew = true;
-                else if(pMP->Observations()<1)
+                else if(pMP->GetPointObservability() < 1)
                 {
                     bCreateNew = true;
                     mCurrentFrame.mvpMapPoints[i] = static_cast<MapPoint*>(NULL);
@@ -1244,7 +1244,7 @@ void Tracking::UpdateLocalKeyFrames()
             MapPt mapPt = mCurrentFrame.mvpMapPoints[i];
             if(!mapPt->isBad())
             {
-                map<KeyframeId, Observation> observations = mapPt->GetObservations();
+                map<KeyframeId, Observation> observations = mapPt->GetActiveObservations();
                 for(auto& obs: observations)
                 {
                     keyframeCounter[obs.second.projKeyframe]++;

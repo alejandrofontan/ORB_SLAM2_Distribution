@@ -189,7 +189,7 @@ void FrameDrawer::Update(Tracking *pTracker)
             {
                 if(!pTracker->mCurrentFrame.mvbOutlier[i])
                 {
-                    if(pMP->Observations()>0)
+                    if(pMP->GetPointObservability()>0)
                         mvbMap[i]=true;
                     else
                         mvbVO[i]=true;

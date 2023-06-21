@@ -108,7 +108,7 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
         vPoint->setMarginalized(true);
         optimizer.addVertex(vPoint);
 
-        const map<KeyframeId , Observation> observations = mapPt->GetObservations();
+        const map<KeyframeId , Observation> observations = mapPt->GetAllObservations();
 
         //Set edges
         int nEdges = 0;
@@ -296,7 +296,7 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
         vPoint->setMarginalized(true);
         optimizer.addVertex(vPoint);
 
-        const map<KeyframeId , Observation> observations = pMP->GetObservations();
+        const map<KeyframeId , Observation> observations = pMP->GetActiveObservations();
 
         int nEdges = 0;
         //SET EDGES
@@ -688,7 +688,8 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
     map<int,KeyFrame*> fixedKeyframes{};
     for(auto& mapPt : lLocalMapPoints)
     {
-        map<KeyframeId , Observation> observations = mapPt->GetObservations();
+        mapPt->activateAllObservations();
+        map<KeyframeId , Observation> observations = mapPt->GetActiveObservations();
         for(auto& obs :observations)
         {
             Keyframe keyframe_i = obs.second.projKeyframe;
@@ -778,7 +779,8 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
         vPoint->setMarginalized(true);
         optimizer.addVertex(vPoint);
 
-        map<long unsigned int, Observation> observations = pMP->GetObservations();
+        pMP->activateAllObservations();
+        map<long unsigned int, Observation> observations = pMP->GetActiveObservations();
 
         //Set edges
         for(auto& obs: observations)
@@ -950,8 +952,11 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
         {
             KeyFrame* pKFi = vToErase[i].first;
             MapPoint* pMPi = vToErase[i].second;
-            pKFi->EraseMapPointMatch(pMPi);
-            pMPi->EraseObservation(pKFi);
+            auto obs = pMPi->GetObservation(pKFi->mnId);
+            if(obs)
+                obs->setActive(false);
+            //pKFi->EraseMapPointMatch(pMPi);
+            //pMPi->EraseObservation(pKFi);
         }
     }
 

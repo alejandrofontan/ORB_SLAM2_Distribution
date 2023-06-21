@@ -45,6 +45,7 @@ class Observation{
         // ref : reference keyframe
         // proj : projection keyframe
 
+
         KeyFrame* projKeyframe{};
         KeypointIndex projIndex{};
         OctaveType projOctave{};
@@ -52,6 +53,12 @@ class Observation{
         KeyFrame* refKeyframe{};
         KeypointIndex  refIndex{};
         OctaveType refOctave{};
+
+        void setActive(const bool& isActive_){active = isActive_;}
+        bool isActive() const {return active;}
+
+private:
+    bool active{true};
 
     };
 
@@ -67,15 +74,16 @@ public:
     cv::Mat GetNormal();
     KeyFrame* GetReferenceKeyFrame();
 
-    int Observations();
-
     void AddObservation(KeyFrame* projKeyframe, const KeypointIndex& projIndex);
     void EraseObservation(KeyFrame* projKeyframe);
-    std::map<KeyframeId , Observation> GetObservations();
+    std::map<KeyframeId , Observation> GetAllObservations();
+    std::map<KeyframeId , Observation> GetActiveObservations();
+    void activateAllObservations();
     int GetNumberOfObservations();
+    Observation* GetObservation(const KeyframeId& keyframeId);
 
-    void increasePointObservability(KeyFrame* projKeyframe, const KeypointIndex& projIndex);
-    void decreasePointObservability(KeyFrame* projKeyframe, const KeypointIndex& projIndex);
+    int GetPointObservability();
+    int getPointObservability();
 
     void SetCurrentRefKeyframeIndex(const KeypointIndex& refKeyframeIndex);
     KeyFrame* GetCurrentRefKeyframe();
@@ -112,7 +120,6 @@ public:
     static long unsigned int nNextId;
     long int mnFirstKFid;
     long int mnFirstFrame;
-    int nObs;
 
     // Variables used by the tracking
     float mTrackProjX;
@@ -144,7 +151,7 @@ protected:
      cv::Mat mWorldPos;
 
      // Keyframes observing the point and associated index in keyframe
-     std::map<KeyframeId, Observation> mObservations;
+     std::map<KeyframeId, Observation> observations;
 
      // Mean viewing direction
      cv::Mat mNormalVector;

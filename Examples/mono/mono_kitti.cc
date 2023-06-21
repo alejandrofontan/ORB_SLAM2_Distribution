@@ -115,8 +115,6 @@ int main(int argc, char **argv)
 #endif
     }
 
-    //
-    SLAM.GlobalRobustBundleAdjustment();
     // Stop all threads
     SLAM.Shutdown();
 

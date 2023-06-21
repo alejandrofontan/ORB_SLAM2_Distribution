@@ -209,7 +209,7 @@ void LocalMapping::RunSequential()
             } else if (pMP->GetFoundRatio() < 0.25f) {
                 pMP->SetBadFlag();
                 lit = mlpRecentAddedMapPoints.erase(lit);
-            } else if (((int) nCurrentKFid - (int) pMP->mnFirstKFid) >= 2 && pMP->Observations() <= cnThObs) {
+            } else if (((int) nCurrentKFid - (int) pMP->mnFirstKFid) >= 2 && pMP->GetPointObservability() <= cnThObs) {
                 pMP->SetBadFlag();
                 lit = mlpRecentAddedMapPoints.erase(lit);
             } else if (((int) nCurrentKFid - (int) pMP->mnFirstKFid) >= 3)
@@ -646,10 +646,10 @@ void LocalMapping::KeyFrameCulling()
                     }
 
                     nMPs++;
-                    if(mapPt->Observations() > thObs)
+                    if(mapPt->GetPointObservability() > thObs)
                     {
                         const int &scaleLevel = keyframe->mvKeysUn[iMapPt].octave;
-                        map<KeyframeId , Observation> observations = mapPt->GetObservations();
+                        map<KeyframeId , Observation> observations = mapPt->GetActiveObservations();
                         int numberOfObservations = 0;
                         for(auto& obs: observations)
                         {

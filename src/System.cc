@@ -597,6 +597,17 @@ void System::SaveStatisticsToFiles(const string& pathToFiles){
 #ifdef COMPILED_DEBUG
     cout << "    "<< "mahalanobisDistances.txt" << endl;
     saveVectorToFile(Optimizer::mahalanobisDistancesToSave,pathToFiles + "mahalanobisDistances.txt");
+
+    auto mapPoints = mpMap->GetAllMapPoints();
+    int numberOfObservations = 0;
+    int numberOfActiveObservations = 0;
+    for(auto& mapPt: mapPoints){
+        numberOfObservations += mapPt->GetNumberOfObservations();
+        numberOfActiveObservations += mapPt->GetPointObservability();
+    }
+    cout <<  "Number Of Observations: " << numberOfObservations<< endl;
+    cout <<  "Number Of Active Observations: " << numberOfActiveObservations<< endl;
+    cout <<  "Active Observations Percentaje: " << 100.0*double(numberOfActiveObservations)/double(numberOfObservations) << " %"<< endl;
 #endif
 }
 

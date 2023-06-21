@@ -85,7 +85,7 @@ int ORBmatcher::SearchByProjection(Frame &F, const vector<MapPoint*> &vpMapPoint
             const size_t idx = *vit;
 
             if(F.mvpMapPoints[idx])
-                if(F.mvpMapPoints[idx]->Observations()>0)
+                if(F.mvpMapPoints[idx]->GetPointObservability() > 0)
                     continue;
 
             if(F.mvuRight[idx]>0)
@@ -956,7 +956,7 @@ int ORBmatcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const
             {
                 if(!pMPinKF->isBad())
                 {
-                    if(pMPinKF->Observations()>pMP->Observations())
+                    if(pMPinKF->GetPointObservability() > pMP->GetPointObservability())
                         pMP->Replace(pMPinKF);
                     else
                         pMPinKF->Replace(pMP);
@@ -1401,7 +1401,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
                 {
                     const size_t i2 = *vit;
                     if(CurrentFrame.mvpMapPoints[i2])
-                        if(CurrentFrame.mvpMapPoints[i2]->Observations()>0)
+                        if(CurrentFrame.mvpMapPoints[i2]->GetPointObservability()>0)
                             continue;
 
                     if(CurrentFrame.mvuRight[i2]>0)

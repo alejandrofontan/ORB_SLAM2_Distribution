@@ -288,7 +288,7 @@ int KeyFrame::TrackedMapPoints(const int &minObs)
             {
                 if(bCheckObs)
                 {
-                    if(mvpMapPoints[i]->Observations()>=minObs)
+                    if(mvpMapPoints[i]->GetPointObservability() >= minObs)
                         nPoints++;
                 }
                 else
@@ -336,7 +336,7 @@ void KeyFrame::UpdateConnections()
         if(pMP->isBad())
             continue;
 
-        map<long unsigned int, Observation> observations = pMP->GetObservations();
+        map<long unsigned int, Observation> observations = pMP->GetActiveObservations();
 
         for(auto& mit: observations)
         {
