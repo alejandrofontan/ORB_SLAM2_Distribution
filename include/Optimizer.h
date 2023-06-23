@@ -45,7 +45,8 @@ public:
                                  int nIterations = 5, bool *pbStopFlag = nullptr, const unsigned long nLoopKF = 0,
                                  const bool bRobust = true);
 
-    void static RobustBundleAdjustment(const std::vector<Keyframe> &vpKF, const std::vector<MapPt> &vpMP);
+    void static RobustBundleAdjustment(const std::vector<Keyframe> &vpKF, const std::vector<MapPt> &vpMP,
+                                       const unsigned long nLoopKF = 0);
 
     void static GlobalBundleAdjustment(Map *pMap, int nIterations = 5, bool *pbStopFlag = NULL,
                                        const unsigned long nLoopKF = 0, const bool bRobust = true);
@@ -53,6 +54,7 @@ public:
     void static GlobalRobustBundleAdjustment(Map *pMap);
 
     void static LocalBundleAdjustment(KeyFrame *pKF, bool *pbStopFlag, Map *pMap);
+    void static RobustLocalBundleAdjustment(Keyframe& refKeyframe, bool *stopFlag, Map *map_);
 
     int static PoseOptimization(Frame *pFrame);
 
@@ -106,6 +108,9 @@ public:
     struct LocalBundleAdjustmentParameters{
         int optimizerItsCoarse{5};
         int optimizerItsFine{10};
+
+        double k{1.0},alpha{1.0}, beta{1.0};
+
         LocalBundleAdjustmentParameters() = default;
         LocalBundleAdjustmentParameters(const int& optimizerItsCoarse, const int& optimizerItsFine):
         optimizerItsCoarse(optimizerItsCoarse),optimizerItsFine(optimizerItsFine){};

@@ -32,6 +32,7 @@ double DistributionFitter::burr_pdf(double x, double k, double alpha, double bet
     double term1 = k*beta/alpha;
     double term2 = std::pow(x  / alpha, beta - 1);
     double term3 = std::pow(1.0 + pow(x/alpha,beta), k + 1);
+
     return term1 * term2 / term3;
 }
 

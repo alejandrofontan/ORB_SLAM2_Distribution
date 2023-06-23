@@ -47,7 +47,8 @@ void Optimizer::GlobalBundleAdjustment(Map* pMap, int nIterations, bool* pbStopF
 {
     vector<Keyframe> keyframes = pMap->GetAllKeyFrames();
     vector<MapPt> mapPoints = pMap->GetAllMapPoints();
-    BundleAdjustment(keyframes,mapPoints,nIterations,pbStopFlag, nLoopKF, bRobust);
+    //BundleAdjustment(keyframes,mapPoints,nIterations,pbStopFlag, nLoopKF, bRobust);
+    RobustBundleAdjustment(keyframes,mapPoints,nLoopKF);
 }
 
 void Optimizer::GlobalRobustBundleAdjustment(Map* pMap)
@@ -57,7 +58,7 @@ void Optimizer::GlobalRobustBundleAdjustment(Map* pMap)
         RobustBundleAdjustment(keyframes,mapPoints);
 }
 
-void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const vector<MapPt> &mapPoints)
+void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const vector<MapPt> &mapPoints, const unsigned long nLoopKF)
 {
 
     // Set optimizer
@@ -108,7 +109,7 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
         vPoint->setMarginalized(true);
         optimizer.addVertex(vPoint);
 
-        mapPt->activateAllObservations();
+        //mapPt->activateAllObservations();
         const map<KeyframeId , Observation> observations = mapPt->GetActiveObservations();
 
         //Set edges
@@ -244,32 +245,49 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
     optimizer.initializeOptimization();
     optimizer.optimize(parameters.globalRobustBundleAdjustment.optimizerItsFine);
 
-    // Recover optimized data
     //Keyframes
-    for(auto& keyframe: keyframes)
+    for(size_t i=0; i < keyframes.size(); i++)
     {
-        if(keyframe->isBad())
+        KeyFrame* pKF = keyframes[i];
+        if(pKF->isBad())
             continue;
-        g2o::VertexSE3Expmap* vSE3 = static_cast<g2o::VertexSE3Expmap*>(optimizer.vertex(keyframe->mnId));
+        g2o::VertexSE3Expmap* vSE3 = static_cast<g2o::VertexSE3Expmap*>(optimizer.vertex(pKF->mnId));
         g2o::SE3Quat SE3quat = vSE3->estimate();
-        keyframe->SetPose(Converter::toCvMat(SE3quat));
+        if(nLoopKF==0)
+        {
+            pKF->SetPose(Converter::toCvMat(SE3quat));
+        }
+        else
+        {
+            pKF->mTcwGBA.create(4,4,CV_32F);
+            Converter::toCvMat(SE3quat).copyTo(pKF->mTcwGBA);
+            pKF->mnBAGlobalForKF = nLoopKF;
+        }
     }
 
     //Points
-    for(size_t iMapPt{0}; iMapPt < mapPoints.size(); iMapPt++)
+    for(size_t i=0; i< mapPoints.size(); i++)
     {
-        if(mapPtsNotInclude[iMapPt])
+        if(mapPtsNotInclude[i])
             continue;
 
-        MapPt mapPt = mapPoints[iMapPt];
+        MapPoint* pMP = mapPoints[i];
 
-        if(mapPt->isBad())
+        if(pMP->isBad())
             continue;
+        g2o::VertexSBAPointXYZ* vPoint = static_cast<g2o::VertexSBAPointXYZ*>(optimizer.vertex(pMP->mnId+maxKeyId+1));
 
-        g2o::VertexSBAPointXYZ* vPoint = static_cast<g2o::VertexSBAPointXYZ*>(optimizer.vertex(mapPt->mnId + maxKeyId + 1));
-
-        mapPt->SetWorldPos(Converter::toCvMat(vPoint->estimate()));
-        mapPt->UpdateNormalAndDepth();
+        if(nLoopKF==0)
+        {
+            pMP->SetWorldPos(Converter::toCvMat(vPoint->estimate()));
+            pMP->UpdateNormalAndDepth();
+        }
+        else
+        {
+            pMP->mPosGBA.create(3,1,CV_32F);
+            Converter::toCvMat(vPoint->estimate()).copyTo(pMP->mPosGBA);
+            pMP->mnBAGlobalForKF = nLoopKF;
+        }
     }
 }
 
@@ -1011,6 +1029,331 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
     }
 }
 
+void Optimizer::RobustLocalBundleAdjustment(Keyframe& refKeyframe, bool *stopFlag, Map* map_)
+{
+    // Local KeyFrames: First Breath Search from Current Keyframe
+    list<Keyframe> localKeyframes{};
+
+    localKeyframes.push_back(refKeyframe);
+    refKeyframe->mnBALocalForKF = refKeyframe->mnId;
+
+    vector<Keyframe> neighbors = refKeyframe->GetVectorCovisibleKeyFrames();
+    for(auto& neighbor:neighbors){
+        neighbor->mnBALocalForKF = refKeyframe->mnId;
+        if(!neighbor->isBad())
+            localKeyframes.push_back(neighbor);
+    }
+
+    // Local MapPoints seen in Local KeyFrames
+    list<MapPt> localMapPoints{};
+    for(auto& localKeyframe: localKeyframes){
+        vector<MapPt> mapPoints = localKeyframe->GetMapPointMatches();
+        for(auto& mapPt: mapPoints){
+            if(mapPt){
+                if(!mapPt->isBad()) {
+                    if (mapPt->mnBALocalForKF != refKeyframe->mnId) {
+                        localMapPoints.push_back(mapPt);
+                        mapPt->mnBALocalForKF = refKeyframe->mnId;
+                    }
+                }
+            }
+        }
+    }
+
+    // Fixed Keyframes. Keyframes that see Local MapPoints but that are not Local Keyframes
+    list<Keyframe> fixedCameras{};
+    map<int,Keyframe> fixedKeyframes{};
+
+    for(auto& mapPt : localMapPoints){
+        mapPt->activateAllObservations();
+        map<KeyframeId , Observation> observations = mapPt->GetActiveObservations();
+        for(auto& obs :observations){
+            Keyframe keyframe_i = obs.second.projKeyframe;
+            if(keyframe_i->mnBALocalForKF != refKeyframe->mnId && keyframe_i->mnBAFixedForKF != refKeyframe->mnId){
+                keyframe_i->mnBAFixedForKF = refKeyframe->mnId;
+                if(!keyframe_i->isBad()){
+                    fixedCameras.push_back(keyframe_i);
+                }
+            }
+        }
+    }
+
+    // Setup optimizer
+    g2o::SparseOptimizer optimizer;
+    g2o::BlockSolver_6_3::LinearSolverType * linearSolver;
+
+    linearSolver = new g2o::LinearSolverEigen<g2o::BlockSolver_6_3::PoseMatrixType>();
+
+    g2o::BlockSolver_6_3 * solver_ptr = new g2o::BlockSolver_6_3(linearSolver);
+
+    g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg(solver_ptr);
+    optimizer.setAlgorithm(solver);
+
+    if(stopFlag)
+        optimizer.setForceStopFlag(stopFlag);
+
+
+    // Set Local KeyFrame vertices
+    KeyframeId maxKFid = 0;
+    for(auto& localKeyframe: localKeyframes){
+        g2o::VertexSE3Expmap * vSE3 = new g2o::VertexSE3Expmap();
+        vSE3->setEstimate(Converter::toSE3Quat(localKeyframe->GetPose()));
+        vSE3->setId(localKeyframe->mnId);
+        vSE3->setFixed(localKeyframe->mnId==0);
+        optimizer.addVertex(vSE3);
+        if(localKeyframe->mnId>maxKFid)
+            maxKFid = localKeyframe->mnId;
+    }
+
+    // Set Fixed KeyFrame vertices
+    for(auto& fixedCamera: fixedCameras){
+        g2o::VertexSE3Expmap * vSE3 = new g2o::VertexSE3Expmap();
+        vSE3->setEstimate(Converter::toSE3Quat(fixedCamera->GetPose()));
+        vSE3->setId(fixedCamera->mnId);
+        vSE3->setFixed(true);
+        optimizer.addVertex(vSE3);
+        if(fixedCamera->mnId > maxKFid)
+            maxKFid = fixedCamera->mnId;
+    }
+
+    // Set MapPoint vertices
+    const int nExpectedSize = (localKeyframes.size() + fixedCameras.size())*localMapPoints.size();
+
+    vector<g2o::EdgeSE3ProjectXYZ*> edgesMono;
+    edgesMono.reserve(nExpectedSize);
+
+    vector<Keyframe> vpEdgeKFMono;
+    vpEdgeKFMono.reserve(nExpectedSize);
+
+    vector<MapPt> vpMapPointEdgeMono;
+    vpMapPointEdgeMono.reserve(nExpectedSize);
+
+    vector<g2o::EdgeStereoSE3ProjectXYZ*> edgesStereo;
+    edgesStereo.reserve(nExpectedSize);
+
+    vector<Keyframe> vpEdgeKFStereo;
+    vpEdgeKFStereo.reserve(nExpectedSize);
+
+    vector<MapPt> vpMapPointEdgeStereo;
+    vpMapPointEdgeStereo.reserve(nExpectedSize);
+
+    const float thHuberMono = parameters.deltaMono;
+    const float thHuberStereo = parameters.deltaStereo;
+
+    for(auto& mapPt: localMapPoints){
+        g2o::VertexSBAPointXYZ* vPoint = new g2o::VertexSBAPointXYZ();
+        vPoint->setEstimate(Converter::toVector3d(mapPt->GetWorldPos()));
+        int id = mapPt->mnId+maxKFid+1;
+        vPoint->setId(id);
+        vPoint->setMarginalized(true);
+        optimizer.addVertex(vPoint);
+
+        mapPt->activateAllObservations();
+        map<long unsigned int, Observation> observations = mapPt->GetActiveObservations();
+
+        //Set edges
+        for(auto& obs: observations){
+            Keyframe keyframe = obs.second.projKeyframe;
+
+            if(!keyframe->isBad()){
+
+                const cv::KeyPoint &kpUn = keyframe->mvKeysUn[obs.second.projIndex];
+
+                // Monocular observation
+                if(keyframe->mvuRight[obs.second.projIndex]<0){
+                    Eigen::Matrix<double,2,1> obs2D;
+                    obs2D << kpUn.pt.x, kpUn.pt.y;
+
+                    g2o::EdgeSE3ProjectXYZ* e = new g2o::EdgeSE3ProjectXYZ();
+
+                    setVertex(e, &optimizer, obs2D,id,keyframe->mnId);
+
+                    const float &invSigma2 = keyframe->mvInvLevelSigma2[kpUn.octave];
+                    e->setInformation(Eigen::Matrix2d::Identity()*invSigma2);
+                    setEdgeRobustKernel(e, thHuberMono);
+                    setEdgeMonoIntrinsics(e, keyframe);
+
+                    optimizer.addEdge(e);
+                    edgesMono.push_back(e);
+                    vpEdgeKFMono.push_back(keyframe);
+                    vpMapPointEdgeMono.push_back(mapPt);
+                }
+                else // Stereo observation
+                {
+                    Eigen::Matrix<double,3,1> obs3D;
+                    const float kp_ur = keyframe->mvuRight[obs.second.projIndex];
+                    obs3D << kpUn.pt.x, kpUn.pt.y, kp_ur;
+
+                    g2o::EdgeStereoSE3ProjectXYZ* e = new g2o::EdgeStereoSE3ProjectXYZ();
+
+                    setVertex(e, &optimizer, obs3D,id,keyframe->mnId);
+
+                    const float &invSigma2 = keyframe->mvInvLevelSigma2[kpUn.octave];
+                    Eigen::Matrix3d Info = Eigen::Matrix3d::Identity()*invSigma2;
+                    e->setInformation(Info);
+
+                    setEdgeRobustKernel(e, thHuberStereo);
+                    setEdgeStereoIntrinsics(e, keyframe);
+
+                    optimizer.addEdge(e);
+                    edgesStereo.push_back(e);
+                    vpEdgeKFStereo.push_back(keyframe);
+                    vpMapPointEdgeStereo.push_back(mapPt);
+                }
+            }
+        }
+    }
+
+    if(stopFlag)
+        if(*stopFlag)
+            return;
+
+    optimizer.initializeOptimization();
+    optimizer.optimize(parameters.localBundleAdjustment.optimizerItsCoarse);
+
+    bool bDoMore= true;
+
+    if(stopFlag)
+        if(*stopFlag)
+            bDoMore = false;
+
+    //double k{1.0}, alpha{1.0}, beta{1.0};
+    double burrThreshold;
+    if(bDoMore){
+        vector<double> mahalanobisDistancesMono{};
+        for(const auto& edge: edgesMono){
+            edge->computeError();
+            mahalanobisDistancesMono.push_back(edge->chi2());
+        }
+        vector<double> mahalanobisDistancesStereo{};
+        for(const auto& edge: edgesStereo){
+            edge->computeError();
+            mahalanobisDistancesStereo.push_back(edge->chi2());
+        }
+
+        std::vector<double> mahalanobisDistances(mahalanobisDistancesMono.begin(), mahalanobisDistancesMono.end());
+        mahalanobisDistances.insert(mahalanobisDistances.end(), mahalanobisDistancesStereo.begin(), mahalanobisDistancesStereo.end());
+
+        DIST_FITTER::DistributionFitter::FitBurr(mahalanobisDistances,
+                                                 parameters.localBundleAdjustment.k,
+                                                 parameters.localBundleAdjustment.alpha,
+                                                 parameters.localBundleAdjustment.beta);
+        burrThreshold = DIST_FITTER::DistributionFitter::Burr_icdf(parameters.localBundleAdjustment.k,
+                                                                   parameters.localBundleAdjustment.alpha,
+                                                                   parameters.localBundleAdjustment.beta, parameters.globalRobustBundleAdjustment.inlierProbability);
+
+        vector<bool> isInlierMono =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesMono,
+                                                                                 parameters.localBundleAdjustment.k,
+                                                                                 parameters.localBundleAdjustment.alpha,
+                                                                                 parameters.localBundleAdjustment.beta, burrThreshold);
+        vector<bool> isInlierStereo =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesStereo,
+                                                                                   parameters.localBundleAdjustment.k,
+                                                                                   parameters.localBundleAdjustment.alpha,
+                                                                                   parameters.localBundleAdjustment.beta, burrThreshold);
+
+        // Check inlier observations
+        setInliers(edgesMono, isInlierMono);
+        setInliers(edgesStereo, isInlierStereo);
+        //setEdgesRobustKernel(edgesMono, float(sqrt(burrThreshold)));
+        //setEdgesRobustKernel(edgesStereo, float(sqrt(burrThreshold)));
+
+        deactivateRobustKernel(edgesMono);
+        deactivateRobustKernel(edgesStereo);
+
+        // Optimize again without the outliers
+        optimizer.initializeOptimization(0);
+        optimizer.optimize(parameters.localBundleAdjustment.optimizerItsFine);
+
+    }
+
+    vector<pair<KeyFrame*,MapPoint*> > vToErase;
+    vToErase.reserve(edgesMono.size() + edgesStereo.size());
+    vector<double> mahalanobisDistancesMono{};
+    for(const auto& edge: edgesMono){
+        edge->computeError();
+        mahalanobisDistancesMono.push_back(edge->chi2());
+    }
+    vector<double> mahalanobisDistancesStereo{};
+    for(const auto& edge: edgesStereo){
+        edge->computeError();
+        mahalanobisDistancesStereo.push_back(edge->chi2());
+    }
+
+    std::vector<double> mahalanobisDistances(mahalanobisDistancesMono.begin(), mahalanobisDistancesMono.end());
+    mahalanobisDistances.insert(mahalanobisDistances.end(), mahalanobisDistancesStereo.begin(), mahalanobisDistancesStereo.end());
+
+    //double k{1.0}, alpha{1.0}, beta{1.0};
+    //cout << " aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa 2"<< endl;
+    //DIST_FITTER::DistributionFitter::FitBurr(mahalanobisDistances,k,alpha,beta);
+    //cout << " aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa 3"<< endl;
+
+    //double burrThreshold = DIST_FITTER::DistributionFitter::Burr_icdf(k, alpha, beta, parameters.globalRobustBundleAdjustment.inlierProbability);
+
+    vector<bool> isInlierMono =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesMono,
+                                                                             parameters.localBundleAdjustment.k,
+                                                                             parameters.localBundleAdjustment.alpha,
+                                                                             parameters.localBundleAdjustment.beta,burrThreshold);
+    vector<bool> isInlierStereo =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesStereo,
+                                                                            parameters.localBundleAdjustment.k,
+                                                                            parameters.localBundleAdjustment.alpha,
+                                                                            parameters.localBundleAdjustment.beta,burrThreshold);
+
+    // Check inlier observations
+    for(size_t i=0, iend = edgesMono.size(); i<iend;i++){
+        MapPt pMP = vpMapPointEdgeMono[i];
+        if(pMP->isBad())
+            continue;
+
+        if(!isInlierMono[i]){
+            Keyframe pKFi = vpEdgeKFMono[i];
+            vToErase.push_back(make_pair(pKFi,pMP));
+        }
+    }
+
+    for(size_t i=0, iend = edgesStereo.size(); i<iend;i++){
+        MapPt pMP = vpMapPointEdgeStereo[i];
+        if(pMP->isBad())
+            continue;
+
+        if(!isInlierStereo[i]){
+            KeyFrame* pKFi = vpEdgeKFStereo[i];
+            vToErase.push_back(make_pair(pKFi,pMP));
+        }
+    }
+
+    // Get Map Mutex
+    unique_lock<mutex> lock(map_->mMutexMapUpdate);
+
+    if(!vToErase.empty()){
+        for(size_t i=0;i<vToErase.size();i++){
+            Keyframe pKFi = vToErase[i].first;
+            MapPt pMPi = vToErase[i].second;
+            auto obs = pMPi->GetObservation(pKFi->mnId);
+            if(obs)
+                obs->setActive(false);
+            //pKFi->EraseMapPointMatch(pMPi);
+            //pMPi->EraseObservation(pKFi);
+        }
+    }
+
+    // Recover optimized data
+
+    //Keyframes
+    for(auto& pKF:localKeyframes){
+        //KeyFrame* pKF = lit.se;
+        g2o::VertexSE3Expmap* vSE3 = static_cast<g2o::VertexSE3Expmap*>(optimizer.vertex(pKF->mnId));
+        g2o::SE3Quat SE3quat = vSE3->estimate();
+        pKF->SetPose(Converter::toCvMat(SE3quat));
+    }
+
+    //Points
+    for(list<MapPoint*>::iterator lit = localMapPoints.begin(), lend = localMapPoints.end(); lit!=lend; lit++){
+        MapPt pMP = *lit;
+        g2o::VertexSBAPointXYZ* vPoint = static_cast<g2o::VertexSBAPointXYZ*>(optimizer.vertex(pMP->mnId+maxKFid+1));
+        pMP->SetWorldPos(Converter::toCvMat(vPoint->estimate()));
+        pMP->UpdateNormalAndDepth();
+    }
+}
 
 void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* pCurKF,
                                        const LoopClosing::KeyFrameAndPose &NonCorrectedSim3,
