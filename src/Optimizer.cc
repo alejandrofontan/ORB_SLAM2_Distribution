@@ -108,7 +108,8 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
         vPoint->setMarginalized(true);
         optimizer.addVertex(vPoint);
 
-        const map<KeyframeId , Observation> observations = mapPt->GetAllObservations();
+        mapPt->activateAllObservations();
+        const map<KeyframeId , Observation> observations = mapPt->GetActiveObservations();
 
         //Set edges
         int nEdges = 0;
@@ -199,17 +200,45 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
 #endif
 
     double k{1.0}, alpha{1.0}, beta{1.0};
-    DIST_FITTER::DistributionFitter::fitBurr(mahalanobisDistances,k,alpha,beta);
+    DIST_FITTER::DistributionFitter::FitBurr(mahalanobisDistances,k,alpha,beta);
+    double burrThreshold = DIST_FITTER::DistributionFitter::Burr_icdf(k, alpha, beta, parameters.globalRobustBundleAdjustment.inlierProbability);
 
-    vector<bool> isInlierMono =  DIST_FITTER::DistributionFitter::inliersBurr(mahalanobisDistancesMono,k, alpha,beta,
-                                                                               parameters.globalRobustBundleAdjustment.inlierProbability);
-    vector<bool> isInlierStereo =  DIST_FITTER::DistributionFitter::inliersBurr(mahalanobisDistancesStereo,k, alpha,beta,
-                                                                               parameters.globalRobustBundleAdjustment.inlierProbability);
+    vector<bool> isInlierMono =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesMono,k, alpha,beta,burrThreshold);
+    vector<bool> isInlierStereo =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesStereo,k, alpha,beta,burrThreshold);
+
     // Check inlier observations
     setInliers(edgesMono, isInlierMono);
     setInliers(edgesStereo, isInlierStereo);
-    deactivateRobustKernel(edgesMono);
-    deactivateRobustKernel(edgesStereo);
+    setEdgesRobustKernel(edgesMono, float(sqrt(burrThreshold)));
+    setEdgesRobustKernel(edgesStereo, float(sqrt(burrThreshold)));
+
+    //deactivateRobustKernel(edgesMono);
+    //deactivateRobustKernel(edgesStereo);
+
+    // Keyframes reset
+    for(auto& keyframe: keyframes)
+    {
+        if(keyframe->isBad())
+            continue;
+        g2o::VertexSE3Expmap* vSE3 = static_cast<g2o::VertexSE3Expmap*>(optimizer.vertex(keyframe->mnId));
+        g2o::SE3Quat SE3quat = Converter::toSE3Quat(keyframe->GetPose());
+        vSE3->setEstimate(SE3quat);
+    }
+
+    // Points Reset
+    for(size_t iMapPt{0}; iMapPt < mapPoints.size(); iMapPt++)
+    {
+        if(mapPtsNotInclude[iMapPt])
+            continue;
+
+        MapPt mapPt = mapPoints[iMapPt];
+
+        if(mapPt->isBad())
+            continue;
+
+        g2o::VertexSBAPointXYZ* vPoint = static_cast<g2o::VertexSBAPointXYZ*>(optimizer.vertex(mapPt->mnId + maxKeyId + 1));
+        vPoint->setEstimate(Converter::toVector3d(mapPt->GetWorldPos()));
+    }
 
     // Optimize again without the outliers
     optimizer.initializeOptimization();
@@ -296,6 +325,7 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
         vPoint->setMarginalized(true);
         optimizer.addVertex(vPoint);
 
+        pMP->activateAllObservations();
         const map<KeyframeId , Observation> observations = pMP->GetActiveObservations();
 
         int nEdges = 0;
@@ -1505,6 +1535,15 @@ void Optimizer::setEdgeRobustKernel(Edge_* e, const float& thHuber){
     rk->setDelta(thHuber);
 }
 
+template <typename Edge_>
+void Optimizer::setEdgesRobustKernel(vector<Edge_*>& edges, const float& thHuber){
+    for(auto& e: edges){
+        g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
+        e->setRobustKernel(rk);
+        rk->setDelta(thHuber);
+    }
+}
+
 template <typename Edge_, typename Optimizer_, typename obs_>
 void Optimizer::setVertex(Edge_* e, Optimizer_* optimizer,
                           const obs_& obs,
@@ -1519,7 +1558,9 @@ void Optimizer::setInliers(vector<Edge_*>& edges, const vector<bool>& isInlier){
     for(size_t iEdge{0}; iEdge < edges.size(); iEdge++)
     {
         Edge_* e = edges[iEdge];
-        e->setLevel(!isInlier[iEdge]);
+        if(!isInlier[iEdge])
+            e->setLevel(1);
+        //e->setLevel(!isInlier[iEdge]);
     }
 }
 
@@ -1528,5 +1569,6 @@ void Optimizer::deactivateRobustKernel(vector<Edge_*>& edges){
     for(auto& e: edges)
         e->setRobustKernel(nullptr);
 }
+
 
 } //namespace ORB_SLAM

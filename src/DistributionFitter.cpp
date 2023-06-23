@@ -99,7 +99,7 @@ double burr_icdf_(double x, void* params) {
     return burr_cdf(x, p->k, p->alpha, p->beta) - p->x;
 }
 
-double DistributionFitter::burr_icdf(const double& k, const double& alpha, const double& beta, const double& probability) {
+double DistributionFitter::Burr_icdf(const double& k, const double& alpha, const double& beta, const double& probability) {
     Params params{ probability, k, alpha, beta };
 
     gsl_function F;
@@ -131,32 +131,33 @@ double DistributionFitter::burr_icdf(const double& k, const double& alpha, const
 
     gsl_root_fsolver_free(solver);
 
+    if(verbosity >= MEDIUM){
+        cout << "[DistributionFitter] Burr_icdf(): " << endl;
+        cout << "    burr Threshold: "<< icdf << " at probability " << 100.0*probability << " %"<< endl;
+    }
+
     return icdf;
 }
 
-vector<bool> DistributionFitter::inliersBurr(const vector<double>& data, const double& k, const double& alpha, const double& beta, const double& probability){
+vector<bool> DistributionFitter::GetInliers(const vector<double>& data, const double& k, const double& alpha, const double& beta, const double& burrThreshold){
+    if(data.empty())
+        return vector<bool>{};
 
-        if(data.empty())
-            return vector<bool>{};
+    vector<bool> isInlier(data.size(), false);
+    for(size_t iData{}; iData < data.size(); iData++)
+        isInlier[iData] = (data[iData] < burrThreshold);
 
-        double burrThreshold = burr_icdf(k,alpha,beta,probability);
-
-        vector<bool> isInlier(data.size(), false);
-        for(size_t iData{}; iData < data.size(); iData++)
-            isInlier[iData] = (data[iData] < burrThreshold);
-
-        if(verbosity >= MEDIUM){
-            int numInliers{};
-            for(auto value: isInlier)
-                if(value)
-                    numInliers++;
-            cout << "[DistributionFitter] inliersBurr(): " << endl;
-            cout << "    Inlier percentaje Goal: "<< 100.0*probability << " %"<< endl;
-            cout << "    Inlier percentaje: "<< numInliers << "/" << isInlier.size() << " = " << 100.0 * double(numInliers)/double(isInlier.size()) << " %"<< endl;
-        }
-
-        return isInlier;
+    if(verbosity >= MEDIUM){
+        int numInliers{};
+        for(auto value: isInlier)
+            if(value)
+                numInliers++;
+        cout << "[DistributionFitter] GetInliers(): " << endl;
+        cout << "    Inlier percentaje: "<< numInliers << "/" << isInlier.size() << " = " << 100.0 * double(numInliers)/double(isInlier.size()) << " %"<< endl;
     }
+
+    return isInlier;
+}
 
 double DistributionFitter::calculateKS(const std::vector<double>& data, const double& mu, const double& sigma) {
     size_t n = data.size();
@@ -226,7 +227,7 @@ void DistributionFitter::fitLogNormal(vector<double> &data,
 
 }
 
-void DistributionFitter::fitBurr(vector<double>& data, double& k, double& alpha, double& beta){
+void DistributionFitter::FitBurr(vector<double>& data, double& k, double& alpha, double& beta){
 
     gsl_vector *params = gsl_vector_alloc(3); // Vector for parameters (k, alpha, beta)
 

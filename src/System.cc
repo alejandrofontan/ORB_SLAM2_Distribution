@@ -354,6 +354,11 @@ void System::DeactivateLocalizationMode()
     mbDeactivateLocalizationMode = true;
 }
 
+void System::GlobalBundleAdjustment(){
+    cout << "GlobalBundleAdjustment ... "<< endl;
+    Optimizer::GlobalBundleAdjustment(mpMap, 100, nullptr, 0,true);
+}
+
 void System::GlobalRobustBundleAdjustment(){
     cout << "GlobalRobustBundleAdjustment ... "<< endl;
     Optimizer::GlobalRobustBundleAdjustment(mpMap);
@@ -473,10 +478,10 @@ void System::SaveFrameTrajectoryTUM(const string &filename)
     f << fixed;
 
     for(const auto& frameId: slamGraph->getIds()){
-        SLAM_GRAPH::mat4 Twc = slamGraph->getTwc(frameId);
-        SLAM_GRAPH::mat3 Rwc = Twc.block<3,3>(0,0);
-        SLAM_GRAPH::vec3 twc = Twc.block<3,1>(0,3);
-        SLAM_GRAPH::quat q(Rwc);
+        mat4 Twc = slamGraph->getTwc(frameId);
+        mat3 Rwc = Twc.block<3,3>(0,0);
+        vec3 twc = Twc.block<3,1>(0,3);
+        quat q(Rwc);
         f << setprecision(6) << slamGraph->getTimestamp(frameId) << setprecision(7)
         << " " << twc(0) << " " << twc(1) << " " << twc(2)
         << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
@@ -496,10 +501,10 @@ void System::SaveKeyFrameTrajectoryTUM(const string &filename)
 
     auto keyframes = slamGraph->getKeyframes();
     for(const auto& keyframe: *keyframes){
-        SLAM_GRAPH::mat4 Twc = keyframe.second->getTwc();
-        SLAM_GRAPH::mat3 Rwc = Twc.block<3,3>(0,0);
-        SLAM_GRAPH::vec3 twc = Twc.block<3,1>(0,3);
-        SLAM_GRAPH::quat q(Rwc);
+        mat4 Twc = keyframe.second->getTwc();
+        mat3 Rwc = Twc.block<3,3>(0,0);
+        vec3 twc = Twc.block<3,1>(0,3);
+        quat q(Rwc);
         f << setprecision(6) << keyframe.second->getTimestamp() << setprecision(7)
           << " " << twc(0) << " " << twc(1) << " " << twc(2)
           << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
@@ -609,6 +614,24 @@ void System::SaveStatisticsToFiles(const string& pathToFiles){
     cout <<  "Number Of Active Observations: " << numberOfActiveObservations<< endl;
     cout <<  "Active Observations Percentaje: " << 100.0*double(numberOfActiveObservations)/double(numberOfObservations) << " %"<< endl;
 #endif
+}
+
+void System::saveMap(){
+    for( const auto& mapPt: mpMap->GetAllMapPoints()){
+        slamGraph->addMapPoint(mapPt->mnId,mapPt->GetXYZ());
+    }
+    slamGraph->saveMap();
+}
+
+void System::loadMap(){
+    slamGraph->resetMapFromCopy();
+    for(auto& keyframe:  mpMap->GetAllKeyFrames())
+        keyframe->SetPose(Converter::toCvMat(slamGraph->getTcw(keyframe->mnFrameId)));
+
+    for( const auto& mapPt:  mpMap->GetAllMapPoints()) {
+        mapPt->SetWorldPos(Converter::toCvMat(slamGraph->getXYZ(mapPt->mnId)));
+        mapPt->UpdateNormalAndDepth();
+    }
 }
 
 

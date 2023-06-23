@@ -30,6 +30,7 @@
 #include "KeyFrameDatabase.h"
 #include "Utils.h"
 #include "SLAMGraph.h"
+#include "Definitions.h"
 
 #include <mutex>
 
@@ -56,6 +57,8 @@ public:
     cv::Mat GetStereoCenter();
     cv::Mat GetRotation();
     cv::Mat GetTranslation();
+
+    mat4 GetTwc();
 
     // Bag of Words Representation
     void ComputeBoW();

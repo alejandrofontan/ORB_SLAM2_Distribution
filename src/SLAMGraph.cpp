@@ -54,6 +54,17 @@ void SLAM_GRAPH::SLAMGraph::addFrame(const FrameId &frameId, const Seconds& time
     ids.insert(frameId);
 }
 
+void SLAM_GRAPH::SLAMGraph::addMapPoint(const MapPointId& mapPointId, const vec3& XYZ){
+    if(mapPoints.count(mapPointId)) { // Check if map point already exists
+        cout << "[SLAMGraph::addMapPoint]: FAILED" << endl;
+        cout << "     Map Point " << mapPointId << " already exists."<<endl;
+        return;
+    }
+
+    MapPointNode newMapPoint = make_shared<MapPointNODE>(MapPointNODE(mapPointId,XYZ));
+    mapPoints.insert(make_pair(mapPointId, newMapPoint));
+}
+
 void SLAM_GRAPH::SLAMGraph::removeKeyframe(const FrameId &keyframeToRemoveId){
     if(!keyframes.count(keyframeToRemoveId)) { // Check if keyframe exists
         cout << "[SLAMGraph::removeKeyframe]: FAILED" << endl;
@@ -99,7 +110,7 @@ void SLAM_GRAPH::SLAMGraph::updateTwc(const FrameId& frameId,const mat4& Twc){
     keyframe->updateTwc(Twc);
 }
 
-SLAM_GRAPH::mat4 SLAM_GRAPH::SLAMGraph::getTwc(const FrameId &frameId) const{
+mat4 SLAM_GRAPH::SLAMGraph::getTwc(const FrameId &frameId) const{
     if(keyframes.count(frameId))
         return keyframes.find(frameId)->second->getTwc();
 
@@ -107,6 +118,17 @@ SLAM_GRAPH::mat4 SLAM_GRAPH::SLAMGraph::getTwc(const FrameId &frameId) const{
         return frames.find(frameId)->second->getTwc();
 
     return mat4::Identity();
+}
+
+mat4 SLAM_GRAPH::SLAMGraph::getTcw(const FrameId &frameId) const{
+    return getTwc(frameId).inverse();
+}
+
+vec3 SLAM_GRAPH::SLAMGraph::getXYZ(const MapPointId &mapPointId) const{
+    if(mapPoints.count(mapPointId))
+        return mapPoints.find(mapPointId)->second->getXYZ();
+
+    return vec3::Zero();
 }
 
 SLAM_GRAPH::Seconds SLAM_GRAPH::SLAMGraph::getTimestamp(const FrameId &frameId) const{
@@ -152,6 +174,58 @@ void SLAM_GRAPH::SLAMGraph::correctFramesScale(const double& scale, const FrameI
     }
 }
 
+void SLAM_GRAPH::SLAMGraph::saveMap(){
+    if(verbosity >= LOW)
+        cout << "[SLAMGraph] saveMap() : save a copy of keyframe poses Twc and map point world coordinates XYZ"<< endl;
+
+    keyframeTwc_0.clear();
+    for(const auto& keyframe: keyframes)
+        keyframeTwc_0.insert(pair{keyframe.second->getId(),keyframe.second->getTwc()});
+
+    mapPointXYZ_0.clear();
+    for(const auto& mapPoint: mapPoints)
+        mapPointXYZ_0.insert(pair{mapPoint.second->getId(),mapPoint.second->getXYZ()});
+
+    addNoiseToMap(0.01);
+}
+
+void SLAM_GRAPH::SLAMGraph::resetMapFromCopy(){
+    for(const auto& keyframeTwc: keyframeTwc_0)
+        keyframes.find(keyframeTwc.first)->second->updateTwc(keyframeTwc.second);
+
+    for(const auto& mapPointXYZ: mapPointXYZ_0)
+        mapPoints.find(mapPointXYZ.first)->second->updateXYZ(mapPointXYZ.second);
+}
+
+void SLAM_GRAPH::SLAMGraph::addNoiseToMap(const double& noise_){
+
+    double meanKeyframeDistance{0.0};
+
+    auto it = keyframeTwc_0.begin();
+    mat4 Twc_prev = it->second;
+    ++it;
+    for (; it != keyframeTwc_0.end(); ++it) {
+        meanKeyframeDistance += (Twc_prev.block<3,1>(0,3) - it->second.block<3,1>(0,3)).norm();
+        Twc_prev = it->second;
+    }
+    meanKeyframeDistance /= double(keyframeTwc_0.size());
+
+    double noise = noise_ * meanKeyframeDistance;
+    for(auto& keyframeTwc: keyframeTwc_0){
+        mat4 Twc = keyframeTwc.second;
+        Twc.block<3,1>(0,3) += noise * vec3::Random();
+        //Twc.block<3,3>(0,0).eulerAngles()
+        keyframeTwc.second = Twc;
+    }
+
+    for(auto& mapPointXYZ: mapPointXYZ_0){
+        vec3 XYZ = mapPointXYZ.second;
+        XYZ += noise * vec3::Random();
+        mapPointXYZ.second = XYZ;
+    }
+
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Keyframe Node Methods
 SLAM_GRAPH::KeyframeNODE::KeyframeNODE(const FrameId& id_, const Seconds& timestamp_, mat4 Twc_):
@@ -175,7 +249,7 @@ SLAM_GRAPH::FrameNODE::FrameNODE(const FrameId& id_, const Seconds& timestamp_,
     Tr.insert(make_pair(refKeyframe, Tr_));
 }
 
-SLAM_GRAPH::mat4 SLAM_GRAPH::FrameNODE::getTr(const KeyframeNode& keyframe) const{
+mat4 SLAM_GRAPH::FrameNODE::getTr(const KeyframeNode& keyframe) const{
     return Tr.find(keyframe)->second;
 }
 
@@ -188,7 +262,7 @@ void SLAM_GRAPH::FrameNODE::removeTr(const KeyframeNode& refkeyframe){
         Tr.erase(refkeyframe);
 }
 
-SLAM_GRAPH::mat4 SLAM_GRAPH::FrameNODE::getTwc() const{
+mat4 SLAM_GRAPH::FrameNODE::getTwc() const{
 
     return Tr.begin()->first->getTwc()*Tr.begin()->second.inverse();
 }
@@ -196,3 +270,12 @@ SLAM_GRAPH::mat4 SLAM_GRAPH::FrameNODE::getTwc() const{
 void SLAM_GRAPH::FrameNODE::correctScale(const double& scale, const KeyframeNode &refKeyframe){
     Tr.find(refKeyframe)->second.block<3,1>(0,3) *= scale;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Map Point Node Methods
+SLAM_GRAPH::MapPointNODE::MapPointNODE(const MapPointId & id_, const vec3& XYZ_):id(id_),XYZ(XYZ_){}
+
+void SLAM_GRAPH::MapPointNODE::updateXYZ(const vec3& XYZ_){
+    XYZ = XYZ_;
+}
+

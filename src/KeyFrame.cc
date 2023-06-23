@@ -91,6 +91,11 @@ void KeyFrame::SetPose(const cv::Mat &Tcw_)
     slamGraph->updateTwc(mnFrameId,Converter::toMatrix4d(Twc));
 }
 
+mat4 KeyFrame::GetTwc(){
+    unique_lock<mutex> lock(mMutexPose);
+    return Converter::toMatrix4d(Twc);
+}
+
 cv::Mat KeyFrame::GetPose()
 {
     unique_lock<mutex> lock(mMutexPose);

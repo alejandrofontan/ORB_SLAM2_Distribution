@@ -98,6 +98,11 @@ cv::Mat MapPoint::GetWorldPos()
     return mWorldPos.clone();
 }
 
+vec3 MapPoint::GetXYZ(){
+    unique_lock<mutex> lock(mMutexPos);
+    return Converter::toVector3d(mWorldPos.clone());
+}
+
 cv::Mat MapPoint::GetNormal()
 {
     unique_lock<mutex> lock(mMutexPos);

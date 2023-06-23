@@ -25,6 +25,8 @@
 #include"Frame.h"
 #include"Map.h"
 #include"Utils.h"
+#include"Converter.h"
+#include"Definitions.h"
 
 #include<opencv2/core/core.hpp>
 #include<mutex>
@@ -70,6 +72,7 @@ public:
 
     void SetWorldPos(const cv::Mat &Pos);
     cv::Mat GetWorldPos();
+    vec3 GetXYZ();
 
     cv::Mat GetNormal();
     KeyFrame* GetReferenceKeyFrame();

@@ -95,7 +95,7 @@ src/Initializer.cc
 src/Viewer.cc
 src/Utils.cpp
 src/SLAMGraph.cpp
-src/DistributionFitter.cpp )
+src/DistributionFitter.cpp)
 
 target_link_libraries(${PROJECT_NAME}
 ${OpenCV_LIBS}

@@ -76,6 +76,9 @@ public:
     template <typename Edge_>
     static void setEdgeRobustKernel(Edge_* e, const float& thHuber);
 
+    template <typename Edge_>
+    static void setEdgesRobustKernel(vector<Edge_*>& edges, const float& thHuber);
+
     template <typename Edge_, typename Optimizer_, typename obs_>
     static void setVertex(Edge_* e, Optimizer_* optimizer, const obs_& obs, const int& mapPtId, const KeyframeId& keyframeId);
 
@@ -181,6 +184,10 @@ public:
         chi2_3dof = chi2_3dof_;
         deltaMono = sqrt(chi2_2dof);
         deltaStereo = sqrt(chi2_3dof);
+    }
+
+    void updateinlierProbability(const double& inlierProbability_){
+        globalRobustBundleAdjustment.inlierProbability = inlierProbability_;
     }
 };
 

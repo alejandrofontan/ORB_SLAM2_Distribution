@@ -35,11 +35,12 @@ namespace DIST_FITTER {
         static DistributionFitterParameters parameters;
 
         void static fitLogNormal(vector<double>& data, double& mu, double& sigma);
-        void static fitBurr(vector<double>& data, double& k, double& alpha, double& beta);
+        void static FitBurr(vector<double>& data, double& k, double& alpha, double& beta);
+        double static Burr_icdf(const double& k, const double& alpha, const double& beta, const double& probability);
 
         vector<bool> static inliersLogNormal(const vector<double>& data, const double& mu, const double& sigma,
                                      const double& probability);
-        vector<bool> static inliersBurr(const vector<double>& data, const double& k, const double& alpha, const double& beta, const double& probability);
+        vector<bool> static GetInliers(const vector<double>& data, const double& k, const double& alpha, const double& beta, const double& burrThreshold);
 
         double static calculateKS(const std::vector<double>& data, const double& mu, const double& sigma);
 
@@ -51,8 +52,6 @@ namespace DIST_FITTER {
 
         double static burr_pdf(double x, double k, double alpha, double beta);
         double static burr_loglikelihood(const gsl_vector* params, void* data);
-        double static burr_icdf(const double& k, const double& alpha, const double& beta, const double& probability);
-
     };
 
     class DistributionFitterParameters {

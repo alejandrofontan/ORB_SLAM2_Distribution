@@ -13,24 +13,24 @@
 #include <set>
 #include<mutex>
 
+#include<Definitions.h>
+
 #include<Eigen/Dense>
 
 using namespace std;
 
 namespace SLAM_GRAPH {
     using FrameId = long unsigned int;
+    using MapPointId = long unsigned int;
     using Seconds = double;
-
-    typedef double dataType;
-    typedef Eigen::Matrix<dataType,3,1> vec3;
-    typedef Eigen::Matrix<dataType,3,3> mat3;
-    typedef Eigen::Matrix<dataType,4,4> mat4;
-    typedef Eigen::Quaterniond quat;
 
     class KeyframeNODE;
     class FrameNODE;
+    class MapPointNODE;
+
     typedef shared_ptr<KeyframeNODE> KeyframeNode;
     typedef shared_ptr<FrameNODE> FrameNode;
+    typedef shared_ptr<MapPointNODE> MapPointNode;
 
     class KeyframeNODE {
     private:
@@ -74,14 +74,28 @@ namespace SLAM_GRAPH {
         [[nodiscard]] mat4 getTwc() const;
     };
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    class MapPointNODE {
+
+    private:
+        MapPointId id{};
+        vec3 XYZ{};
+
+    public:
+        MapPointNODE(const MapPointId & id_, const vec3& XYZ_);
+        void updateXYZ(const vec3& XYZ_);
+        [[nodiscard]] MapPointId getId() const{return id;};
+        [[nodiscard]] vec3 getXYZ() const{return XYZ;};
+    };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     class SLAMGraph {
     public:
         enum VerbosityLevel{
-            LOW = 0,
-            MEDIUM = 1,
-            HIGH = 2
+            NONE = 0,
+            LOW = 1,
+            MEDIUM = 2,
+            HIGH = 3
         };
 
         SLAMGraph(const VerbosityLevel& verbosity): verbosity(verbosity){};
@@ -90,6 +104,7 @@ namespace SLAM_GRAPH {
 
         void addKeyframe(const FrameId& keyframeId, const Seconds& timestamp, const mat4& Twc);
         void addFrame(const FrameId &frameId, const Seconds& timestamp, const mat4& Tcw, const FrameId& refKeyframeId);
+        void addMapPoint(const MapPointId& mapPointId, const vec3& XYZ);
         void removeKeyframe(const FrameId& keyframeToRemoveId);
         void updateTwc(const FrameId& frameId,const mat4& Twc);
         void correctFramesScale(const double& scale, const FrameId &keyframeId);
@@ -101,14 +116,24 @@ namespace SLAM_GRAPH {
         set<FrameId> getIds(){return ids;};
 
         [[nodiscard]] mat4 getTwc(const FrameId &frameId) const;
+        [[nodiscard]] mat4 getTcw(const FrameId &frameId) const;
         [[nodiscard]] Seconds getTimestamp(const FrameId &frameId) const;
+        [[nodiscard]] vec3 getXYZ(const MapPointId &mapPointId) const;
+
+        void saveMap();
+        void resetMapFromCopy();
+        void addNoiseToMap(const double& noise_);
 
     private:
         VerbosityLevel verbosity{};
         map<FrameId,shared_ptr<KeyframeNODE>> keyframes{};
         map<FrameId,shared_ptr<FrameNODE>> frames{};
+        map<FrameId,shared_ptr<MapPointNODE>> mapPoints{};
+
         set<FrameId> ids{};
 
+        map<FrameId,mat4> keyframeTwc_0{};
+        map<FrameId,vec3> mapPointXYZ_0{};
     };
     typedef shared_ptr<SLAMGraph> SlamGraph;
 }

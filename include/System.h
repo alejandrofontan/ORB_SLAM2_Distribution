@@ -88,6 +88,7 @@ public:
     void DeactivateLocalizationMode();
 
     //
+    void GlobalBundleAdjustment();
     void GlobalRobustBundleAdjustment();
 
     // Returns true if there have been a big map change (loop closure, global BA)
@@ -124,6 +125,8 @@ public:
     //
     void SaveStatisticsToFiles(const string& pathToFiles);
 
+    void saveMap();
+    void loadMap();
 
     void readImage(cv::Mat& im, const string& imagePath) const;
 
