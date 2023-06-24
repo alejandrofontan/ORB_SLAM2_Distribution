@@ -7,6 +7,7 @@ namespace DIST_FITTER {
 
 DistributionFitter::VerbosityLevel DistributionFitter::verbosity{LOW};
 DistributionFitterParameters DistributionFitter::parameters{};
+DistributionFitter::DistributionType DistributionFitter::distributionType{BURR};
 
 double DistributionFitter::lognormal_pdf(double x, double mu, double sigma) {
     double logx = log(x);
@@ -54,6 +55,18 @@ double DistributionFitter::burr_loglikelihood(const gsl_vector* x_, void* params
     return -sum;
 }
 
+double DistributionFitter::Lognormal_icdf(double x, double mu, double sigma) {
+
+    double logNormalThreshold = gsl_cdf_lognormal_Pinv(x, mu, sigma);
+
+    if(verbosity >= MEDIUM){
+        cout << "[DistributionFitter] Lognormal_icdf(): " << endl;
+        cout << "    logNormal Threshold: "<< logNormalThreshold << " at probability " << 100.0*x << " %"<< endl;
+
+    }
+    return logNormalThreshold;
+}
+
 vector<bool> DistributionFitter::inliersLogNormal(const vector<double>& data, const double& mu, const double& sigma,
                                  const double& probability){
 
@@ -73,7 +86,7 @@ vector<bool> DistributionFitter::inliersLogNormal(const vector<double>& data, co
         for(auto value: isInlier)
             if(value)
                 numInliers++;
-        cout << "[DistributionFitter] inliersLogNormal(): " << endl;
+        cout << "[DistributionFitter] inliersLogNormal() aaaa: " << endl;
         cout << "    Inlier percentaje Goal: "<< 100.0*probability << " %"<< endl;
         cout << "    Inlier percentaje: "<< numInliers << "/" << isInlier.size() << " = " << 100.0 * double(numInliers)/double(isInlier.size()) << " %"<< endl;
     }
@@ -100,14 +113,15 @@ double burr_icdf_(double x, void* params) {
     return burr_cdf(x, p->k, p->alpha, p->beta) - p->x;
 }
 
-double DistributionFitter::Burr_icdf(const double& k, const double& alpha, const double& beta, const double& probability) {
+double DistributionFitter::Burr_icdf(const double& k, const double& alpha, const double& beta, const double& probability,
+                                     const double icdf_0) {
     Params params{ probability, k, alpha, beta };
 
     gsl_function F;
     F.function = &burr_icdf_;
     F.params = &params;
 
-    double icdf, icdf_lower = 0.0, icdf_upper = 10.0;
+    double icdf, icdf_lower = 0.0, icdf_upper = 10.0*icdf_0;
     gsl_root_fsolver* solver = gsl_root_fsolver_alloc(gsl_root_fsolver_brent);
     gsl_root_fsolver_set(solver, &F, icdf_lower, icdf_upper);  // Provide an initial bracket
 
@@ -140,13 +154,13 @@ double DistributionFitter::Burr_icdf(const double& k, const double& alpha, const
     return icdf;
 }
 
-vector<bool> DistributionFitter::GetInliers(const vector<double>& data, const double& k, const double& alpha, const double& beta, const double& burrThreshold){
+vector<bool> DistributionFitter::GetInliers(const vector<double>& data, const double& threshold){
     if(data.empty())
         return vector<bool>{};
 
     vector<bool> isInlier(data.size(), false);
     for(size_t iData{}; iData < data.size(); iData++)
-        isInlier[iData] = (data[iData] < burrThreshold);
+        isInlier[iData] = ((data[iData] < threshold) && (data[iData] > parameters.minResidual));
 
     if(verbosity >= MEDIUM){
         int numInliers{};
@@ -174,8 +188,13 @@ double DistributionFitter::calculateKS(const std::vector<double>& data, const do
     return d;
 }
 
-void DistributionFitter::fitLogNormal(vector<double> &data,
-                                      double &mu, double &sigma) {
+void DistributionFitter::FitLogNormal(vector<double> &data_, double &mu, double &sigma) {
+
+    vector<double> data{};
+    for(const auto& value: data_){
+        if(value > parameters.minResidual)
+            data.push_back(value);
+    }
 
     gsl_vector *params = gsl_vector_alloc(2); // Vector for parameters (mu, sigma)
 
@@ -228,7 +247,13 @@ void DistributionFitter::fitLogNormal(vector<double> &data,
 
 }
 
-void DistributionFitter::FitBurr(vector<double>& data, double& k, double& alpha, double& beta){
+void DistributionFitter::FitBurr(vector<double>& data_, double& k, double& alpha, double& beta){
+
+    vector<double> data{};
+    for(const auto& value: data_){
+        if(value > parameters.minResidual)
+            data.push_back(value);
+    }
 
     gsl_vector *params = gsl_vector_alloc(3); // Vector for parameters (k, alpha, beta)
 

@@ -111,16 +111,16 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
 
     OptimizerParameters::GlobalRobustBundleAdjustment globalRobustBundleAdjustment(
             settingsFile["Optimizer.globalRobustBundleAdjustment.optimizerItsCoarse"],
-            settingsFile["Optimizer.globalRobustBundleAdjustment.optimizerItsFine"],
-            settingsFile["Optimizer.globalRobustBundleAdjustment.inlierProbability"]);
+            settingsFile["Optimizer.globalRobustBundleAdjustment.optimizerItsFine"]);
 
     Optimizer::parameters.setParameters(settingsFile["Optimizer.chi2_2dof"], settingsFile["Optimizer.chi2_3dof"],
+                                        settingsFile["Optimizer.inlierProbability"],
                                         poseOptimizationParameters,
                                         localBundleAdjustmentParameters,
                                         optimizeEssentialGraph,
                                         optimizeSim3,
                                         globalRobustBundleAdjustment);
-    Optimizer::parameters.updateinlierProbability(double(expId)*0.025 + 0.80);
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Create SLAM Graph
     slamGraph = make_shared<SLAM_GRAPH::SLAMGraph>(SLAM_GRAPH::SLAMGraph::LOW);
@@ -600,8 +600,11 @@ void System::readImage(cv::Mat& im, const string& imagePath) const{
 void System::SaveStatisticsToFiles(const string& pathToFiles){
     cout << "Saving Statistics Files: "<< pathToFiles << endl;
 #ifdef COMPILED_DEBUG
-    cout << "    "<< "mahalanobisDistances.txt" << endl;
-    saveVectorToFile(Optimizer::mahalanobisDistancesToSave,pathToFiles + "mahalanobisDistances.txt");
+    //cout << "    "<< "mahalanobisDistances.txt" << endl;
+    //saveVectorToFile(Optimizer::mahalanobisDistancesToSave,pathToFiles + "mahalanobisDistances.txt");
+
+    cout << "    "<< "inlierThreshold.txt" << endl;
+    saveVectorToFile(Optimizer::inlierThreshold,pathToFiles + "inlierThreshold.txt");
 
     auto mapPoints = mpMap->GetAllMapPoints();
     int numberOfObservations = 0;

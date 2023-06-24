@@ -40,15 +40,15 @@ namespace ORB_SLAM2
 
 OptimizerParameters Optimizer::parameters{};
 #ifdef COMPILED_DEBUG
-    vector<double> Optimizer::mahalanobisDistancesToSave{};
+    //vector<double> Optimizer::mahalanobisDistancesToSave{};
+    vector<double> inlierThreshold{};
 #endif
 
 void Optimizer::GlobalBundleAdjustment(Map* pMap, int nIterations, bool* pbStopFlag, const unsigned long nLoopKF, const bool bRobust)
 {
     vector<Keyframe> keyframes = pMap->GetAllKeyFrames();
     vector<MapPt> mapPoints = pMap->GetAllMapPoints();
-    //BundleAdjustment(keyframes,mapPoints,nIterations,pbStopFlag, nLoopKF, bRobust);
-    RobustBundleAdjustment(keyframes,mapPoints,nLoopKF);
+    BundleAdjustment(keyframes,mapPoints,nIterations,pbStopFlag, nLoopKF, bRobust);
 }
 
 void Optimizer::GlobalRobustBundleAdjustment(Map* pMap)
@@ -196,22 +196,36 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
 
     std::vector<double> mahalanobisDistances(mahalanobisDistancesMono.begin(), mahalanobisDistancesMono.end());
     mahalanobisDistances.insert(mahalanobisDistances.end(), mahalanobisDistancesStereo.begin(), mahalanobisDistancesStereo.end());
-#ifdef COMPILED_DEBUG
-    mahalanobisDistancesToSave = mahalanobisDistances;
-#endif
 
-    double k{1.0}, alpha{1.0}, beta{1.0};
-    DIST_FITTER::DistributionFitter::FitBurr(mahalanobisDistances,k,alpha,beta);
-    double burrThreshold = DIST_FITTER::DistributionFitter::Burr_icdf(k, alpha, beta, parameters.globalRobustBundleAdjustment.inlierProbability);
+    double inlierThresholdMono{parameters.inlierThresholdMono};
+    double inlierThresholdStereo{parameters.inlierThresholdStereo};
 
-    vector<bool> isInlierMono =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesMono,k, alpha,beta,burrThreshold);
-    vector<bool> isInlierStereo =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesStereo,k, alpha,beta,burrThreshold);
+    if(DIST_FITTER::DistributionFitter::distributionType == DIST_FITTER::DistributionFitter::DistributionType::BURR){
+        double k{parameters.localBundleAdjustment.k_burr};
+        double alpha{parameters.localBundleAdjustment.alpha_burr};
+        double beta{parameters.localBundleAdjustment.beta_burr};
+        DIST_FITTER::DistributionFitter::FitBurr(mahalanobisDistances,k,alpha,beta);
+        inlierThresholdMono = DIST_FITTER::DistributionFitter::Burr_icdf(k, alpha, beta, parameters.inlierProbability, inlierThresholdMono);
+    }
+
+    if(DIST_FITTER::DistributionFitter::distributionType == DIST_FITTER::DistributionFitter::DistributionType::LOGNORMAL){
+        double mu{parameters.localBundleAdjustment.mu_lognormal}, sigma{parameters.localBundleAdjustment.sigma_lognormal};
+        DIST_FITTER::DistributionFitter::FitLogNormal(mahalanobisDistances,
+                                                  parameters.localBundleAdjustment.mu_lognormal,
+                                                  parameters.localBundleAdjustment.sigma_lognormal);
+        inlierThresholdMono = DIST_FITTER::DistributionFitter::Lognormal_icdf(parameters.inlierProbability,
+                                                                      parameters.localBundleAdjustment.mu_lognormal,
+                                                                      parameters.localBundleAdjustment.sigma_lognormal);
+    }
+
+    vector<bool> isInlierMono =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesMono,inlierThresholdMono);
+    vector<bool> isInlierStereo =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesStereo,inlierThresholdStereo);
 
     // Check inlier observations
     setInliers(edgesMono, isInlierMono);
     setInliers(edgesStereo, isInlierStereo);
-    setEdgesRobustKernel(edgesMono, float(sqrt(burrThreshold)));
-    setEdgesRobustKernel(edgesStereo, float(sqrt(burrThreshold)));
+    setEdgesRobustKernel(edgesMono, float(sqrt(inlierThresholdMono)));
+    setEdgesRobustKernel(edgesStereo, float(sqrt(inlierThresholdStereo)));
 
     //deactivateRobustKernel(edgesMono);
     //deactivateRobustKernel(edgesStereo);
@@ -343,7 +357,7 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
         vPoint->setMarginalized(true);
         optimizer.addVertex(vPoint);
 
-        pMP->activateAllObservations();
+        //pMP->activateAllObservations();
         const map<KeyframeId , Observation> observations = pMP->GetActiveObservations();
 
         int nEdges = 0;
@@ -1137,8 +1151,11 @@ void Optimizer::RobustLocalBundleAdjustment(Keyframe& refKeyframe, bool *stopFla
     vector<MapPt> vpMapPointEdgeStereo;
     vpMapPointEdgeStereo.reserve(nExpectedSize);
 
-    const float thHuberMono = parameters.deltaMono;
-    const float thHuberStereo = parameters.deltaStereo;
+    //const float thHuberMono = parameters.deltaMono;
+    //const float thHuberStereo = parameters.deltaStereo;
+
+    const float thHuberMono = sqrt(parameters.inlierThresholdMono);
+    const float thHuberStereo = sqrt(parameters.inlierThresholdStereo);
 
     for(auto& mapPt: localMapPoints){
         g2o::VertexSBAPointXYZ* vPoint = new g2o::VertexSBAPointXYZ();
@@ -1217,8 +1234,8 @@ void Optimizer::RobustLocalBundleAdjustment(Keyframe& refKeyframe, bool *stopFla
         if(*stopFlag)
             bDoMore = false;
 
-    //double k{1.0}, alpha{1.0}, beta{1.0};
-    double burrThreshold;
+    double inlierThresholdMono = parameters.inlierThresholdMono;
+    double inlierThresholdStereo = parameters.inlierThresholdStereo;
     if(bDoMore){
         vector<double> mahalanobisDistancesMono{};
         for(const auto& edge: edgesMono){
@@ -1232,24 +1249,43 @@ void Optimizer::RobustLocalBundleAdjustment(Keyframe& refKeyframe, bool *stopFla
         }
 
         std::vector<double> mahalanobisDistances(mahalanobisDistancesMono.begin(), mahalanobisDistancesMono.end());
-        mahalanobisDistances.insert(mahalanobisDistances.end(), mahalanobisDistancesStereo.begin(), mahalanobisDistancesStereo.end());
+        mahalanobisDistances.insert(mahalanobisDistances.end(), mahalanobisDistancesStereo.begin(),
+                                    mahalanobisDistancesStereo.end());
 
-        DIST_FITTER::DistributionFitter::FitBurr(mahalanobisDistances,
-                                                 parameters.localBundleAdjustment.k,
-                                                 parameters.localBundleAdjustment.alpha,
-                                                 parameters.localBundleAdjustment.beta);
-        burrThreshold = DIST_FITTER::DistributionFitter::Burr_icdf(parameters.localBundleAdjustment.k,
-                                                                   parameters.localBundleAdjustment.alpha,
-                                                                   parameters.localBundleAdjustment.beta, parameters.globalRobustBundleAdjustment.inlierProbability);
+        if(DIST_FITTER::DistributionFitter::distributionType == DIST_FITTER::DistributionFitter::DistributionType::BURR) {
 
-        vector<bool> isInlierMono =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesMono,
-                                                                                 parameters.localBundleAdjustment.k,
-                                                                                 parameters.localBundleAdjustment.alpha,
-                                                                                 parameters.localBundleAdjustment.beta, burrThreshold);
-        vector<bool> isInlierStereo =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesStereo,
-                                                                                   parameters.localBundleAdjustment.k,
-                                                                                   parameters.localBundleAdjustment.alpha,
-                                                                                   parameters.localBundleAdjustment.beta, burrThreshold);
+            DIST_FITTER::DistributionFitter::FitBurr(mahalanobisDistances,
+                                                     parameters.localBundleAdjustment.k_burr,
+                                                     parameters.localBundleAdjustment.alpha_burr,
+                                                     parameters.localBundleAdjustment.beta_burr);
+
+            inlierThresholdMono = DIST_FITTER::DistributionFitter::Burr_icdf(
+                    parameters.localBundleAdjustment.k_burr,
+                    parameters.localBundleAdjustment.alpha_burr,
+                    parameters.localBundleAdjustment.beta_burr,
+                    parameters.inlierProbability,
+                    parameters.inlierThresholdMono);
+
+            Optimizer::parameters.UpdateInlierThresholds(inlierThresholdMono,inlierThresholdStereo);
+        }
+
+        if(DIST_FITTER::DistributionFitter::distributionType == DIST_FITTER::DistributionFitter::DistributionType::LOGNORMAL) {
+            DIST_FITTER::DistributionFitter::FitLogNormal(mahalanobisDistances,
+                                                      parameters.localBundleAdjustment.mu_lognormal,
+                                                      parameters.localBundleAdjustment.sigma_lognormal);
+            inlierThresholdMono = DIST_FITTER::DistributionFitter::Lognormal_icdf(parameters.inlierProbability,
+                                                                            parameters.localBundleAdjustment.mu_lognormal,
+                                                                            parameters.localBundleAdjustment.sigma_lognormal);
+
+            Optimizer::parameters.UpdateInlierThresholds(inlierThresholdMono,inlierThresholdStereo);
+        }
+
+        vector<bool> isInlierMono =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesMono, parameters.inlierThresholdMono);
+        vector<bool> isInlierStereo =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesStereo, parameters.inlierThresholdStereo);
+
+#ifdef COMPILED_DEBUG
+        Optimizer::inlierThreshold.push_back(inlierThresholdMono);
+#endif
 
         // Check inlier observations
         setInliers(edgesMono, isInlierMono);
@@ -1268,6 +1304,7 @@ void Optimizer::RobustLocalBundleAdjustment(Keyframe& refKeyframe, bool *stopFla
 
     vector<pair<KeyFrame*,MapPoint*> > vToErase;
     vToErase.reserve(edgesMono.size() + edgesStereo.size());
+
     vector<double> mahalanobisDistancesMono{};
     for(const auto& edge: edgesMono){
         edge->computeError();
@@ -1282,21 +1319,8 @@ void Optimizer::RobustLocalBundleAdjustment(Keyframe& refKeyframe, bool *stopFla
     std::vector<double> mahalanobisDistances(mahalanobisDistancesMono.begin(), mahalanobisDistancesMono.end());
     mahalanobisDistances.insert(mahalanobisDistances.end(), mahalanobisDistancesStereo.begin(), mahalanobisDistancesStereo.end());
 
-    //double k{1.0}, alpha{1.0}, beta{1.0};
-    //cout << " aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa 2"<< endl;
-    //DIST_FITTER::DistributionFitter::FitBurr(mahalanobisDistances,k,alpha,beta);
-    //cout << " aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa 3"<< endl;
-
-    //double burrThreshold = DIST_FITTER::DistributionFitter::Burr_icdf(k, alpha, beta, parameters.globalRobustBundleAdjustment.inlierProbability);
-
-    vector<bool> isInlierMono =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesMono,
-                                                                             parameters.localBundleAdjustment.k,
-                                                                             parameters.localBundleAdjustment.alpha,
-                                                                             parameters.localBundleAdjustment.beta,burrThreshold);
-    vector<bool> isInlierStereo =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesStereo,
-                                                                            parameters.localBundleAdjustment.k,
-                                                                            parameters.localBundleAdjustment.alpha,
-                                                                            parameters.localBundleAdjustment.beta,burrThreshold);
+    vector<bool> isInlierMono =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesMono,parameters.inlierThresholdMono);
+    vector<bool> isInlierStereo =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesStereo,parameters.inlierThresholdStereo);
 
     // Check inlier observations
     for(size_t i=0, iend = edgesMono.size(); i<iend;i++){
@@ -1826,6 +1850,7 @@ std::ostream &operator<<(std::ostream &outstream, const OptimizerParameters &par
     outstream << "- chi2_3dof: "        << parameters.chi2_3dof << endl;
     outstream << "- deltaMono: "        << parameters.deltaMono << endl;
     outstream << "- deltaStereo: "      << parameters.deltaStereo << endl;
+    outstream << "- inlierProbability : "  << parameters.inlierProbability << endl;
 
     outstream << "- PoseOptimization : "<< endl;
     outstream << "    - nInitialCorrespondences: " << parameters.poseOptimization.nInitialCorrespondences << endl;
@@ -1852,7 +1877,6 @@ std::ostream &operator<<(std::ostream &outstream, const OptimizerParameters &par
     outstream << "- Global Robust Bundle Adjustment : "<< endl;
     outstream << "    - optimizerItsCoarse: " << parameters.globalRobustBundleAdjustment.optimizerItsCoarse << endl;
     outstream << "    - optimizerItsFine : "  << parameters.globalRobustBundleAdjustment.optimizerItsFine << endl;
-    outstream << "    - inlierProbability : "  << parameters.globalRobustBundleAdjustment.inlierProbability << endl;
 
     return outstream;
 }

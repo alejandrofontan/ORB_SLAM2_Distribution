@@ -39,7 +39,8 @@ class Optimizer {
 public:
     static OptimizerParameters parameters;
 #ifdef COMPILED_DEBUG
-    static vector<double> mahalanobisDistancesToSave;
+    //static vector<double> mahalanobisDistancesToSave;
+    static vector<double> inlierThreshold;
 #endif
     void static BundleAdjustment(const std::vector<Keyframe> &vpKF, const std::vector<MapPt> &vpMP,
                                  int nIterations = 5, bool *pbStopFlag = nullptr, const unsigned long nLoopKF = 0,
@@ -109,7 +110,8 @@ public:
         int optimizerItsCoarse{5};
         int optimizerItsFine{10};
 
-        double k{1.0},alpha{1.0}, beta{1.0};
+        double k_burr{1.0},alpha_burr{1.0}, beta_burr{1.0};
+        double mu_lognormal{1.0},sigma_lognormal{1.0};
 
         LocalBundleAdjustmentParameters() = default;
         LocalBundleAdjustmentParameters(const int& optimizerItsCoarse, const int& optimizerItsFine):
@@ -141,11 +143,10 @@ public:
     struct GlobalRobustBundleAdjustment{
         int optimizerItsCoarse{100};
         int optimizerItsFine{100};
-        double inlierProbability{0.85};
 
         GlobalRobustBundleAdjustment() = default;
-        GlobalRobustBundleAdjustment(const int& optimizerItsCoarse, const int& optimizerItsFine, const double& inlierProbability):
-                optimizerItsCoarse(optimizerItsCoarse),optimizerItsFine(optimizerItsFine),inlierProbability(inlierProbability){};
+        GlobalRobustBundleAdjustment(const int& optimizerItsCoarse, const int& optimizerItsFine):
+                optimizerItsCoarse(optimizerItsCoarse),optimizerItsFine(optimizerItsFine){};
     };
 
 private:
@@ -156,6 +157,9 @@ private:
     float chi2_3dof{7.815}; // Chi2 , 3 dof, 95%
     float deltaMono{sqrtf(chi2_2dof)};
     float deltaStereo{sqrtf(chi2_3dof)};
+    double inlierProbability{0.85};
+    double inlierThresholdMono{5.991};
+    double inlierThresholdStereo{7.815};
 
     PoseOptimizationParameters poseOptimization{};
     LocalBundleAdjustmentParameters localBundleAdjustment{};
@@ -166,6 +170,7 @@ private:
 public:
     void setParameters(
             const float& chi2_2dof_, const float& chi2_3dof_,
+            const double& inlierProbability_,
             const PoseOptimizationParameters& poseOptimization_,
             const LocalBundleAdjustmentParameters& localBundleAdjustment_,
             const OptimizeEssentialGraph& optimizeEssentialGraph_,
@@ -176,6 +181,10 @@ public:
         chi2_3dof = chi2_3dof_;
         deltaMono = sqrt(chi2_2dof);
         deltaStereo = sqrt(chi2_3dof);
+        inlierProbability = inlierProbability_;
+
+        inlierThresholdMono = chi2_2dof;
+        inlierThresholdStereo = chi2_3dof;
 
         poseOptimization = poseOptimization_;
         localBundleAdjustment = localBundleAdjustment_;
@@ -192,7 +201,12 @@ public:
     }
 
     void updateinlierProbability(const double& inlierProbability_){
-        globalRobustBundleAdjustment.inlierProbability = inlierProbability_;
+        inlierProbability = inlierProbability_;
+    }
+
+    void UpdateInlierThresholds(const double& inlierThresholdMono_, const double& inlierThresholdStereo_){
+        inlierThresholdMono = inlierThresholdMono_;
+        inlierThresholdStereo = inlierThresholdStereo_;
     }
 };
 

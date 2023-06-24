@@ -32,19 +32,28 @@ namespace DIST_FITTER {
             MEDIUM = 1,
             HIGH = 2
         };
-        static DistributionFitterParameters parameters;
 
-        void static fitLogNormal(vector<double>& data, double& mu, double& sigma);
+        enum DistributionType{
+            LOGNORMAL = 0,
+            BURR = 1,
+        };
+
+        static DistributionFitterParameters parameters;
+        static DistributionType distributionType;
+        static VerbosityLevel verbosity;
+
+        void static FitLogNormal(vector<double>& data, double& mu, double& sigma);
         void static FitBurr(vector<double>& data, double& k, double& alpha, double& beta);
-        double static Burr_icdf(const double& k, const double& alpha, const double& beta, const double& probability);
+        double static Burr_icdf(const double& k, const double& alpha, const double& beta, const double& probability, const double icdf_0);
+        double static Lognormal_icdf(double x, double mu, double sigma);
 
         vector<bool> static inliersLogNormal(const vector<double>& data, const double& mu, const double& sigma,
                                      const double& probability);
-        vector<bool> static GetInliers(const vector<double>& data, const double& k, const double& alpha, const double& beta, const double& burrThreshold);
+        vector<bool> static GetInliers(const vector<double>& data, const double& threshold);
 
         double static calculateKS(const std::vector<double>& data, const double& mu, const double& sigma);
 
-        static VerbosityLevel verbosity;
+
 
     private:
         double static lognormal_pdf(double x, double mu, double sigma);
@@ -70,6 +79,7 @@ namespace DIST_FITTER {
         friend class DistributionFitter;
 
         LogNormal logNormal{};
+        double minResidual{1e-8};
 
     public:
         void setParameters(const LogNormal& logNormal_){

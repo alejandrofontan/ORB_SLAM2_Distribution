@@ -48,6 +48,7 @@ ORBextractor.minThFAST: 7
 #--------------------------------------------------------------------------------------------
 Optimizer.chi2_2dof: 5.991
 Optimizer.chi2_3dof: 7.815
+Optimizer.inlierProbability: 0.85
 
 Optimizer.poseOptimization.nInitialCorrespondences: 3
 Optimizer.poseOptimization.optimizerIts: 10
@@ -69,7 +70,6 @@ Optimizer.optimizeSim3.th2: 10.0
 
 Optimizer.globalRobustBundleAdjustment.optimizerItsCoarse: 100
 Optimizer.globalRobustBundleAdjustment.optimizerItsFine: 100
-Optimizer.globalRobustBundleAdjustment.inlierProbability: 0.85
 
 #--------------------------------------------------------------------------------------------
 # DistributionFitter Parameters
