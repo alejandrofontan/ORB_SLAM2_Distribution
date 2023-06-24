@@ -120,7 +120,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
                                         optimizeEssentialGraph,
                                         optimizeSim3,
                                         globalRobustBundleAdjustment);
-
+    Optimizer::parameters.updateinlierProbability(double(expId)*0.025 + 0.80);
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Create SLAM Graph
     slamGraph = make_shared<SLAM_GRAPH::SLAMGraph>(SLAM_GRAPH::SLAMGraph::LOW);

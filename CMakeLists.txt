@@ -2,10 +2,10 @@ cmake_minimum_required(VERSION 2.8)
 project(ORB_SLAM2_Distribution)
 
 option(COMPILE_WITH_PANGOLIN "Compile using Pangolin for Visualization" ON)
-option(COMPILE_SEQUENTIAL "Compile Sequential Version Of ORB_SLAM2" OFF)
-option(COMPILE_DETERMINISTIC "Compile Deterministic Version Of ORB_SLAM2" OFF)
+option(COMPILE_SEQUENTIAL "Compile Sequential Version Of ORB_SLAM2" ON)
+option(COMPILE_DETERMINISTIC "Compile Deterministic Version Of ORB_SLAM2" ON)
 option(COMPILE_DEBUG "Compile DEBUG Version Of ORB_SLAM2" OFF)
-option(COMPILE_ABLATION "Compile ABLATION Version Of ORB_SLAM2" OFF)
+option(COMPILE_ABLATION "Compile ABLATION Version Of ORB_SLAM2" ON)
 
 if(COMPILE_WITH_PANGOLIN)
     add_definitions(-DCOMPILED_WITH_PANGOLIN=1)
