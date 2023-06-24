@@ -1,8 +1,8 @@
 #!/bin/bash -l 
 
-#PBS -l ncpus=1
-#PBS -l mem=1G 
-#PBS -l walltime=1:00:00 
+#PBS -l ncpus=2
+#PBS -l mem=30G 
+#PBS -l walltime=12:00:00 
 #PBS -l cputype=6140 
 
 cd $PBS_O_WORKDIR

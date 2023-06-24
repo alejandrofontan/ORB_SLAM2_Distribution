@@ -1,9 +1,9 @@
 
 
 experimentName_="test1"
-systemVersion_="ORB_SLAM2_Deterministic"
-datasets=("kitti")
-sequenceGroups=("all")	
+systemVersion_="ORB_SLAM2_Distribution"
+datasets=("rgbdtum")
+sequenceGroups=("testGroup")	
 
 workspacePath_="/home/fontan"
 resultsFolder_="ORB_SLAM2_Ablation"
