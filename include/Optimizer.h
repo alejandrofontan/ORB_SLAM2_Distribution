@@ -181,8 +181,8 @@ public:
         chi2_3dof = chi2_3dof_;
         deltaMono = sqrt(chi2_2dof);
         deltaStereo = sqrt(chi2_3dof);
-        inlierProbability = inlierProbability_;
 
+        inlierProbability = inlierProbability_;
         inlierThresholdMono = chi2_2dof;
         inlierThresholdStereo = chi2_3dof;
 

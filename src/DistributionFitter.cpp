@@ -6,8 +6,207 @@
 namespace DIST_FITTER {
 
 DistributionFitter::VerbosityLevel DistributionFitter::verbosity{LOW};
-DistributionFitterParameters DistributionFitter::parameters{};
+DistributionFitterParameters DistributionFitter::params{};
 DistributionFitter::DistributionType DistributionFitter::distributionType{BURR};
+
+void DistributionFitter::FitLogNormal(vector<double> &data_, double &mu, double &sigma) {
+
+    // Filter points with negligible residuals
+    vector<double> data{};
+    for(const auto& value: data_){
+        if(value > params.minResidual)
+            data.push_back(value);
+    }
+
+    // Vector for parameters (mu, sigma)
+    gsl_vector *fittedParams = gsl_vector_alloc(2);
+
+    // Initialize the parameters with initial guesses
+    gsl_vector_set(fittedParams, 0, mu);
+    gsl_vector_set(fittedParams, 1, sigma);
+
+    // Initialize loglikelihood function
+    gsl_multimin_function loglike_func;
+    loglike_func.n = 2;
+    loglike_func.f = &logNormal_loglikelihood;
+    loglike_func.params = &data;
+
+    const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex2;
+    gsl_multimin_fminimizer *s = gsl_multimin_fminimizer_alloc(T, 2);
+
+    // Set initial step sizes
+    gsl_vector *stepSize = gsl_vector_alloc(2);
+    gsl_vector_set(stepSize, 0, params.logNormal.stepSize);
+    gsl_vector_set(stepSize, 1, params.logNormal.stepSize);
+
+    gsl_multimin_fminimizer_set(s, &loglike_func, fittedParams, stepSize);
+
+    // Optimize
+    int iter{0};
+    int status;
+    do {
+        iter++;
+        status = gsl_multimin_fminimizer_iterate(s);
+        if (status != GSL_SUCCESS)
+            break;
+
+        double size = gsl_multimin_fminimizer_size(s);
+        status = gsl_multimin_test_size(size, params.logNormal.tolerance);
+    } while (status == GSL_CONTINUE && iter < params.logNormal.maxNumberIterations);
+
+    // Recover fitted parameters
+    mu = gsl_vector_get(s->x, 0);
+    sigma = gsl_vector_get(s->x, 1);
+
+    gsl_multimin_fminimizer_free(s);
+    gsl_vector_free(fittedParams);
+    gsl_vector_free(stepSize);
+
+    //double KS = calculateKS(data, mu, sigma);
+    if (verbosity >= MEDIUM) {
+        cout << "[DistributionFitter] fitLogNormal(): " << endl;
+        std::cout << "    Fitted Lognormal Distribution:\n";
+        std::cout << "    Mu: " << mu << "\n";
+        std::cout << "    Sigma: " << sigma << "\n";
+        //std::cout << "    KS: " << KS << "\n";
+    }
+}
+
+void DistributionFitter::FitBurr(vector<double>& data_, double& k, double& alpha, double& beta){
+
+    // Filter points with negligible residuals
+    vector<double> data{};
+    for(const auto& value: data_){
+        if(value > params.minResidual)
+            data.push_back(value);
+    }
+    // Vector for parameters (k, alpha, beta)
+    gsl_vector *fittedParams = gsl_vector_alloc(3);
+
+    // Initialize the parameters with initial guesses
+    gsl_vector_set (fittedParams, 0, k);
+    gsl_vector_set (fittedParams, 1, alpha);
+    gsl_vector_set (fittedParams, 2, beta);
+
+    // Initialize minex_func function
+    gsl_multimin_function minex_func;
+    minex_func.n = 3;
+    minex_func.f = burr_loglikelihood;
+    minex_func.params = &data;
+
+    const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex2;
+    gsl_multimin_fminimizer *s = nullptr;
+
+    // Set initial step sizes
+    gsl_vector *stepSize;
+    stepSize = gsl_vector_alloc (3);
+    gsl_vector_set_all (stepSize, params.burr.stepSize);
+
+    s = gsl_multimin_fminimizer_alloc (T, 3);
+    gsl_multimin_fminimizer_set (s, &minex_func, fittedParams, stepSize);
+
+    // Optimize
+    size_t iter = 0;
+    int status;
+    do
+    {
+        iter++;
+        status = gsl_multimin_fminimizer_iterate(s);
+
+        if (status)
+            break;
+
+        double size = gsl_multimin_fminimizer_size (s);
+        status = gsl_multimin_test_size (size, params.burr.tolerance);
+    }
+    while (status == GSL_CONTINUE && iter < params.burr.maxNumberIterations);
+
+    // Recover fitted parameters
+    k = gsl_vector_get(s->x, 0);
+    alpha = gsl_vector_get(s->x, 1);
+    beta = gsl_vector_get(s->x, 2);
+
+    gsl_vector_free(fittedParams);
+    gsl_vector_free(stepSize);
+    gsl_multimin_fminimizer_free (s);
+
+    if (verbosity >= MEDIUM) {
+        cout << "[DistributionFitter] fitBurr(): " << endl;
+        std::cout << "    Fitted Burr Distribution:\n";
+        std::cout << "    k: " << k << "\n";
+        std::cout << "    alpha: " << alpha << "\n";
+        std::cout << "    beta: " << beta << "\n";
+    }
+}
+
+double DistributionFitter::Lognormal_icdf(const double& probability, const double& mu, const double& sigma) {
+
+    double logNormalThreshold = gsl_cdf_lognormal_Pinv(probability, mu, sigma);
+
+    if(verbosity >= MEDIUM){
+        cout << "[DistributionFitter] Lognormal_icdf(): " << endl;
+        cout << "    logNormal Threshold: "<< logNormalThreshold << " at probability " << 100.0 * probability << " %"<< endl;
+    }
+    return logNormalThreshold;
+}
+
+double DistributionFitter::Burr_icdf(const double& probability, const double& k, const double& alpha, const double& beta, double icdf_0){
+
+    BurrParameters burrParameters{ probability, k, alpha, beta };
+
+    gsl_function F;
+    F.function = &burr_icdf;
+    F.params = &burrParameters;
+
+    double icdf, icdf_lower = 0.0, icdf_upper = params.burr.icdf_upper_rel*icdf_0;
+    gsl_root_fsolver* solver = gsl_root_fsolver_alloc(gsl_root_fsolver_brent);
+    gsl_root_fsolver_set(solver, &F, icdf_lower, icdf_upper);  // Provide an initial bracket
+
+    int iter = 0;
+    int status;
+    do {
+        iter++;
+        status = gsl_root_fsolver_iterate(solver);
+        icdf = gsl_root_fsolver_root(solver);
+        icdf_lower = gsl_root_fsolver_x_lower(solver);
+        icdf_upper = gsl_root_fsolver_x_upper(solver);
+        status = gsl_root_test_interval(icdf_lower, icdf_upper, params.burr.epsAbs, params.burr.epsRel);
+
+        if (status == GSL_SUCCESS){
+            if(verbosity >= HIGH){
+                std::cout << "ICDF of probability " << probability << " in the Burr distribution: " << icdf << std::endl;
+            }
+        }
+    } while (status == GSL_CONTINUE && iter < params.burr.maxNumberIterations);
+
+    gsl_root_fsolver_free(solver);
+
+    if(verbosity >= MEDIUM){
+        cout << "[DistributionFitter] Burr_icdf(): " << endl;
+        cout << "    burr Threshold: "<< icdf << " at probability " << 100.0*probability << " %"<< endl;
+    }
+    return icdf;
+}
+
+vector<bool> DistributionFitter::GetInliers(const vector<double>& data, const double& threshold){
+    if(data.empty())
+        return vector<bool>{};
+
+    vector<bool> isInlier(data.size(), false);
+    for(size_t iData{}; iData < data.size(); iData++)
+        isInlier[iData] = ((data[iData] < threshold) && (data[iData] > params.minResidual));
+
+    if(verbosity >= MEDIUM){
+        int numInliers{};
+        for(auto value: isInlier)
+            if(value)
+                numInliers++;
+        cout << "[DistributionFitter] GetInliers(): " << endl;
+        cout << "    Inlier percentaje: "<< numInliers << "/" << isInlier.size() << " = " << 100.0 * double(numInliers)/double(isInlier.size()) << " %"<< endl;
+    }
+
+    return isInlier;
+}
 
 double DistributionFitter::lognormal_pdf(double x, double mu, double sigma) {
     double logx = log(x);
@@ -15,9 +214,9 @@ double DistributionFitter::lognormal_pdf(double x, double mu, double sigma) {
     return exp(logpdf);
 }
 
-double DistributionFitter::logNormal_loglikelihood(const gsl_vector *params, void *data) {
-    double mu = gsl_vector_get(params, 0);
-    double sigma = gsl_vector_get(params, 1);
+double DistributionFitter::logNormal_loglikelihood(const gsl_vector *fittedParams, void *data) {
+    double mu = gsl_vector_get(fittedParams, 0);
+    double sigma = gsl_vector_get(fittedParams, 1);
 
     auto *dataset = static_cast<std::vector<double> *>(data);
 
@@ -37,12 +236,12 @@ double DistributionFitter::burr_pdf(double x, double k, double alpha, double bet
     return term1 * term2 / term3;
 }
 
-double DistributionFitter::burr_loglikelihood(const gsl_vector* x_, void* params) {
+double DistributionFitter::burr_loglikelihood(const gsl_vector* x_, void* fittedParams) {
     double k = gsl_vector_get(x_, 0);
     double alpha = gsl_vector_get(x_, 1);
     double beta = gsl_vector_get(x_, 2);
 
-    std::vector<double>* data = static_cast<std::vector<double>*>(params);
+    std::vector<double>* data = static_cast<std::vector<double>*>(fittedParams);
     size_t n = data->size();
 
     double sum = 0.0;
@@ -55,51 +254,6 @@ double DistributionFitter::burr_loglikelihood(const gsl_vector* x_, void* params
     return -sum;
 }
 
-double DistributionFitter::Lognormal_icdf(double x, double mu, double sigma) {
-
-    double logNormalThreshold = gsl_cdf_lognormal_Pinv(x, mu, sigma);
-
-    if(verbosity >= MEDIUM){
-        cout << "[DistributionFitter] Lognormal_icdf(): " << endl;
-        cout << "    logNormal Threshold: "<< logNormalThreshold << " at probability " << 100.0*x << " %"<< endl;
-
-    }
-    return logNormalThreshold;
-}
-
-vector<bool> DistributionFitter::inliersLogNormal(const vector<double>& data, const double& mu, const double& sigma,
-                                 const double& probability){
-
-    if(data.empty())
-        return vector<bool>{};
-
-    double logNormalThreshold = gsl_cdf_lognormal_Pinv(probability, mu, sigma);
-
-    double normalThreshold = (log(logNormalThreshold) - mu)/sigma;
-    vector<bool> isInlier(data.size(), false);
-    for(size_t iData{}; iData < data.size(); iData++){
-        double normalizedValue = (log(data[iData]) - mu)/sigma;
-        isInlier[iData] = (normalizedValue < normalThreshold);
-    }
-    if(verbosity >= MEDIUM){
-        int numInliers{};
-        for(auto value: isInlier)
-            if(value)
-                numInliers++;
-        cout << "[DistributionFitter] inliersLogNormal() aaaa: " << endl;
-        cout << "    Inlier percentaje Goal: "<< 100.0*probability << " %"<< endl;
-        cout << "    Inlier percentaje: "<< numInliers << "/" << isInlier.size() << " = " << 100.0 * double(numInliers)/double(isInlier.size()) << " %"<< endl;
-    }
-    return isInlier;
-}
-
-    struct Params {
-        double x;
-        double k;
-        double alpha;
-        double beta;
-    };
-
 double burr_cdf(double x, double k, double alpha, double beta) {
 
     double term1 = std::pow(x / alpha, beta);
@@ -108,70 +262,9 @@ double burr_cdf(double x, double k, double alpha, double beta) {
     return 1.0 - term2;
 }
 
-double burr_icdf_(double x, void* params) {
-    Params* p = static_cast<Params*>(params);
+double burr_icdf(double x, void* fittedParams) {
+    auto* p = static_cast<BurrParameters*>(fittedParams);
     return burr_cdf(x, p->k, p->alpha, p->beta) - p->x;
-}
-
-double DistributionFitter::Burr_icdf(const double& k, const double& alpha, const double& beta, const double& probability,
-                                     const double icdf_0) {
-    Params params{ probability, k, alpha, beta };
-
-    gsl_function F;
-    F.function = &burr_icdf_;
-    F.params = &params;
-
-    double icdf, icdf_lower = 0.0, icdf_upper = 10.0*icdf_0;
-    gsl_root_fsolver* solver = gsl_root_fsolver_alloc(gsl_root_fsolver_brent);
-    gsl_root_fsolver_set(solver, &F, icdf_lower, icdf_upper);  // Provide an initial bracket
-
-    int iter = 0;
-
-    int status;
-    do {
-        iter++;
-        status = gsl_root_fsolver_iterate(solver);
-        icdf = gsl_root_fsolver_root(solver);
-        icdf_lower = gsl_root_fsolver_x_lower(solver);
-        icdf_upper = gsl_root_fsolver_x_upper(solver);
-        status = gsl_root_test_interval(icdf_lower, icdf_upper, 0, 0.001);
-
-        if (status == GSL_SUCCESS){
-            if(verbosity >= HIGH){
-                std::cout << "ICDF of probability " << probability << " in the Burr distribution: " << icdf << std::endl;
-            }
-        }
-
-    } while (status == GSL_CONTINUE && iter < 100);
-
-    gsl_root_fsolver_free(solver);
-
-    if(verbosity >= MEDIUM){
-        cout << "[DistributionFitter] Burr_icdf(): " << endl;
-        cout << "    burr Threshold: "<< icdf << " at probability " << 100.0*probability << " %"<< endl;
-    }
-
-    return icdf;
-}
-
-vector<bool> DistributionFitter::GetInliers(const vector<double>& data, const double& threshold){
-    if(data.empty())
-        return vector<bool>{};
-
-    vector<bool> isInlier(data.size(), false);
-    for(size_t iData{}; iData < data.size(); iData++)
-        isInlier[iData] = ((data[iData] < threshold) && (data[iData] > parameters.minResidual));
-
-    if(verbosity >= MEDIUM){
-        int numInliers{};
-        for(auto value: isInlier)
-            if(value)
-                numInliers++;
-        cout << "[DistributionFitter] GetInliers(): " << endl;
-        cout << "    Inlier percentaje: "<< numInliers << "/" << isInlier.size() << " = " << 100.0 * double(numInliers)/double(isInlier.size()) << " %"<< endl;
-    }
-
-    return isInlier;
 }
 
 double DistributionFitter::calculateKS(const std::vector<double>& data, const double& mu, const double& sigma) {
@@ -188,144 +281,6 @@ double DistributionFitter::calculateKS(const std::vector<double>& data, const do
     return d;
 }
 
-void DistributionFitter::FitLogNormal(vector<double> &data_, double &mu, double &sigma) {
-
-    vector<double> data{};
-    for(const auto& value: data_){
-        if(value > parameters.minResidual)
-            data.push_back(value);
-    }
-
-    gsl_vector *params = gsl_vector_alloc(2); // Vector for parameters (mu, sigma)
-
-    // Initialize the parameters with initial guesses
-    gsl_vector_set(params, 0, mu);    // Initial guess for mu
-    gsl_vector_set(params, 1, sigma); // Initial guess for sigma
-
-    // Initialize the parameters
-    gsl_multimin_function loglike_func;
-    loglike_func.n = 2;
-    loglike_func.f = &logNormal_loglikelihood;
-    loglike_func.params = &data;
-
-    const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex2;
-    gsl_multimin_fminimizer *s = gsl_multimin_fminimizer_alloc(T, 2);
-
-    gsl_vector *stepSize = gsl_vector_alloc(2);
-    gsl_vector_set(stepSize, 0, parameters.logNormal.stepSize);
-    gsl_vector_set(stepSize, 1, parameters.logNormal.stepSize);
-
-    gsl_multimin_fminimizer_set(s, &loglike_func, params, stepSize);
-
-    int iter{0};
-    int status;
-    do {
-        iter++;
-        status = gsl_multimin_fminimizer_iterate(s);
-        if (status != GSL_SUCCESS)
-            break;
-
-        double size = gsl_multimin_fminimizer_size(s);
-        status = gsl_multimin_test_size(size, parameters.logNormal.tolerance);
-    } while (status == GSL_CONTINUE && iter < parameters.logNormal.maxNumberIterations);
-
-    mu = gsl_vector_get(s->x, 0);
-    sigma = gsl_vector_get(s->x, 1);
-
-    double KS = calculateKS(data, mu, sigma);
-    if (verbosity >= MEDIUM) {
-        cout << "[DistributionFitter] fitLogNormal(): " << endl;
-        std::cout << "    Fitted Lognormal Distribution:\n";
-        std::cout << "    Mu: " << mu << "\n";
-        std::cout << "    Sigma: " << sigma << "\n";
-        std::cout << "    KS: " << KS << "\n";
-    }
-
-    gsl_multimin_fminimizer_free(s);
-    gsl_vector_free(params);
-
-
-}
-
-void DistributionFitter::FitBurr(vector<double>& data_, double& k, double& alpha, double& beta){
-
-    vector<double> data{};
-    for(const auto& value: data_){
-        if(value > parameters.minResidual)
-            data.push_back(value);
-    }
-
-    gsl_vector *params = gsl_vector_alloc(3); // Vector for parameters (k, alpha, beta)
-
-    // Initialize the parameters with initial guesses
-    gsl_vector_set (params, 0, 1.0);
-    gsl_vector_set (params, 1, 1.0);
-    gsl_vector_set (params, 2, 1.0);
-
-    // Initialize the parameters
-    gsl_multimin_function minex_func;
-    minex_func.n = 3;
-    minex_func.f = burr_loglikelihood;
-    minex_func.params = &data;
-
-    const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex2;
-    gsl_multimin_fminimizer *s = NULL;
-    gsl_vector *ss;
-
-    /* Set initial step sizes to 1 */
-    ss = gsl_vector_alloc (3);
-    gsl_vector_set_all (ss, 1.0);
-
-    s = gsl_multimin_fminimizer_alloc (T, 3);
-    gsl_multimin_fminimizer_set (s, &minex_func, params, ss);
-
-    size_t iter = 0;
-    int status;
-    double size;
-
-    do
-    {
-        iter++;
-        status = gsl_multimin_fminimizer_iterate(s);
-
-        if (status)
-            break;
-
-        size = gsl_multimin_fminimizer_size (s);
-        status = gsl_multimin_test_size (size, 1e-2);
-
-        if (status == GSL_SUCCESS)
-        {
-            if(verbosity >= HIGH)
-                printf ("converged to minimum at\n");
-        }
-        if(verbosity >= HIGH){
-            printf ("%5d %10.3e %10.3e %10.3e f() = %7.3f size = %.3f\n",
-                    iter,
-                    gsl_vector_get (s->x, 0),
-                    gsl_vector_get (s->x, 1),
-                    gsl_vector_get (s->x, 2),
-                    s->fval, size);
-        }
-    }
-    while (status == GSL_CONTINUE && iter < 100);
-
-    k = gsl_vector_get(s->x, 0);
-    alpha = gsl_vector_get(s->x, 1);
-    beta = gsl_vector_get(s->x, 2);
-
-    if (verbosity >= MEDIUM) {
-        cout << "[DistributionFitter] fitBurr(): " << endl;
-        std::cout << "    Fitted Lognormal Distribution:\n";
-        std::cout << "    k: " << k << "\n";
-        std::cout << "    alpha: " << alpha << "\n";
-        std::cout << "    beta: " << beta << "\n";
-    }
-    gsl_vector_free(params);
-    gsl_vector_free(ss);
-    gsl_multimin_fminimizer_free (s);
-}
-
 std::ostream &operator<<(std::ostream &outstream, const DistributionFitterParameters &parameters) {
     cout << "\nDistribution Fitter parameters : " << endl;
 
@@ -334,6 +289,10 @@ std::ostream &operator<<(std::ostream &outstream, const DistributionFitterParame
     outstream << "    - stepSize: " << parameters.logNormal.stepSize << endl;
     outstream << "    - tolerance : " << parameters.logNormal.tolerance << endl;
 
+    outstream << "- Burr : " << endl;
+    outstream << "    - maxNumberIterations: " << parameters.burr.maxNumberIterations << endl;
+    outstream << "    - stepSize: " << parameters.burr.stepSize << endl;
+    outstream << "    - tolerance : " << parameters.burr.tolerance << endl;
 
     return outstream;
 }

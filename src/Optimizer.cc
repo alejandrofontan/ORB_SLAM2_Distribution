@@ -205,7 +205,7 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
         double alpha{parameters.localBundleAdjustment.alpha_burr};
         double beta{parameters.localBundleAdjustment.beta_burr};
         DIST_FITTER::DistributionFitter::FitBurr(mahalanobisDistances,k,alpha,beta);
-        inlierThresholdMono = DIST_FITTER::DistributionFitter::Burr_icdf(k, alpha, beta, parameters.inlierProbability, inlierThresholdMono);
+        inlierThresholdMono = DIST_FITTER::DistributionFitter::Burr_icdf(parameters.inlierProbability, k, alpha, beta, inlierThresholdMono);
     }
 
     if(DIST_FITTER::DistributionFitter::distributionType == DIST_FITTER::DistributionFitter::DistributionType::LOGNORMAL){
@@ -1260,10 +1260,10 @@ void Optimizer::RobustLocalBundleAdjustment(Keyframe& refKeyframe, bool *stopFla
                                                      parameters.localBundleAdjustment.beta_burr);
 
             inlierThresholdMono = DIST_FITTER::DistributionFitter::Burr_icdf(
+                    parameters.inlierProbability,
                     parameters.localBundleAdjustment.k_burr,
                     parameters.localBundleAdjustment.alpha_burr,
                     parameters.localBundleAdjustment.beta_burr,
-                    parameters.inlierProbability,
                     parameters.inlierThresholdMono);
 
             Optimizer::parameters.UpdateInlierThresholds(inlierThresholdMono,inlierThresholdStereo);

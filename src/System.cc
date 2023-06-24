@@ -131,8 +131,13 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
             settingsFile["DistributionFitter.logNormal.maxNumberIterations"],
             settingsFile["DistributionFitter.logNormal.stepSize"],
             settingsFile["DistributionFitter.logNormal.tolerance"]);
+    DIST_FITTER::DistributionFitterParameters::Burr burr(
+            settingsFile["DistributionFitter.burr.maxNumberIterations"],
+            settingsFile["DistributionFitter.burr.stepSize"],
+            settingsFile["DistributionFitter.burr.tolerance"]);
+
     DIST_FITTER::DistributionFitter::verbosity = DIST_FITTER::DistributionFitter::VerbosityLevel::MEDIUM;
-    DIST_FITTER::DistributionFitter::parameters.setParameters(logNormal);
+    DIST_FITTER::DistributionFitter::params.SetParameters(logNormal,burr);
 
     //Create KeyFrame Database
     mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
@@ -184,7 +189,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Print parameters
     cout << Optimizer::parameters;
-    cout << DIST_FITTER::DistributionFitter::parameters;
+    cout << DIST_FITTER::DistributionFitter::params;
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 }
 
