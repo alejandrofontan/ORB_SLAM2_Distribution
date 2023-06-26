@@ -139,6 +139,9 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     DIST_FITTER::DistributionFitter::verbosity = DIST_FITTER::DistributionFitter::VerbosityLevel::MEDIUM;
     DIST_FITTER::DistributionFitter::params.SetParameters(logNormal,burr);
 
+    vector<double> probabilities{0.25,0.5,0.75,0.8,0.85,0.9,0.925,0.95,0.975,0.99};
+    //Optimizer::parameters.UpdateInlierProbability(probabilities[expId]);
+
     //Create KeyFrame Database
     mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
 

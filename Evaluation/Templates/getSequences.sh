@@ -213,18 +213,12 @@ then
 	
 	if [ $sequenceGroup == 'testGroup' ]
 	then 
-		#sequenceNames=(
-			#"sequence_01" "sequence_11" "sequence_21" "sequence_31" "sequence_41"
-		#)
-		#sequenceSettings=(
-			#"monotum1.yaml" "monotum1.yaml" "monotum1.yaml" "monotum2.yaml" "monotum2.yaml"
-		#)
 		sequenceNames=(
-			"sequence_31" "sequence_41"
+			"sequence_01" "sequence_11" "sequence_21" "sequence_31" "sequence_41"
 		)
 		sequenceSettings=(
-			"monotum2.yaml" "monotum2.yaml"
-		)
+			"monotum1.yaml" "monotum1.yaml" "monotum1.yaml" "monotum2.yaml" "monotum2.yaml"
+		)		
 	fi
 	
 	if [ $sequenceGroup == 'motionBiasSubset' ]
@@ -557,11 +551,13 @@ then
 	if [ $sequenceGroup == 'testGroup' ]
 	then 
 		sequenceNames=(
-			"00" "02" "04" "06" "08" "10"
+			"00" "01" "02" "03" "04" "05" "06" "07" "08" "09" "10"
 		)
 		sequenceSettings=( 
-			"KITTI00-02.yaml" "KITTI00-02.yaml"			
+			"KITTI00-02.yaml" "KITTI00-02.yaml" "KITTI00-02.yaml"
+			"KITTI03.yaml"
 			"KITTI04-12.yaml" "KITTI04-12.yaml" "KITTI04-12.yaml" "KITTI04-12.yaml"
+			"KITTI04-12.yaml" "KITTI04-12.yaml" "KITTI04-12.yaml"
 		)
 	fi
 	
@@ -690,16 +686,17 @@ then
 	if [ $sequenceGroup == 'testGroup' ]
 	then 
 		sequenceNames=(
-			"V1_01_easy" "V1_02_medium" 
-			"V2_01_easy" "V2_02_medium" 
-			"MH_01_easy" "MH_02_easy" "MH_03_medium"
+			"V1_01_easy" "V1_02_medium" "V1_03_difficult"
+			"V2_01_easy" "V2_02_medium" "V2_03_difficult"
+			"MH_01_easy" "MH_02_easy" "MH_03_medium" "MH_04_difficult" "MH_05_difficult"
 		)
 		sequenceSettings="EuRoC.yaml"
 		sequenceTimestamps=(
-			"V101" "V102" 
-			"V201" "V202" 
-			"MH01" "MH02" "MH03"		
-		)	
+			"V101" "V102" "V103"
+			"V201" "V202" "V203"
+			"MH01" "MH02" "MH03"
+			"MH04" "MH05" 
+		)
 	fi
 	
 	if [ $sequenceGroup == 'V1_01_easy' ]

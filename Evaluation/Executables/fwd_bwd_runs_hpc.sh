@@ -20,6 +20,6 @@ cd ../Templates
 backwards="0"                # if "1" runs the sequence backwards
 ./run_SLAM.sh ${system} ${mode} ${experimentName} ${experimentDate} ${evaluateExperiment} ${activeVisualization} ${numberOfRuns} ${dataset} ${sequenceGroup} ${backwards} ${workspacePath} ${vocabularyFile} ${systemVersion} ${resultsFolder}
 
-backwards="1"                # if "1" runs the sequence backwards
-./run_SLAM.sh ${system} ${mode} ${experimentName} ${experimentDate} ${evaluateExperiment} ${activeVisualization} ${numberOfRuns} ${dataset} ${sequenceGroup} ${backwards} ${workspacePath} ${vocabularyFile} ${systemVersion} ${resultsFolder}
+#backwards="1"                # if "1" runs the sequence backwards
+#./run_SLAM.sh ${system} ${mode} ${experimentName} ${experimentDate} ${evaluateExperiment} ${activeVisualization} ${numberOfRuns} ${dataset} ${sequenceGroup} ${backwards} ${workspacePath} ${vocabularyFile} ${systemVersion} ${resultsFolder}
 cd ../Executables

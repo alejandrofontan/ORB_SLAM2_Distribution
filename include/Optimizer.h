@@ -28,6 +28,13 @@
 #include "Frame.h"
 
 #include "Thirdparty/g2o/g2o/types/types_seven_dof_expmap.h"
+#include "Thirdparty/g2o/g2o/core/block_solver.h"
+#include "Thirdparty/g2o/g2o/core/optimization_algorithm_levenberg.h"
+#include "Thirdparty/g2o/g2o/solvers/linear_solver_eigen.h"
+#include "Thirdparty/g2o/g2o/types/types_six_dof_expmap.h"
+#include "Thirdparty/g2o/g2o/core/robust_kernel_impl.h"
+#include "Thirdparty/g2o/g2o/solvers/linear_solver_dense.h"
+#include "Thirdparty/g2o/g2o/types/types_seven_dof_expmap.h"
 
 namespace ORB_SLAM2
 {
@@ -56,6 +63,15 @@ public:
 
     void static LocalBundleAdjustment(KeyFrame *pKF, bool *pbStopFlag, Map *pMap);
     void static RobustLocalBundleAdjustment(Keyframe& refKeyframe, bool *stopFlag, Map *map_);
+
+    template <typename Optimizer_>
+    void static ResetOptimizerVariables(const list<Keyframe>& keyframes, const list<MapPt>& mapPoints,
+                                        Optimizer_& optimizer,
+                                        const KeyframeId& maxKFid);
+    template <typename Optimizer_>
+    void static ResetOptimizerVariables(const vector<Keyframe>& keyframes, const vector<MapPt>& mapPoints,
+                                        Optimizer_& optimizer,
+                                        const KeyframeId& maxKFid);
 
     int static PoseOptimization(Frame *pFrame);
 
@@ -200,7 +216,7 @@ public:
         deltaStereo = sqrt(chi2_3dof);
     }
 
-    void updateinlierProbability(const double& inlierProbability_){
+    void UpdateInlierProbability(const double& inlierProbability_){
         inlierProbability = inlierProbability_;
     }
 

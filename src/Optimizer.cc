@@ -20,13 +20,6 @@
 
 #include "Optimizer.h"
 
-#include "Thirdparty/g2o/g2o/core/block_solver.h"
-#include "Thirdparty/g2o/g2o/core/optimization_algorithm_levenberg.h"
-#include "Thirdparty/g2o/g2o/solvers/linear_solver_eigen.h"
-#include "Thirdparty/g2o/g2o/types/types_six_dof_expmap.h"
-#include "Thirdparty/g2o/g2o/core/robust_kernel_impl.h"
-#include "Thirdparty/g2o/g2o/solvers/linear_solver_dense.h"
-#include "Thirdparty/g2o/g2o/types/types_seven_dof_expmap.h"
 
 #include<Eigen/StdVector>
 
@@ -224,11 +217,11 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
     // Check inlier observations
     setInliers(edgesMono, isInlierMono);
     setInliers(edgesStereo, isInlierStereo);
-    setEdgesRobustKernel(edgesMono, float(sqrt(inlierThresholdMono)));
-    setEdgesRobustKernel(edgesStereo, float(sqrt(inlierThresholdStereo)));
+    //setEdgesRobustKernel(edgesMono, float(sqrt(inlierThresholdMono)));
+    //setEdgesRobustKernel(edgesStereo, float(sqrt(inlierThresholdStereo)));
 
-    //deactivateRobustKernel(edgesMono);
-    //deactivateRobustKernel(edgesStereo);
+    deactivateRobustKernel(edgesMono);
+    deactivateRobustKernel(edgesStereo);
 
     // Keyframes reset
     for(auto& keyframe: keyframes)
@@ -256,6 +249,7 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
     }
 
     // Optimize again without the outliers
+    ResetOptimizerVariables(keyframes,mapPoints,optimizer,maxKeyId);
     optimizer.initializeOptimization();
     optimizer.optimize(parameters.globalRobustBundleAdjustment.optimizerItsFine);
 
@@ -1154,8 +1148,8 @@ void Optimizer::RobustLocalBundleAdjustment(Keyframe& refKeyframe, bool *stopFla
     //const float thHuberMono = parameters.deltaMono;
     //const float thHuberStereo = parameters.deltaStereo;
 
-    const float thHuberMono = sqrt(parameters.inlierThresholdMono);
-    const float thHuberStereo = sqrt(parameters.inlierThresholdStereo);
+    const float thHuberMono = sqrt(parameters.chi2_2dof);
+    const float thHuberStereo = sqrt(parameters.chi2_3dof);
 
     for(auto& mapPt: localMapPoints){
         g2o::VertexSBAPointXYZ* vPoint = new g2o::VertexSBAPointXYZ();
@@ -1297,6 +1291,7 @@ void Optimizer::RobustLocalBundleAdjustment(Keyframe& refKeyframe, bool *stopFla
         deactivateRobustKernel(edgesStereo);
 
         // Optimize again without the outliers
+        ResetOptimizerVariables(localKeyframes, localMapPoints, optimizer, maxKFid);
         optimizer.initializeOptimization(0);
         optimizer.optimize(parameters.localBundleAdjustment.optimizerItsFine);
 
@@ -1319,8 +1314,8 @@ void Optimizer::RobustLocalBundleAdjustment(Keyframe& refKeyframe, bool *stopFla
     std::vector<double> mahalanobisDistances(mahalanobisDistancesMono.begin(), mahalanobisDistancesMono.end());
     mahalanobisDistances.insert(mahalanobisDistances.end(), mahalanobisDistancesStereo.begin(), mahalanobisDistancesStereo.end());
 
-    vector<bool> isInlierMono =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesMono,parameters.inlierThresholdMono);
-    vector<bool> isInlierStereo =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesStereo,parameters.inlierThresholdStereo);
+    vector<bool> isInlierMono =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesMono,parameters.chi2_2dof);
+    vector<bool> isInlierStereo =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesStereo,parameters.chi2_3dof);
 
     // Check inlier observations
     for(size_t i=0, iend = edgesMono.size(); i<iend;i++){
@@ -1897,7 +1892,7 @@ void Optimizer::setEdgeStereoIntrinsics(Edge_* e, Frame_ frame ){
 
 template <typename Edge_>
 void Optimizer::setEdgeRobustKernel(Edge_* e, const float& thHuber){
-    g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
+    auto* rk = new g2o::RobustKernelHuber;
     e->setRobustKernel(rk);
     rk->setDelta(thHuber);
 }
@@ -1905,7 +1900,7 @@ void Optimizer::setEdgeRobustKernel(Edge_* e, const float& thHuber){
 template <typename Edge_>
 void Optimizer::setEdgesRobustKernel(vector<Edge_*>& edges, const float& thHuber){
     for(auto& e: edges){
-        g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
+        auto* rk = new g2o::RobustKernelHuber;
         e->setRobustKernel(rk);
         rk->setDelta(thHuber);
     }
@@ -1937,5 +1932,36 @@ void Optimizer::deactivateRobustKernel(vector<Edge_*>& edges){
         e->setRobustKernel(nullptr);
 }
 
+template <typename Optimizer_>
+void Optimizer::ResetOptimizerVariables(const list<Keyframe>& keyframes, const list<MapPt>& mapPoints,
+                                        Optimizer_& optimizer,  const KeyframeId& maxKFid){
+    //Keyframes
+    for(auto& pKF:keyframes){
+        auto* vSE3 = static_cast<g2o::VertexSE3Expmap*>(optimizer.vertex(pKF->mnId));
+        vSE3->setEstimate(Converter::toSE3Quat(pKF->GetPose()));
+    }
+
+    //Points
+    for(auto& pMP: mapPoints){
+        auto* vPoint = static_cast<g2o::VertexSBAPointXYZ*>(optimizer.vertex(pMP->mnId + maxKFid + 1));
+        vPoint->setEstimate(Converter::toVector3d(pMP->GetWorldPos().clone()));
+    }
+}
+
+template <typename Optimizer_>
+void Optimizer::ResetOptimizerVariables(const vector<Keyframe>& keyframes, const vector<MapPt>& mapPoints,
+                                            Optimizer_& optimizer,  const KeyframeId& maxKFid){
+    //Keyframes
+    for(auto& pKF:keyframes){
+        auto* vSE3 = static_cast<g2o::VertexSE3Expmap*>(optimizer.vertex(pKF->mnId));
+        vSE3->setEstimate(Converter::toSE3Quat(pKF->GetPose()));
+    }
+
+    //Points
+    for(auto& pMP: mapPoints){
+        auto* vPoint = static_cast<g2o::VertexSBAPointXYZ*>(optimizer.vertex(pMP->mnId + maxKFid + 1));
+        vPoint->setEstimate(Converter::toVector3d(pMP->GetWorldPos().clone()));
+    }
+}
 
 } //namespace ORB_SLAM
