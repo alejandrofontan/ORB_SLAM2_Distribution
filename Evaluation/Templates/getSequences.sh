@@ -780,4 +780,62 @@ then
 	fi
 fi
 
+if [ $dataset == 'oxford' ]
+then 
+	if [ $sequenceGroup == 'all' ]
+	then 
+		sequenceNames=(
+			"exp04_construction_upper_level"
+			"exp21_outside_building"
+		)
+		sequenceSettings=( 
+			"oxford0.yaml"
+			"oxford0.yaml"
+		)
+	fi
+	
+	if [ $sequenceGroup == 'exp04_construction_upper_level' ]
+	then 
+		sequenceNames=(
+			"exp04_construction_upper_level"
+		)
+		sequenceSettings=( 
+			"oxford0.yaml"
+		)
+	fi
+	
+	if [ $sequenceGroup == 'exp21_outside_building' ]
+	then 
+		sequenceNames=(
+			"exp21_outside_building"
+		)
+		sequenceSettings=( 
+			"oxford0.yaml"
+		)
+	fi
+fi
 
+if [ $dataset == 'vector' ]
+then 
+	if [ $sequenceGroup == 'all' ]
+	then 
+		sequenceNames=(
+			"school_scooter1"
+			
+		)
+		sequenceSettings=( 
+			"vector_right.yaml"
+		)
+	fi
+	
+	if [ $sequenceGroup == 'school_scooter1' ]
+	then 
+		sequenceNames=(
+			"school_scooter1"
+		)
+		sequenceSettings=( 
+			"vector_right.yaml"
+		)
+	fi
+	
+fi

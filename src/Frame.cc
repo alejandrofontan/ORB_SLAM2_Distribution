@@ -443,7 +443,10 @@ void Frame::UndistortKeyPoints()
 
     // Undistort points
     mat=mat.reshape(2);
+
     cv::undistortPoints(mat,mat,mK,mDistCoef,cv::Mat(),mK);
+    //cv::fisheye::undistortPoints(mat,mat,mK,mDistCoef,cv::Mat(),mK);
+
     mat=mat.reshape(1);
 
     // Fill undistorted keypoint vector
@@ -470,6 +473,8 @@ void Frame::ComputeImageBounds(const cv::Mat &imLeft)
         // Undistort corners
         mat=mat.reshape(2);
         cv::undistortPoints(mat,mat,mK,mDistCoef,cv::Mat(),mK);
+        //cv::fisheye::undistortPoints(mat,mat,mK,mDistCoef,cv::Mat(),mK);
+
         mat=mat.reshape(1);
 
         mnMinX = min(mat.at<float>(0,0),mat.at<float>(2,0));

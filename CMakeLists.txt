@@ -152,3 +152,10 @@ add_executable(mono_euroc
         Examples/mono/mono_euroc.cc)
 target_link_libraries(mono_euroc ${PROJECT_NAME})
 
+add_executable(mono_oxford
+        Examples/mono/mono_oxford.cc)
+target_link_libraries(mono_oxford ${PROJECT_NAME})
+
+add_executable(mono_vector
+        Examples/mono/mono_vector.cc)
+target_link_libraries(mono_vector ${PROJECT_NAME})

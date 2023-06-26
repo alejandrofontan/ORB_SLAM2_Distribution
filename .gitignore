@@ -3,6 +3,8 @@ Examples/mono/mono_euroc
 Examples/mono/mono_kitti
 Examples/mono/mono_monotum
 Examples/mono/mono_rgbdtum
+Examples/mono/mono_vector
+Examples/mono/mono_oxford
 Examples/RGB-D/rgbd_tum
 Examples/ROS/ORB_SLAM2/CMakeLists.txt.user
 Examples/ROS/ORB_SLAM2/Mono
