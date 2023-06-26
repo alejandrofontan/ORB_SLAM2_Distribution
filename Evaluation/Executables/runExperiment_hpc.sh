@@ -2,8 +2,8 @@
 
 experimentName_="test1"
 systemVersion_="ORB_SLAM2_Distribution"
-datasets=("rgbdtum")
-sequenceGroups=("testGroup")	
+datasets=("rgbdtum" "kitti" "euroc")
+sequenceGroups=("testGroup" "testGroup" "testGroup")	
 
 workspacePath_="/home/fontan"
 resultsFolder_="ORB_SLAM2_Ablation"

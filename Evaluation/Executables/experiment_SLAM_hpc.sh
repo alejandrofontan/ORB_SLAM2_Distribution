@@ -2,7 +2,7 @@
 
 #PBS -l ncpus=2
 #PBS -l mem=30G 
-#PBS -l walltime=12:00:00 
+#PBS -l walltime=18:00:00 
 #PBS -l cputype=6140 
 
 cd $PBS_O_WORKDIR
