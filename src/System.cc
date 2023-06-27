@@ -86,6 +86,14 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Load SLAM parameters
 
+    // Load Resolution parameters
+    int cropBottom_ = settingsFile["Resolution.cropBottom"];
+    if(cropBottom_ != 0)
+        cropBottom = cropBottom_;
+
+    cout << "Resolution Parameters"<< endl;
+    cout << "- Crop Bottom: "<< cropBottom <<endl;
+
     // Load Optimizer parameters
     OptimizerParameters::PoseOptimizationParameters poseOptimizationParameters(
             settingsFile["Optimizer.poseOptimization.nInitialCorrespondences"],
@@ -595,14 +603,45 @@ vector<cv::KeyPoint> System::GetTrackedKeyPointsUn()
     return mTrackedKeyPointsUn;
 }
 
-void System::readImage(cv::Mat& im, const string& imagePath) const{
+void System::readImage(cv::Mat& im, const string& imagePath){
     im = cv::imread(imagePath,cv::IMREAD_UNCHANGED);
     if(im.empty())
     {
         cerr << endl << "Failed to load image at: " << imagePath << endl;
         return;
     }
-    //cv::resize(im.clone(),im, cv::Size(), resolutionFactor, resolutionFactor, cv::INTER_LINEAR);
+
+#ifdef COMPILED_FITRESOLUTION
+    static bool firstImage{true};
+
+    // Undistort Image
+    static cv::Mat map1GrayImage,map2GrayImage;
+    static float resolutionFactor_x, resolutionFactor_y;
+    if(firstImage)
+        mpTracker->UndistortCalibration(im.cols,im.rows, map1GrayImage,map2GrayImage);
+    cv::Mat imageTemporal = im.clone();
+    cv::remap(imageTemporal, im, map1GrayImage, map2GrayImage, cv::INTER_LINEAR);
+
+    if(firstImage){
+        float numPixels = 640.0f*480.0f;
+        float ratio = float(im.cols)/float(im.rows);
+        float h = sqrt(numPixels/ratio);
+        float w = h * ratio;
+        resolutionFactor_x = float(w)/float(im.cols);
+        resolutionFactor_y = float(h)/float(im.rows);
+
+        mpTracker->ResizeCalibration(resolutionFactor_x, resolutionFactor_y);
+        firstImage = false;
+    }
+    cv::resize(im.clone(),im, cv::Size(), resolutionFactor_x, resolutionFactor_y, cv::INTER_LINEAR);
+#endif
+
+    // Define the region of interest (ROI) to crop
+    cv::Rect roi(0, 0, im.cols, im.rows - cropBottom); // (x, y, width, height)
+
+    // Crop the image based on the defined ROI
+    im = im(roi);
+
 }
 
 void System::SaveStatisticsToFiles(const string& pathToFiles){

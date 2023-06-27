@@ -128,7 +128,7 @@ public:
     void saveMap();
     void loadMap();
 
-    void readImage(cv::Mat& im, const string& imagePath) const;
+    void readImage(cv::Mat& im, const string& imagePath);
 
     // TODO: Save/Load functions
     // SaveMap(const string &filename);
@@ -199,6 +199,10 @@ private:
 
     // Test Variables
     int expId{0};
+
+public:
+    // Image resolution
+    int cropBottom{0};
 };
 
 }// namespace ORB_SLAM

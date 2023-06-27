@@ -1558,39 +1558,48 @@ void Tracking::Reset()
         mpViewer->Release();
 }
 
-void Tracking::ChangeCalibration(const string &strSettingPath)
+void Tracking::UndistortCalibration(const int& width, const int& height,
+                                    cv::Mat& map1GrayImage, cv::Mat& map2GrayImage)
 {
-    cv::FileStorage fSettings(strSettingPath, cv::FileStorage::READ);
-    float fx = fSettings["Camera.fx"];
-    float fy = fSettings["Camera.fy"];
-    float cx = fSettings["Camera.cx"];
-    float cy = fSettings["Camera.cy"];
+    cv::Mat cameraMatrix = mK.clone();    // Intrinsic camera matrix
+    cv::Mat distortionCoeffs = mDistCoef.clone();
+    cv::Size imageSize = cv::Size(width,height);
 
-    cv::Mat K = cv::Mat::eye(3,3,CV_32F);
-    K.at<float>(0,0) = fx;
-    K.at<float>(1,1) = fy;
-    K.at<float>(0,2) = cx;
-    K.at<float>(1,2) = cy;
-    K.copyTo(mK);
+    cv::Mat cameraMatrixUndist = getOptimalNewCameraMatrix(cameraMatrix,distortionCoeffs,imageSize,0);
+    cv::Mat R_image{};
 
+    initUndistortRectifyMap(cameraMatrix,distortionCoeffs,R_image,cameraMatrixUndist, imageSize, CV_8U,
+                            map1GrayImage, map2GrayImage);
+
+    cameraMatrixUndist.copyTo(mK);
     cv::Mat DistCoef(4,1,CV_32F);
-    DistCoef.at<float>(0) = fSettings["Camera.k1"];
-    DistCoef.at<float>(1) = fSettings["Camera.k2"];
-    DistCoef.at<float>(2) = fSettings["Camera.p1"];
-    DistCoef.at<float>(3) = fSettings["Camera.p2"];
-    const float k3 = fSettings["Camera.k3"];
-    if(k3!=0)
-    {
-        DistCoef.resize(5);
-        DistCoef.at<float>(4) = k3;
-    }
+    DistCoef.at<float>(0) = 0.0;
+    DistCoef.at<float>(1) = 0.0;
+    DistCoef.at<float>(2) = 0.0;
+    DistCoef.at<float>(3) = 0.0;
     DistCoef.copyTo(mDistCoef);
-
-    mbf = fSettings["Camera.bf"];
 
     Frame::mbInitialComputations = true;
 }
 
+
+void Tracking::ResizeCalibration(const float& resolutionFactor_x, const float& resolutionFactor_y){
+
+        float fx = mK.at<float>(0,0);
+        float fy = mK.at<float>(1,1);
+        float cx = mK.at<float>(0,2);
+        float cy = mK.at<float>(1,2);
+
+        cv::Mat K = cv::Mat::eye(3,3,CV_32F);
+        K.at<float>(0,0) = fx*resolutionFactor_x;
+        K.at<float>(1,1) = fy*resolutionFactor_y;
+        K.at<float>(0,2) = cx*resolutionFactor_x;
+        K.at<float>(1,2) = cy*resolutionFactor_y;
+        cout << K << endl;
+        K.copyTo(mK);
+
+        Frame::mbInitialComputations = true;
+}
 void Tracking::InformOnlyTracking(const bool &flag)
 {
     mbOnlyTracking = flag;
