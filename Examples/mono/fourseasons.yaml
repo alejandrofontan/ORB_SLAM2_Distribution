@@ -1,0 +1,97 @@
+%YAML:1.0
+
+#--------------------------------------------------------------------------------------------
+# Camera Parameters. Adjust them!
+#--------------------------------------------------------------------------------------------
+  
+# Camera calibration and distortion parameters (OpenCV) 
+Camera.fx: 501.4757919305817
+Camera.fy: 501.475791930581
+Camera.cx: 421.7953735163109
+Camera.cy: 167.65799492501083
+Camera.resolutionFactor: 1.0
+
+Camera.k1: 0.0
+Camera.k2: 0.0
+Camera.p1: 0.0
+Camera.p2: 0.0
+Camera.k3: 0.0
+
+# Camera frames per second 
+Camera.fps: 50.0
+
+# Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale)
+Camera.RGB: 1
+
+#--------------------------------------------------------------------------------------------
+# ORB Parameters
+#--------------------------------------------------------------------------------------------
+
+# ORB Extractor: Number of features per image
+ORBextractor.nFeatures: 1000
+
+# ORB Extractor: Scale factor between levels in the scale pyramid 	
+ORBextractor.scaleFactor: 1.2
+
+# ORB Extractor: Number of levels in the scale pyramid	
+ORBextractor.nLevels: 8
+
+# ORB Extractor: Fast threshold
+# Image is divided in a grid. At each cell FAST are extracted imposing a minimum response.
+# Firstly we impose iniThFAST. If no corners are detected we impose a lower value minThFAST
+# You can lower these values if your images have low contrast			
+ORBextractor.iniThFAST: 20
+ORBextractor.minThFAST: 7
+
+#--------------------------------------------------------------------------------------------
+# Optimizer Parameters
+#--------------------------------------------------------------------------------------------
+Optimizer.chi2_2dof: 5.991
+Optimizer.chi2_3dof: 7.815
+Optimizer.inlierProbability: 0.85
+
+Optimizer.poseOptimization.nInitialCorrespondences: 3
+Optimizer.poseOptimization.optimizerIts: 10
+Optimizer.poseOptimization.its: 4
+Optimizer.poseOptimization.minimumNumberOfEdges: 10
+
+Optimizer.localBundleAdjustment.optimizerItsCoarse: 5
+Optimizer.localBundleAdjustment.optimizerItsFine: 10
+
+Optimizer.optimizeEssentialGraph.solverLambdaInit: 1e-16
+Optimizer.optimizeEssentialGraph.minFeat: 100
+Optimizer.optimizeEssentialGraph.optimizerIts: 20
+
+Optimizer.optimizeSim3.optimizerIts: 5
+Optimizer.optimizeSim3.nMoreIterationsHigh: 10
+Optimizer.optimizeSim3.nMoreIterationsLow: 5
+Optimizer.optimizeSim3.nBad: 10
+Optimizer.optimizeSim3.th2: 10.0
+
+Optimizer.globalRobustBundleAdjustment.optimizerItsCoarse: 100
+Optimizer.globalRobustBundleAdjustment.optimizerItsFine: 100
+
+#--------------------------------------------------------------------------------------------
+# DistributionFitter Parameters
+#--------------------------------------------------------------------------------------------
+DistributionFitter.logNormal.maxNumberIterations: 100
+DistributionFitter.logNormal.stepSize: 0.1
+DistributionFitter.logNormal.tolerance: 1e-4
+
+DistributionFitter.burr.maxNumberIterations: 100
+DistributionFitter.burr.stepSize: 1.0
+DistributionFitter.burr.tolerance: 1e-2
+
+#--------------------------------------------------------------------------------------------
+# Viewer Parameters
+#--------------------------------------------------------------------------------------------
+Viewer.KeyFrameSize: 0.05
+Viewer.KeyFrameLineWidth: 1
+Viewer.GraphLineWidth: 0.9
+Viewer.PointSize: 2
+Viewer.CameraSize: 0.08
+Viewer.CameraLineWidth: 3
+Viewer.ViewpointX: 0
+Viewer.ViewpointY: -0.7
+Viewer.ViewpointZ: -1.8
+Viewer.ViewpointF: 500

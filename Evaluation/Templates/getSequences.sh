@@ -817,21 +817,83 @@ then
 	if [ $sequenceGroup == 'all' ]
 	then 
 		sequenceNames=(
-			"school_scooter1"
+			"corridors_dolly_left"
+			"units_dolly_left"
 			
 		)
 		sequenceSettings=( 
-			"vector_right.yaml"
+			"vectorLeft.yaml"
+			"vectorLeft.yaml"
 		)
 	fi
 	
-	if [ $sequenceGroup == 'school_scooter1' ]
+	if [ $sequenceGroup == 'corridors_dolly_left' ]
 	then 
 		sequenceNames=(
-			"school_scooter1"
+			"corridors_dolly_left"
 		)
 		sequenceSettings=( 
-			"vector_right.yaml"
+			"vectorLeft.yaml"
+		)
+	fi
+	
+	if [ $sequenceGroup == 'units_dolly_left' ]
+	then 
+		sequenceNames=(
+			"units_dolly_left"
+		)
+		sequenceSettings=( 
+			"vectorLeft.yaml"
+		)
+	fi
+	
+fi
+
+if [ $dataset == 'fourseasons' ]
+then 
+	if [ $sequenceGroup == 'all' ]
+	then 
+		sequenceNames=(
+			"office_loop_1_train"
+			
+		)
+		sequenceSettings=( 
+			"fourseasons.yaml"
+		)
+	fi
+	
+	if [ $sequenceGroup == 'office_loop_1_train' ]
+	then 
+		sequenceNames=(
+			"office_loop_1_train"
+		)
+		sequenceSettings=( 
+			"fourseasons.yaml"
+		)
+	fi
+	
+fi
+
+if [ $dataset == 'interior' ]
+then 
+	if [ $sequenceGroup == 'all' ]
+	then 
+		sequenceNames=(
+			"3FO4KI08T3TL"
+			
+		)
+		sequenceSettings=( 
+			"interior.yaml"
+		)
+	fi
+	
+	if [ $sequenceGroup == '3FO4KI08T3TL' ]
+	then 
+		sequenceNames=(
+			"interior-03-24_17-45-31"
+		)
+		sequenceSettings=( 
+			"interior.yaml"
 		)
 	fi
 	

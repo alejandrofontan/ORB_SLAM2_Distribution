@@ -7,4 +7,5 @@ mkdir "${resultsFolder}/mono/rgbdtum"
 mkdir "${resultsFolder}/mono/oxford"
 mkdir "${resultsFolder}/mono/vector"
 mkdir "${resultsFolder}/mono/fordva"
-
+mkdir "${resultsFolder}/mono/interior"
+mkdir "${resultsFolder}/mono/fourseasons"

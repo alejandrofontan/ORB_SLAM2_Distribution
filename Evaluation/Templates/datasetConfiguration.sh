@@ -30,7 +30,7 @@ fi
 
 if [ $dataset == 'fordva' ]
 then
-	groundtruth_file="$dataset_path/${sequenceName}/new_pose_ground_truth.txt"
+	groundtruth_file="$dataset_path/${sequenceName}/new_pose_ground_truth.txt" #???????????????
 	max_diff=0.067 # 15Hz
 	frequence=15
 fi
@@ -42,3 +42,23 @@ then
 	frequence=15
 fi
 
+if [ $dataset == 'oxford' ]
+then
+	groundtruth_file="$dataset_path/${sequenceName}/groundtruth.txt" #???????????????
+	max_diff=0.033 # 30Hz
+	frequence=30
+fi
+
+if [ $dataset == 'vector' ]
+then
+	groundtruth_file="$dataset_path/${sequenceName}/groundtruth.txt"
+	max_diff=0.033 # 30Hz
+	frequence=30
+fi
+
+if [ $dataset == 'fourseasons' ]
+then
+	groundtruth_file="$dataset_path/${sequenceName}/groundtruth.txt" #???????????????
+	max_diff=0.033 # 30Hz
+	frequence=30
+fi

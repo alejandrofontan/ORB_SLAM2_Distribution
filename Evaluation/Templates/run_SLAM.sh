@@ -88,6 +88,16 @@ if [ $dataset == 'vector' ]
 then 
 dataset_path="${ws_path}/VECTOR"
 fi
+
+if [ $dataset == 'fourseasons' ]
+then 
+dataset_path="${ws_path}/FOURSEASONS"
+fi
+
+if [ $dataset == 'interior' ]
+then 
+dataset_path="${ws_path}/INTERIOR"
+fi
 ###################################################################################################
 # Sequence configuration
 . ./getSequences.sh
@@ -196,6 +206,16 @@ do
 				fi
 				
 				if [ $dataset == 'vector' ]
+				then
+				./${executable} Vocabulary/$voc Examples/mono/${sequenceSettings[seqIndex]} ${dataset_path}/${sequenceName} ${sequenceFolder} ${expId} ${activeVis} ${backwards} > /dev/null > $system_output 2>&1
+				fi	
+				
+				if [ $dataset == 'fourseasons' ]
+				then
+				./${executable} Vocabulary/$voc Examples/mono/${sequenceSettings[seqIndex]} ${dataset_path}/${sequenceName} ${sequenceFolder} ${expId} ${activeVis} ${backwards} > /dev/null > $system_output 2>&1
+				fi
+				
+				if [ $dataset == 'interior' ]
 				then
 				./${executable} Vocabulary/$voc Examples/mono/${sequenceSettings[seqIndex]} ${dataset_path}/${sequenceName} ${sequenceFolder} ${expId} ${activeVis} ${backwards} > /dev/null > $system_output 2>&1
 				fi	
