@@ -2,7 +2,7 @@
 
 #PBS -l ncpus=2
 #PBS -l mem=30G 
-#PBS -l walltime=18:00:00 
+#PBS -l walltime=24:00:00 
 #PBS -l cputype=6140 
 
 cd $PBS_O_WORKDIR
@@ -33,7 +33,7 @@ mamba activate orbslam2det
 #Experiment settings
 numberOfRuns="1"
 
-evaluateExperiment="n"       # if "y" TUM script evaluation is performed (conda---->python2)
+evaluateExperiment="y"       # if "y" TUM script evaluation is performed (conda---->python2)
 activeVisualization="0"      # if "1" display visualization and terminal output
 
 # System configuration
