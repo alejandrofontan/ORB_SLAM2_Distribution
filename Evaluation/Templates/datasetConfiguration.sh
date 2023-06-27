@@ -62,3 +62,10 @@ then
 	max_diff=0.033 # 30Hz
 	frequence=30
 fi
+
+if [ $dataset == 'eth' ]
+then
+	groundtruth_file="$dataset_path/${sequenceName}/groundtruth.txt" #???????????????
+	max_diff=0.033 # 30Hz
+	frequence=30
+fi

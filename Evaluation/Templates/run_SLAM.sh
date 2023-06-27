@@ -98,6 +98,11 @@ if [ $dataset == 'interior' ]
 then 
 dataset_path="${ws_path}/INTERIOR"
 fi
+
+if [ $dataset == 'eth' ]
+then 
+dataset_path="${ws_path}/ETH"
+fi
 ###################################################################################################
 # Sequence configuration
 . ./getSequences.sh
@@ -211,6 +216,11 @@ do
 				fi	
 				
 				if [ $dataset == 'fourseasons' ]
+				then
+				./${executable} Vocabulary/$voc Examples/mono/${sequenceSettings[seqIndex]} ${dataset_path}/${sequenceName} ${sequenceFolder} ${expId} ${activeVis} ${backwards} > /dev/null > $system_output 2>&1
+				fi
+				
+				if [ $dataset == 'eth' ]
 				then
 				./${executable} Vocabulary/$voc Examples/mono/${sequenceSettings[seqIndex]} ${dataset_path}/${sequenceName} ${sequenceFolder} ${expId} ${activeVis} ${backwards} > /dev/null > $system_output 2>&1
 				fi

@@ -855,9 +855,11 @@ then
 	then 
 		sequenceNames=(
 			"office_loop_1_train"
+			"office_loop_5_train"
 			
 		)
 		sequenceSettings=( 
+			"fourseasons.yaml"
 			"fourseasons.yaml"
 		)
 	fi
@@ -872,6 +874,108 @@ then
 		)
 	fi
 	
+	if [ $sequenceGroup == 'office_loop_5_train' ]
+	then 
+		sequenceNames=(
+			"office_loop_5_train"
+		)
+		sequenceSettings=( 
+			"fourseasons.yaml"
+		)
+	fi
+	
+fi
+
+if [ $dataset == 'eth' ]
+then 
+	if [ $sequenceGroup == 'all' ]
+	then 
+		sequenceNames=(
+			"cables_1"
+			"einstein_1"
+			"large_loop_1"
+			"plant_scene_2"
+			"repetitive"
+			"table_3"
+			
+		)
+		sequenceSettings=( 
+			"eth.yaml" "eth.yaml" "eth.yaml"
+			"eth.yaml" "eth.yaml" "eth.yaml"
+		)
+	fi
+	
+	if [ $sequenceGroup == 'testGroup' ]
+	then 
+		sequenceNames=(
+			"cables_1"
+			"einstein_1"
+			"large_loop_1"
+			"plant_scene_2"
+			"repetitive"
+			"table_3"
+			
+		)
+		sequenceSettings=( 
+			"eth.yaml" "eth.yaml" "eth.yaml"
+			"eth.yaml" "eth.yaml" "eth.yaml"
+		)
+	fi
+	
+	if [ $sequenceGroup == 'cables_1' ]
+	then 
+		sequenceNames=(
+			"cables_1"
+		)
+		sequenceSettings=( 
+			"eth.yaml"
+		)
+	fi	
+	if [ $sequenceGroup == 'einstein_1' ]
+	then 
+		sequenceNames=(
+			"einstein_1"
+		)
+		sequenceSettings=( 
+			"eth.yaml"
+		)
+	fi	
+	if [ $sequenceGroup == 'large_loop_1' ]
+	then 
+		sequenceNames=(
+			"large_loop_1"
+		)
+		sequenceSettings=( 
+			"eth.yaml"
+		)
+	fi	
+	if [ $sequenceGroup == 'plant_scene_2' ]
+	then 
+		sequenceNames=(
+			"plant_scene_2"
+		)
+		sequenceSettings=( 
+			"eth.yaml"
+		)
+	fi	
+	if [ $sequenceGroup == 'repetitive' ]
+	then 
+		sequenceNames=(
+			"repetitive"
+		)
+		sequenceSettings=( 
+			"eth.yaml"
+		)
+	fi	
+	if [ $sequenceGroup == 'table_3' ]
+	then 
+		sequenceNames=(
+			"table_3"
+		)
+		sequenceSettings=( 
+			"eth.yaml"
+		)
+	fi		
 fi
 
 if [ $dataset == 'interior' ]

@@ -6,6 +6,7 @@ option(COMPILE_SEQUENTIAL "Compile Sequential Version Of ORB_SLAM2" OFF)
 option(COMPILE_DETERMINISTIC "Compile Deterministic Version Of ORB_SLAM2" OFF)
 option(COMPILE_DEBUG "Compile DEBUG Version Of ORB_SLAM2" OFF)
 option(COMPILE_ABLATION "Compile ABLATION Version Of ORB_SLAM2" OFF)
+option(COMPILE_FITRESOLUTION "Compile FIT RESOLUTION Version Of ORB_SLAM2" OFF)
 
 if(COMPILE_WITH_PANGOLIN)
     add_definitions(-DCOMPILED_WITH_PANGOLIN=1)
@@ -25,6 +26,10 @@ endif()
 
 if(COMPILE_ABLATION)
     add_definitions(-DCOMPILED_ABLATION=1)
+endif()
+
+if(COMPILE_FITRESOLUTION)
+    add_definitions(-DCOMPILED_FITRESOLUTION=1)
 endif()
 
 set(OPENCV_LOCAL_VERSION "4.7.0")
@@ -159,6 +164,10 @@ target_link_libraries(mono_vector ${PROJECT_NAME})
 add_executable(mono_fourseasons
         Examples/mono/mono_fourseasons.cc)
 target_link_libraries(mono_fourseasons ${PROJECT_NAME})
+
+add_executable(mono_eth
+        Examples/mono/mono_eth.cc)
+target_link_libraries(mono_eth ${PROJECT_NAME})
 
 add_executable(mono_oxford
         Examples/mono/mono_oxford.cc)
