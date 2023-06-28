@@ -223,33 +223,8 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
     deactivateRobustKernel(edgesMono);
     deactivateRobustKernel(edgesStereo);
 
-    // Keyframes reset
-    for(auto& keyframe: keyframes)
-    {
-        if(keyframe->isBad())
-            continue;
-        g2o::VertexSE3Expmap* vSE3 = static_cast<g2o::VertexSE3Expmap*>(optimizer.vertex(keyframe->mnId));
-        g2o::SE3Quat SE3quat = Converter::toSE3Quat(keyframe->GetPose());
-        vSE3->setEstimate(SE3quat);
-    }
-
-    // Points Reset
-    for(size_t iMapPt{0}; iMapPt < mapPoints.size(); iMapPt++)
-    {
-        if(mapPtsNotInclude[iMapPt])
-            continue;
-
-        MapPt mapPt = mapPoints[iMapPt];
-
-        if(mapPt->isBad())
-            continue;
-
-        g2o::VertexSBAPointXYZ* vPoint = static_cast<g2o::VertexSBAPointXYZ*>(optimizer.vertex(mapPt->mnId + maxKeyId + 1));
-        vPoint->setEstimate(Converter::toVector3d(mapPt->GetWorldPos()));
-    }
-
     // Optimize again without the outliers
-    ResetOptimizerVariables(keyframes,mapPoints,optimizer,maxKeyId);
+    ResetOptimizerVariables(keyframes,mapPoints,optimizer,maxKeyId,mapPtsNotInclude);
     optimizer.initializeOptimization();
     optimizer.optimize(parameters.globalRobustBundleAdjustment.optimizerItsFine);
 
@@ -1148,8 +1123,8 @@ void Optimizer::RobustLocalBundleAdjustment(Keyframe& refKeyframe, bool *stopFla
     //const float thHuberMono = parameters.deltaMono;
     //const float thHuberStereo = parameters.deltaStereo;
 
-    const float thHuberMono = sqrt(parameters.chi2_2dof);
-    const float thHuberStereo = sqrt(parameters.chi2_3dof);
+    const float thHuberMono = sqrt(parameters.inlierThresholdMono);
+    const float thHuberStereo = sqrt(parameters.inlierThresholdStereo);
 
     for(auto& mapPt: localMapPoints){
         g2o::VertexSBAPointXYZ* vPoint = new g2o::VertexSBAPointXYZ();
@@ -1950,18 +1925,30 @@ void Optimizer::ResetOptimizerVariables(const list<Keyframe>& keyframes, const l
 
 template <typename Optimizer_>
 void Optimizer::ResetOptimizerVariables(const vector<Keyframe>& keyframes, const vector<MapPt>& mapPoints,
-                                            Optimizer_& optimizer,  const KeyframeId& maxKFid){
+                                        Optimizer_& optimizer,  const KeyframeId& maxKFid,
+                                        const vector<bool>& mapPtsNotInclude){
     //Keyframes
-    for(auto& pKF:keyframes){
-        auto* vSE3 = static_cast<g2o::VertexSE3Expmap*>(optimizer.vertex(pKF->mnId));
-        vSE3->setEstimate(Converter::toSE3Quat(pKF->GetPose()));
+    for(auto& keyframe:keyframes){
+        if(keyframe->isBad())
+            continue;
+        auto* vSE3 = static_cast<g2o::VertexSE3Expmap*>(optimizer.vertex(keyframe->mnId));
+        vSE3->setEstimate(Converter::toSE3Quat(keyframe->GetPose()));
     }
 
     //Points
-    for(auto& pMP: mapPoints){
-        auto* vPoint = static_cast<g2o::VertexSBAPointXYZ*>(optimizer.vertex(pMP->mnId + maxKFid + 1));
-        vPoint->setEstimate(Converter::toVector3d(pMP->GetWorldPos().clone()));
+    for(size_t iMapPt{0}; iMapPt < mapPoints.size(); iMapPt++){
+        if(mapPtsNotInclude[iMapPt])
+            continue;
+
+        MapPt mapPt = mapPoints[iMapPt];
+
+        if(mapPt->isBad())
+            continue;
+
+        auto* vPoint = static_cast<g2o::VertexSBAPointXYZ*>(optimizer.vertex(mapPt->mnId + maxKFid + 1));
+        vPoint->setEstimate(Converter::toVector3d(mapPt->GetWorldPos().clone()));
     }
 }
 
 } //namespace ORB_SLAM
+

@@ -71,7 +71,8 @@ public:
     template <typename Optimizer_>
     void static ResetOptimizerVariables(const vector<Keyframe>& keyframes, const vector<MapPt>& mapPoints,
                                         Optimizer_& optimizer,
-                                        const KeyframeId& maxKFid);
+                                        const KeyframeId& maxKFid,
+                                        const vector<bool>& mapPtsNotInclude);
 
     int static PoseOptimization(Frame *pFrame);
 
