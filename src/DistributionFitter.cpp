@@ -7,7 +7,7 @@ namespace DIST_FITTER {
 
 DistributionFitter::VerbosityLevel DistributionFitter::verbosity{LOW};
 DistributionFitterParameters DistributionFitter::params{};
-DistributionFitter::DistributionType DistributionFitter::distributionType{BURR};
+DistributionFitter::DistributionType DistributionFitter::distributionType{LOGNORMAL};
 
 void DistributionFitter::FitLogNormal(vector<double> &data_, double &mu, double &sigma) {
 
@@ -279,6 +279,22 @@ double DistributionFitter::calculateKS(const std::vector<double>& data, const do
     }
 
     return d;
+}
+
+double DistributionFitter::GetCorrectionFactor(const double& probability){
+    std::map<double,double> exponents;
+    exponents[0.75] = 1.57;
+    exponents[0.775] = 1.62;
+    exponents[0.8] = 1.68;
+    exponents[0.825] = 1.74;
+    exponents[0.85] = 1.81;
+    exponents[0.875] = 1.89;
+    exponents[0.9] = 2.0;
+    exponents[0.95] = 2.27;
+    exponents[0.975] = 2.52;
+    exponents[0.99] = 2.82;
+
+    return exponents[probability];
 }
 
 std::ostream &operator<<(std::ostream &outstream, const DistributionFitterParameters &parameters) {

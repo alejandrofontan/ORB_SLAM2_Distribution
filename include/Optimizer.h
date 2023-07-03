@@ -47,7 +47,8 @@ public:
     static OptimizerParameters parameters;
 #ifdef COMPILED_DEBUG
     //static vector<double> mahalanobisDistancesToSave;
-    static vector<double> inlierThreshold;
+    //static vector<double> inlierThreshold;
+    static vector<double> outlierPercentage;
 #endif
     void static BundleAdjustment(const std::vector<Keyframe> &vpKF, const std::vector<MapPt> &vpMP,
                                  int nIterations = 5, bool *pbStopFlag = nullptr, const unsigned long nLoopKF = 0,
@@ -174,9 +175,12 @@ private:
     float chi2_3dof{7.815}; // Chi2 , 3 dof, 95%
     float deltaMono{sqrtf(chi2_2dof)};
     float deltaStereo{sqrtf(chi2_3dof)};
+
     double inlierProbability{0.85};
-    double inlierThresholdMono{5.991};
-    double inlierThresholdStereo{7.815};
+    double th2_2dof{5.991};
+    double th2_3dof{7.815};
+    double th_2dof{sqrt(th2_2dof)};
+    double th_3dof{sqrt(th2_3dof)};
 
     PoseOptimizationParameters poseOptimization{};
     LocalBundleAdjustmentParameters localBundleAdjustment{};
@@ -200,8 +204,6 @@ public:
         deltaStereo = sqrt(chi2_3dof);
 
         inlierProbability = inlierProbability_;
-        inlierThresholdMono = chi2_2dof;
-        inlierThresholdStereo = chi2_3dof;
 
         poseOptimization = poseOptimization_;
         localBundleAdjustment = localBundleAdjustment_;
@@ -221,9 +223,11 @@ public:
         inlierProbability = inlierProbability_;
     }
 
-    void UpdateInlierThresholds(const double& inlierThresholdMono_, const double& inlierThresholdStereo_){
-        inlierThresholdMono = inlierThresholdMono_;
-        inlierThresholdStereo = inlierThresholdStereo_;
+    void UpdateInlierThresholds(const double& th2_2dof_, const double& th2_3dof_){
+        th2_2dof = th2_2dof_;
+        th2_3dof = th2_3dof_;
+        th_2dof = sqrt(th2_2dof);
+        th_3dof = sqrt(th2_3dof);
     }
 };
 

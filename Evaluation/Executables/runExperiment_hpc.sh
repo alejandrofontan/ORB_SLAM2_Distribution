@@ -1,6 +1,6 @@
 
 
-experimentName_="test1"
+experimentName_="lognormal_full"
 systemVersion_="ORB_SLAM2_Distribution"
 datasets=("rgbdtum" "kitti" "eth" "euroc")
 sequenceGroups=("testGroup" "testGroup" "testGroup" "testGroup")	

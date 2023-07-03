@@ -147,8 +147,8 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     DIST_FITTER::DistributionFitter::verbosity = DIST_FITTER::DistributionFitter::VerbosityLevel::MEDIUM;
     DIST_FITTER::DistributionFitter::params.SetParameters(logNormal,burr);
 
-    vector<double> probabilities{0.25,0.5,0.75,0.8,0.85,0.9,0.925,0.95,0.975,0.99};
-    //Optimizer::parameters.UpdateInlierProbability(probabilities[expId]);
+    vector<double> probabilities{0.75,0.775,0.8,0.825,0.85,0.875,0.9,0.95,0.975,0.99};
+    Optimizer::parameters.UpdateInlierProbability(probabilities[expId]);
 
     //Create KeyFrame Database
     mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
@@ -650,8 +650,12 @@ void System::SaveStatisticsToFiles(const string& pathToFiles){
     //cout << "    "<< "mahalanobisDistances.txt" << endl;
     //saveVectorToFile(Optimizer::mahalanobisDistancesToSave,pathToFiles + "mahalanobisDistances.txt");
 
-    cout << "    "<< "inlierThreshold.txt" << endl;
-    saveVectorToFile(Optimizer::inlierThreshold,pathToFiles + "inlierThreshold.txt");
+    //cout << "    "<< "inlierThreshold.txt" << endl;
+    //saveVectorToFile(Optimizer::inlierThreshold,pathToFiles + "inlierThreshold.txt");
+
+    cout << "    "<< "outlierPercentage.txt" << endl;
+    saveVectorToFile(Optimizer::outlierPercentage,pathToFiles + "outlierPercentage.txt");
+
 
     auto mapPoints = mpMap->GetAllMapPoints();
     int numberOfObservations = 0;

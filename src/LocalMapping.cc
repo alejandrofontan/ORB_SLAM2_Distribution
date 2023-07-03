@@ -677,11 +677,8 @@ void LocalMapping::KeyFrameCulling()
         }
 
         const int minKeyId = 15;
-#ifdef COMPILED_ABLATION
-        if((nRedundantObservations > 0.8*nMPs)&&(keyframe->mnId % minKeyId != 0)&&(keyframe->mnId > 5)){
-#else
-            if(nRedundantObservations > 0.9*nMPs){
-#endif
+
+        if(nRedundantObservations > 0.9*nMPs){
             if(keyframe->mnId != 0){
                 slamGraph->removeKeyframe(keyframe->mnFrameId);
             }

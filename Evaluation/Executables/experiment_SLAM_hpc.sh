@@ -31,7 +31,7 @@ mamba activate orbslam2det
 # experimentComments
 
 #Experiment settings
-numberOfRuns="1"
+numberOfRuns="10"
 
 evaluateExperiment="y"       # if "y" TUM script evaluation is performed (conda---->python2)
 activeVisualization="0"      # if "1" display visualization and terminal output
