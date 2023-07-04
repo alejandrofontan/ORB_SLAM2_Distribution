@@ -147,8 +147,10 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     DIST_FITTER::DistributionFitter::verbosity = DIST_FITTER::DistributionFitter::VerbosityLevel::MEDIUM;
     DIST_FITTER::DistributionFitter::params.SetParameters(logNormal,burr);
 
-    vector<double> probabilities{0.75,0.775,0.8,0.825,0.85,0.875,0.9,0.95,0.975,0.99};
-    Optimizer::parameters.UpdateInlierProbability(probabilities[expId]);
+    //vector<double> probabilities{0.75,0.775,0.8,0.825,0.85,0.875,0.9,0.95,0.975,0.99};
+    //vector<double> chi2{0.5,1.0,2.0,4.0,5.991,8.0,16.0,32.0,64.0,128.0};
+    //Optimizer::parameters.UpdateInlierProbability(probabilities[expId]);
+    //Optimizer::parameters.UpdateInlierThresholds(chi2[expId],chi2[expId]);
 
     //Create KeyFrame Database
     mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
@@ -422,6 +424,10 @@ void System::Shutdown()
 #ifdef COMPILED_WITH_PANGOLIN
     if(mpViewer)
         pangolin::BindToContext("ORB-SLAM2: Map Viewer");
+#endif
+
+#ifdef COMPILED_ABLATION
+    GlobalRobustBundleAdjustment();
 #endif
 }
 

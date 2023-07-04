@@ -42,7 +42,11 @@ void Optimizer::GlobalBundleAdjustment(Map* pMap, int nIterations, bool* pbStopF
 {
     vector<Keyframe> keyframes = pMap->GetAllKeyFrames();
     vector<MapPt> mapPoints = pMap->GetAllMapPoints();
+#ifdef COMPILED_ABLATION
+    RobustBundleAdjustment(keyframes,mapPoints,nLoopKF);
+#else
     BundleAdjustment(keyframes,mapPoints,nIterations,pbStopFlag, nLoopKF, bRobust);
+#endif
 }
 
 void Optimizer::GlobalRobustBundleAdjustment(Map* pMap)
@@ -79,8 +83,8 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
     }
 
     // Set MapPoint vertices
-    const float thHuber2D = parameters.th_2dof;
-    const float thHuber3D = parameters.th_3dof;
+    const float thHuber2D = float(parameters.th_2dof);
+    const float thHuber3D = float(parameters.th_3dof);
     vector<bool> mapPtsNotInclude{};
     mapPtsNotInclude.resize(mapPoints.size());
 
@@ -103,7 +107,7 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
         vPoint->setMarginalized(true);
         optimizer.addVertex(vPoint);
 
-        //mapPt->activateAllObservations();
+        mapPt->activateAllObservations();
         const map<KeyframeId , Observation> observations = mapPt->GetActiveObservations();
 
         //Set edges
@@ -202,21 +206,17 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
 
     double th2_2dof, th2_3dof;
     double mu{parameters.localBundleAdjustment.mu_lognormal}, sigma{parameters.localBundleAdjustment.sigma_lognormal};
-    DIST_FITTER::DistributionFitter::FitLogNormal(subset,
-                                                  parameters.localBundleAdjustment.mu_lognormal,
-                                                  parameters.localBundleAdjustment.sigma_lognormal);
+    DIST_FITTER::DistributionFitter::FitLogNormal(subset,mu,sigma);
 
     double correctionFactor = DIST_FITTER::DistributionFitter::GetCorrectionFactor(parameters.inlierProbability);
 
-    th2_2dof = DIST_FITTER::DistributionFitter::Lognormal_icdf(parameters.inlierProbability,
-                                                               parameters.localBundleAdjustment.mu_lognormal,
-                                                               parameters.localBundleAdjustment.sigma_lognormal);
+    th2_2dof = DIST_FITTER::DistributionFitter::Lognormal_icdf(parameters.inlierProbability,mu,sigma);
 
-    cout << "th2_2dof = "<< th2_2dof << endl;
-    cout << "correctionFactor = "<< correctionFactor << endl;
-    cout << "new th2_2dof = "<< correctionFactor*th2_2dof << endl;
+    cout << "[Robust bundle adjustment] th2_2dof = "<< th2_2dof << endl;
+    cout << "[Robust bundle adjustment] correctionFactor = "<< correctionFactor << endl;
+    cout << "[Robust bundle adjustment] new th2_2dof = "<< correctionFactor*th2_2dof << endl;
 
-    vector<bool> isInlierMono =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesMono,th2_2dof);
+    vector<bool> isInlierMono =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesMono,correctionFactor*th2_2dof);
     vector<bool> isInlierStereo =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesStereo,th2_3dof);
 
     // Check inlier observations
@@ -505,8 +505,8 @@ int Optimizer::PoseOptimization(Frame *pFrame)
     vpEdgesStereo.reserve(N);
     vnIndexEdgeStereo.reserve(N);
 
-    const float deltaMono = parameters.deltaMono;
-    const float deltaStereo = parameters.deltaStereo;
+    const float deltaMono = float(parameters.th_2dof);
+    const float deltaStereo = float(parameters.th_3dof);
 
     {
     unique_lock<mutex> lock(MapPoint::mGlobalMutex);
@@ -600,8 +600,8 @@ int Optimizer::PoseOptimization(Frame *pFrame)
 
     // We perform 4 optimizations, after each optimization we classify observation as inlier/outlier
     // At the next optimization, outliers are not included, but at the end they can be classified as inliers again.
-    std::vector<float> chi2Mono(parameters.poseOptimization.its, parameters.chi2_2dof);
-    std::vector<float> chi2Stereo(parameters.poseOptimization.its, parameters.chi2_3dof);
+    std::vector<float> chi2Mono(parameters.poseOptimization.its, float(parameters.th2_2dof));
+    std::vector<float> chi2Stereo(parameters.poseOptimization.its, float(parameters.th2_3dof));
     std::vector<int> its(parameters.poseOptimization.its, parameters.poseOptimization.optimizerIts);
 
     int nBad=0;
@@ -681,6 +681,11 @@ int Optimizer::PoseOptimization(Frame *pFrame)
     cv::Mat pose = Converter::toCvMat(SE3quat_recov);
     pFrame->SetPose(pose);
 
+#ifdef COMPILED_ABLATION
+    SetAllObservationsAsInliers(vnIndexEdgeMono,pFrame);
+    SetAllObservationsAsInliers(vnIndexEdgeStereo,pFrame);
+    nBad = 0;
+#endif
     return nInitialCorrespondences-nBad;
 }
 
@@ -1125,9 +1130,6 @@ void Optimizer::RobustLocalBundleAdjustment(Keyframe& refKeyframe, bool *stopFla
     vector<MapPt> vpMapPointEdgeStereo;
     vpMapPointEdgeStereo.reserve(nExpectedSize);
 
-    //const float thHuberMono = parameters.deltaMono;
-    //const float thHuberStereo = parameters.deltaStereo;
-
     const float thHuberMono = float(parameters.th_2dof);
     const float thHuberStereo = float(parameters.th_3dof);
 
@@ -1246,9 +1248,9 @@ void Optimizer::RobustLocalBundleAdjustment(Keyframe& refKeyframe, bool *stopFla
                                                                    parameters.localBundleAdjustment.sigma_lognormal);
 
         Optimizer::parameters.UpdateInlierThresholds(correctionFactor*th2_2dof,th2_3dof);
-        cout << "th2_2dof = "<< th2_2dof << endl;
-        cout << "correctionFactor = "<< correctionFactor << endl;
-        cout << "new th2_2dof = "<< correctionFactor*th2_2dof << endl;
+        cout << "[Local Bundle Adjustment] th2_2dof = "<< th2_2dof << endl;
+        cout << "[Local Bundle Adjustment] correctionFactor = "<< correctionFactor << endl;
+        cout << "[Local Bundle Adjustment] new th2_2dof = "<< parameters.th2_2dof << endl;
 
         // Get inliers
         vector<bool> isInlierMono =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesMono, parameters.th2_2dof);
@@ -1955,6 +1957,12 @@ void Optimizer::ResetOptimizerVariables(const vector<Keyframe>& keyframes, const
         vPoint->setEstimate(Converter::toVector3d(mapPt->GetWorldPos().clone()));
     }
 }
+
+void Optimizer::SetAllObservationsAsInliers(const vector<size_t>& indexes, Frame* frame){
+    for(const auto& idx: indexes )
+        frame->mvbOutlier[idx] = false;
+}
+
 
 } //namespace ORB_SLAM
 

@@ -5,6 +5,9 @@ Examples/mono/mono_monotum
 Examples/mono/mono_rgbdtum
 Examples/mono/mono_vector
 Examples/mono/mono_oxford
+Examples/mono/mono_eth
+Examples/mono/mono_fourseasons
+Examples/mono/mono_interior
 Examples/RGB-D/rgbd_tum
 Examples/ROS/ORB_SLAM2/CMakeLists.txt.user
 Examples/ROS/ORB_SLAM2/Mono

@@ -76,6 +76,7 @@ public:
                                         const vector<bool>& mapPtsNotInclude);
 
     int static PoseOptimization(Frame *pFrame);
+    void static SetAllObservationsAsInliers(const vector<size_t>& indexes, Frame* frame);
 
     // if bFixScale is true, 6DoF optimization (stereo,rgbd), 7DoF otherwise (mono)
     void static OptimizeEssentialGraph(Map *pMap, KeyFrame *pLoopKF, KeyFrame *pCurKF,

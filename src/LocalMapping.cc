@@ -25,6 +25,7 @@
 #include "Converter.h"
 
 #include<mutex>
+#include<map>
 
 namespace ORB_SLAM2 {
 
@@ -620,7 +621,6 @@ void LocalMapping::KeyFrameCulling()
     // in at least other 3 keyframes (in the same or finer scale)
     // We only consider close stereo points
     vector<Keyframe> vpLocalKeyFrames = mpCurrentKeyFrame->GetVectorCovisibleKeyFrames();
-
     for(auto& keyframe: vpLocalKeyFrames)
     {
         if(keyframe->mnId==0)
@@ -676,15 +676,23 @@ void LocalMapping::KeyFrameCulling()
             ++iMapPt;
         }
 
-        const int minKeyId = 15;
 
+#ifdef COMPILED_ABLATION
+        if(keyframe->mnId != 0){
+            if((nRedundantObservations > 0.7*nMPs)&&(keyframe->mnId % 20 != 0)){
+                slamGraph->removeKeyframe(keyframe->mnId);
+                keyframe->SetBadFlag();
+            }
+        }
+#else
         if(nRedundantObservations > 0.9*nMPs){
+
             if(keyframe->mnId != 0){
                 slamGraph->removeKeyframe(keyframe->mnFrameId);
             }
             keyframe->SetBadFlag();
         }
-
+#endif
     }
 }
 
