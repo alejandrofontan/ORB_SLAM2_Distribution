@@ -281,20 +281,23 @@ double DistributionFitter::calculateKS(const std::vector<double>& data, const do
     return d;
 }
 
-double DistributionFitter::GetCorrectionFactor(const double& probability){
-    std::map<double,double> exponents;
-    exponents[0.75] = 1.57;
-    exponents[0.775] = 1.62;
-    exponents[0.8] = 1.68;
-    exponents[0.825] = 1.74;
-    exponents[0.85] = 1.81;
-    exponents[0.875] = 1.89;
-    exponents[0.9] = 2.0;
-    exponents[0.95] = 2.27;
-    exponents[0.975] = 2.52;
-    exponents[0.99] = 2.82;
+double DistributionFitter::GetCorrectionFactor(const double& p_exp,const double& p, const double& sigma){
+    double ms_p3 = -5.895;
+    double ms_p2 = 11.12;
+    double ms_p1 = -9.693;
+    double ms_p0 = 4.52;
+    double ms = ms_p3*pow(p_exp,3) + ms_p2*pow(p_exp,2) + ms_p1*p_exp + ms_p0;
 
-    return exponents[probability];
+    double bs_p3 = 1.128;
+    double bs_p2 = -1.472;
+    double bs_p1 = 0.7867;
+    double bs_p0 = -0.4272;
+    double bs = bs_p3*pow(p_exp,3) + bs_p2*pow(p_exp,2) + bs_p1*p_exp + bs_p0;
+
+    double k = ms * sigma + bs;
+    double correction = exp(k*p);
+    cout << "[GetCorrectionFactor] p_exp = "<< p_exp << " , p = "<< p << " , sigma = "<< sigma << " , correction = "<< correction << endl;
+    return correction;
 }
 
 std::ostream &operator<<(std::ostream &outstream, const DistributionFitterParameters &parameters) {

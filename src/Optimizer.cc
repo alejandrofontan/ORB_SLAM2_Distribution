@@ -201,19 +201,18 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
     std::sort(mahalanobisDistancesSorted.begin(),mahalanobisDistancesSorted.end());
 
     // Get subset of the distribution
-    int endIdx = int(mahalanobisDistancesSorted.size()) * 0.75;
+    int endIdx = int(mahalanobisDistancesSorted.size()) * parameters.pExp;
     std::vector<double> subset(mahalanobisDistancesSorted.begin(), mahalanobisDistancesSorted.begin() + endIdx + 1);
 
     double th2_2dof, th2_3dof;
     double mu{parameters.localBundleAdjustment.mu_lognormal}, sigma{parameters.localBundleAdjustment.sigma_lognormal};
     DIST_FITTER::DistributionFitter::FitLogNormal(subset,mu,sigma);
 
-    double correctionFactor = DIST_FITTER::DistributionFitter::GetCorrectionFactor(parameters.inlierProbability);
+    double correctionFactor = DIST_FITTER::DistributionFitter::GetCorrectionFactor(parameters.pExp,parameters.inlierProbability,sigma);
 
     th2_2dof = DIST_FITTER::DistributionFitter::Lognormal_icdf(parameters.inlierProbability,mu,sigma);
 
     cout << "[Robust bundle adjustment] th2_2dof = "<< th2_2dof << endl;
-    cout << "[Robust bundle adjustment] correctionFactor = "<< correctionFactor << endl;
     cout << "[Robust bundle adjustment] new th2_2dof = "<< correctionFactor*th2_2dof << endl;
 
     vector<bool> isInlierMono =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesMono,correctionFactor*th2_2dof);
@@ -1234,14 +1233,16 @@ void Optimizer::RobustLocalBundleAdjustment(Keyframe& refKeyframe, bool *stopFla
         std::sort(mahalanobisDistancesSorted.begin(),mahalanobisDistancesSorted.end());
 
         // Get subset of the distribution
-        int endIdx = int(mahalanobisDistancesSorted.size()) * 0.75;
+        int endIdx = int(mahalanobisDistancesSorted.size()) * parameters.pExp;
         std::vector<double> subset(mahalanobisDistancesSorted.begin(), mahalanobisDistancesSorted.begin() + endIdx + 1);
 
         DIST_FITTER::DistributionFitter::FitLogNormal(subset,
                                                       parameters.localBundleAdjustment.mu_lognormal,
                                                       parameters.localBundleAdjustment.sigma_lognormal);
 
-        double correctionFactor = DIST_FITTER::DistributionFitter::GetCorrectionFactor(parameters.inlierProbability);
+        double correctionFactor = DIST_FITTER::DistributionFitter::GetCorrectionFactor(parameters.pExp,
+                                                                                       parameters.inlierProbability,
+                                                                                       parameters.localBundleAdjustment.sigma_lognormal);
 
         th2_2dof = DIST_FITTER::DistributionFitter::Lognormal_icdf(parameters.inlierProbability,
                                                                    parameters.localBundleAdjustment.mu_lognormal,
@@ -1249,7 +1250,6 @@ void Optimizer::RobustLocalBundleAdjustment(Keyframe& refKeyframe, bool *stopFla
 
         Optimizer::parameters.UpdateInlierThresholds(correctionFactor*th2_2dof,th2_3dof);
         cout << "[Local Bundle Adjustment] th2_2dof = "<< th2_2dof << endl;
-        cout << "[Local Bundle Adjustment] correctionFactor = "<< correctionFactor << endl;
         cout << "[Local Bundle Adjustment] new th2_2dof = "<< parameters.th2_2dof << endl;
 
         // Get inliers

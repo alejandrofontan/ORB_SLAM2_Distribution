@@ -182,6 +182,7 @@ private:
     double th2_3dof{7.815};
     double th_2dof{sqrt(th2_2dof)};
     double th_3dof{sqrt(th2_3dof)};
+    double pExp{0.75};
 
     PoseOptimizationParameters poseOptimization{};
     LocalBundleAdjustmentParameters localBundleAdjustment{};
