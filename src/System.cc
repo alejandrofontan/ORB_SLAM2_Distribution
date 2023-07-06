@@ -147,10 +147,26 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     DIST_FITTER::DistributionFitter::verbosity = DIST_FITTER::DistributionFitter::VerbosityLevel::MEDIUM;
     DIST_FITTER::DistributionFitter::params.SetParameters(logNormal,burr);
 
-    //vector<double> probabilities{0.75,0.775,0.8,0.825,0.85,0.875,0.9,0.95,0.975,0.99};
-    //vector<double> chi2{0.5,1.0,2.0,4.0,5.991,8.0,16.0,32.0,64.0,128.0};
+#ifdef COMPILED_ABLATION
+    vector<double> probabilities{0.5,0.6,
+                                 0.7,0.725,0.75,0.775,
+                                 0.8,0.8125,0.825,0.8375,0.85,0.8625,0.875,0.8875,
+                                 0.9,0.9125,0.925,0.9375,0.95,0.9625,0.975,0.9875,
+                                 0.99,0.995,0.999};
+
+    vector<double> chi2{0.0625,0.125,0.25,
+                        0.5,1,2,
+                        3,4,4.5,
+                        5,5.5,5.75,
+                        5.991,
+                        6.25,6.5,7,
+                        7.5,8,9,
+                        16,32,64,
+                        128,256,512};
+
     //Optimizer::parameters.UpdateInlierProbability(probabilities[expId]);
     //Optimizer::parameters.UpdateInlierThresholds(chi2[expId],chi2[expId]);
+#endif
 
     //Create KeyFrame Database
     mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
@@ -653,15 +669,22 @@ void System::readImage(cv::Mat& im, const string& imagePath){
 void System::SaveStatisticsToFiles(const string& pathToFiles){
     cout << "Saving Statistics Files: "<< pathToFiles << endl;
 #ifdef COMPILED_DEBUG
-    //cout << "    "<< "mahalanobisDistances.txt" << endl;
-    //saveVectorToFile(Optimizer::mahalanobisDistancesToSave,pathToFiles + "mahalanobisDistances.txt");
+#ifdef COMPILED_ABLATION
+    cout << "    "<< "residuals_u.txt" << endl;
+    saveVectorToFile(Optimizer::residuals_u,pathToFiles + "residuals_u.txt");
+    cout << "    "<< "residuals_v.txt" << endl;
+    saveVectorToFile(Optimizer::residuals_v,pathToFiles + "residuals_v.txt");
+#endif
 
-    //cout << "    "<< "inlierThreshold.txt" << endl;
-    //saveVectorToFile(Optimizer::inlierThreshold,pathToFiles + "inlierThreshold.txt");
+    cout << "    "<< "inlierThreshold.txt" << endl;
+    saveVectorToFile(Optimizer::inlierThreshold,pathToFiles + "inlierThreshold.txt");
 
     cout << "    "<< "outlierPercentage.txt" << endl;
     saveVectorToFile(Optimizer::outlierPercentage,pathToFiles + "outlierPercentage.txt");
 
+    cout << "    "<< "ablationParameters.txt" << endl;
+    vector<double> ablationParameters{Optimizer::parameters.inlierProbability,Optimizer::parameters.pExp, Optimizer::parameters.th2_2dof};
+    saveVectorToFile(ablationParameters,pathToFiles + "ablationParameters.txt");
 
     auto mapPoints = mpMap->GetAllMapPoints();
     int numberOfObservations = 0;
