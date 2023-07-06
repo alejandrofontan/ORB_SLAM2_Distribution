@@ -41,7 +41,6 @@ then
 			"rgbd_dataset_freiburg1_desk" 
 			"rgbd_dataset_freiburg1_xyz"
 			"rgbd_dataset_freiburg2_desk"
-			"rgbd_dataset_freiburg2_xyz"
 			"rgbd_dataset_freiburg3_long_office_household"
 			"rgbd_dataset_freiburg3_nostructure_texture_near_withloop"
 			"rgbd_dataset_freiburg3_structure_texture_far"
@@ -49,7 +48,7 @@ then
 		)
 		sequenceSettings=(
 			"rgbdtum1.yaml" "rgbdtum1.yaml"
-			"rgbdtum2.yaml" "rgbdtum2.yaml"
+			"rgbdtum2.yaml"
 			"rgbdtum3.yaml" "rgbdtum3.yaml" "rgbdtum3.yaml" "rgbdtum3.yaml" 
 		)
 	fi
@@ -551,10 +550,10 @@ then
 	if [ $sequenceGroup == 'testGroup' ]
 	then 
 		sequenceNames=(
-			"00" "01" "02" "03" "04" "05" "06" "07" "08" "09" "10"
+			"00" "02" "03" "04" "05" "06" "07" "08" "09" "10"
 		)
 		sequenceSettings=( 
-			"KITTI00-02.yaml" "KITTI00-02.yaml" "KITTI00-02.yaml"
+			"KITTI00-02.yaml" "KITTI00-02.yaml"
 			"KITTI03.yaml"
 			"KITTI04-12.yaml" "KITTI04-12.yaml" "KITTI04-12.yaml" "KITTI04-12.yaml"
 			"KITTI04-12.yaml" "KITTI04-12.yaml" "KITTI04-12.yaml"
@@ -908,16 +907,12 @@ then
 	if [ $sequenceGroup == 'testGroup' ]
 	then 
 		sequenceNames=(
-			"cables_1"
-			"einstein_1"
 			"large_loop_1"
-			"plant_scene_2"
 			"repetitive"
 			"table_3"
 			
 		)
-		sequenceSettings=( 
-			"eth.yaml" "eth.yaml" "eth.yaml"
+		sequenceSettings=( 			
 			"eth.yaml" "eth.yaml" "eth.yaml"
 		)
 	fi
