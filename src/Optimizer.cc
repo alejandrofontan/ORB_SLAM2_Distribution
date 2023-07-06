@@ -33,8 +33,11 @@ namespace ORB_SLAM2
 
 OptimizerParameters Optimizer::parameters{};
 #ifdef COMPILED_DEBUG
-    //vector<double> Optimizer::mahalanobisDistancesToSave{};
-    //vector<double> Optimizer::inlierThreshold{};
+    #ifdef COMPILED_ABLATION
+    vector<double> Optimizer::residuals_u{};
+    vector<double> Optimizer::residuals_v{};
+    #endif
+    vector<double> Optimizer::inlierThreshold{};
     vector<double> Optimizer::outlierPercentage{};
 #endif
 
@@ -221,6 +224,23 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
     // Check inlier observations
     setInliers(edgesMono, isInlierMono);
     setInliers(edgesStereo, isInlierStereo);
+#ifdef COMPILED_ABLATION
+    #ifdef COMPILED_DEBUG
+    residuals_u.clear();
+    residuals_v.clear();
+    for(size_t iEdge{0}; iEdge < edgesMono.size(); iEdge++)
+    {
+        auto* e = edgesMono[iEdge];
+        e->computeError();
+        auto error = e->error();
+        auto inf = e->information();
+        double u_mahalanobis = error(0)*sqrt(inf(0,0));
+        double v_mahalanobis = error(1)*sqrt(inf(1,1));
+        residuals_u.push_back(u_mahalanobis);
+        residuals_v.push_back(v_mahalanobis);
+    }
+    #endif
+#endif
     //setEdgesRobustKernel(edgesMono, float(sqrt(inlierThresholdMono)));
     //setEdgesRobustKernel(edgesStereo, float(sqrt(inlierThresholdStereo)));
 
@@ -1256,14 +1276,6 @@ void Optimizer::RobustLocalBundleAdjustment(Keyframe& refKeyframe, bool *stopFla
         vector<bool> isInlierMono =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesMono, parameters.th2_2dof);
         vector<bool> isInlierStereo =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesStereo, parameters.th2_3dof);
 
-#ifdef COMPILED_DEBUG
-        int numInliers{0};
-        for(const auto& inlier: isInlierMono)
-            if(inlier)
-                numInliers++;
-        Optimizer::outlierPercentage.push_back(double(numInliers)/double(isInlierMono.size()));
-#endif
-
         // Check inlier observations
         setInliers(edgesMono, isInlierMono);
         setInliers(edgesStereo, isInlierStereo);
@@ -1299,6 +1311,15 @@ void Optimizer::RobustLocalBundleAdjustment(Keyframe& refKeyframe, bool *stopFla
 
     vector<bool> isInlierMono =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesMono,parameters.th2_2dof);
     vector<bool> isInlierStereo =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesStereo,parameters.th2_3dof);
+
+#ifdef COMPILED_DEBUG
+    int numInliers{0};
+    for(const auto& inlier: isInlierMono)
+        if(inlier)
+            numInliers++;
+    Optimizer::outlierPercentage.push_back(double(numInliers)/double(isInlierMono.size()));
+    Optimizer::inlierThreshold.push_back(parameters.th2_2dof);
+#endif
 
     // Check inlier observations
     for(size_t i=0, iend = edgesMono.size(); i<iend;i++){

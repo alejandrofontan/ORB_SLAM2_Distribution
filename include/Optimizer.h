@@ -46,8 +46,10 @@ class Optimizer {
 public:
     static OptimizerParameters parameters;
 #ifdef COMPILED_DEBUG
-    //static vector<double> mahalanobisDistancesToSave;
-    //static vector<double> inlierThreshold;
+    #ifdef COMPILED_ABLATION
+    static vector<double> residuals_u, residuals_v;
+    #endif
+    static vector<double> inlierThreshold;
     static vector<double> outlierPercentage;
 #endif
     void static BundleAdjustment(const std::vector<Keyframe> &vpKF, const std::vector<MapPt> &vpMP,
@@ -177,11 +179,12 @@ private:
     float deltaMono{sqrtf(chi2_2dof)};
     float deltaStereo{sqrtf(chi2_3dof)};
 
-    double inlierProbability{0.85};
+public:
     double th2_2dof{5.991};
     double th2_3dof{7.815};
     double th_2dof{sqrt(th2_2dof)};
     double th_3dof{sqrt(th2_3dof)};
+    double inlierProbability{0.85};
     double pExp{0.75};
 
     PoseOptimizationParameters poseOptimization{};
