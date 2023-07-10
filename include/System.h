@@ -64,7 +64,8 @@ public:
     // Initialize the SLAM system. It launches the Local Mapping, Loop Closing and Viewer threads.
     System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor,
            const int expId = 0,
-           const bool bUseViewer = true);
+           const bool bUseViewer = true,
+           const string resultsPath = "");
 
     // Proccess the given stereo frame. Images must be synchronized and rectified.
     // Input images: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to grayscale.
@@ -199,6 +200,7 @@ private:
 
     // Test Variables
     int expId{0};
+    string resultsPath{""};
 
 public:
     // Image resolution

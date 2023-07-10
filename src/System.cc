@@ -37,8 +37,9 @@ namespace ORB_SLAM2
 
 System::System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor,
                const int expId,
-               const bool bUseViewer):mSensor(sensor), mpViewer(static_cast<Viewer*>(NULL)), mbReset(false),mbActivateLocalizationMode(false),
-        mbDeactivateLocalizationMode(false), expId(expId)
+               const bool bUseViewer,
+               const string resultsPath):mSensor(sensor), mpViewer(static_cast<Viewer*>(NULL)), mbReset(false),mbActivateLocalizationMode(false),
+        mbDeactivateLocalizationMode(false), expId(expId), resultsPath(resultsPath)
 {
 
     RandomIntegerGenerator::seedRandomGenerator();
@@ -443,6 +444,10 @@ void System::Shutdown()
 #endif
 
 #ifdef COMPILED_ABLATION_GBA
+    // Save
+    SaveFrameTrajectoryTUM(resultsPath + "_FrameTrajectoryBeforeBA.txt");
+    SaveKeyFrameTrajectoryTUM(resultsPath + "_KeyFrameTrajectoryBeforeBA.txt");
+
     GlobalRobustBundleAdjustment();
 #endif
 }
