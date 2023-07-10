@@ -35,12 +35,13 @@ then
 		)
 	fi
 	
-	if [ $sequenceGroup == 'testGroup' ]
+	if [ $sequenceGroup == 'miniTestGroup' ]
 	then 
 		sequenceNames=(
 			"rgbd_dataset_freiburg1_desk" 
 			"rgbd_dataset_freiburg1_xyz"
 			"rgbd_dataset_freiburg2_desk"
+			"rgbd_dataset_freiburg2_xyz"
 			"rgbd_dataset_freiburg3_long_office_household"
 			"rgbd_dataset_freiburg3_nostructure_texture_near_withloop"
 			"rgbd_dataset_freiburg3_structure_texture_far"
@@ -48,7 +49,7 @@ then
 		)
 		sequenceSettings=(
 			"rgbdtum1.yaml" "rgbdtum1.yaml"
-			"rgbdtum2.yaml"
+			"rgbdtum2.yaml" "rgbdtum2.yaml"
 			"rgbdtum3.yaml" "rgbdtum3.yaml" "rgbdtum3.yaml" "rgbdtum3.yaml" 
 		)
 	fi
@@ -560,6 +561,19 @@ then
 		)
 	fi
 	
+	if [ $sequenceGroup == 'miniTestGroup' ]
+	then 
+		sequenceNames=(
+			"00" "02" "03" "04" "05" "06" "07" "08" "09" "10"
+		)
+		sequenceSettings=( 
+			"KITTI00-02.yaml" "KITTI00-02.yaml"
+			"KITTI03.yaml"
+			"KITTI04-12.yaml" "KITTI04-12.yaml" "KITTI04-12.yaml" "KITTI04-12.yaml"
+			"KITTI04-12.yaml" "KITTI04-12.yaml" "KITTI04-12.yaml"
+		)
+	fi
+	
 	if [ $sequenceGroup == 'motionBiasSubset' ]
 	then 
 		sequenceNames=(
@@ -682,7 +696,7 @@ then
 		)		
 	fi
 	
-	if [ $sequenceGroup == 'testGroup' ]
+	if [ $sequenceGroup == 'miniTestGroup' ]
 	then 
 		sequenceNames=(
 			"V1_01_easy" "V1_02_medium" "V1_03_difficult"
@@ -695,7 +709,7 @@ then
 			"V201" "V202" "V203"
 			"MH01" "MH02" "MH03"
 			"MH04" "MH05" 
-		)
+		)		
 	fi
 	
 	if [ $sequenceGroup == 'V1_01_easy' ]
@@ -905,6 +919,19 @@ then
 	fi
 	
 	if [ $sequenceGroup == 'testGroup' ]
+	then 
+		sequenceNames=(
+			"large_loop_1"
+			"repetitive"
+			"table_3"
+			
+		)
+		sequenceSettings=( 			
+			"eth.yaml" "eth.yaml" "eth.yaml"
+		)
+	fi
+	
+	if [ $sequenceGroup == 'miniTestGroup' ]
 	then 
 		sequenceNames=(
 			"large_loop_1"

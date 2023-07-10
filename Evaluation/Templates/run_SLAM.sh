@@ -276,9 +276,9 @@ then
 			frame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_Frame_TUMformat_results.txt"
 			log_frame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_Frame_TUMformat_results_log.txt"
 			
-			> $keyFrame_TUMformat_results
-			> $frame_TUMformat_results
-			> $log_frame_TUMformat_results
+			#> $keyFrame_TUMformat_results
+			#> $frame_TUMformat_results
+			#> $log_frame_TUMformat_results
 			. ./evaluate_experiment.sh 
 				
 			evaluationName="chi2"
@@ -288,9 +288,9 @@ then
 			keyFrame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_KeyFrame_TUMformat_results.txt"
 			frame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_Frame_TUMformat_results.txt"
 			log_frame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_Frame_TUMformat_results_log.txt"
-			> $keyFrame_TUMformat_results
-			> $frame_TUMformat_results
-			> $log_frame_TUMformat_results
+			#> $keyFrame_TUMformat_results
+			#> $frame_TUMformat_results
+			#> $log_frame_TUMformat_results
 			. ./evaluate_experiment.sh 
 			
 			evaluationName="probability"
@@ -300,9 +300,9 @@ then
 			keyFrame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_KeyFrame_TUMformat_results.txt"
 			frame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_Frame_TUMformat_results.txt"
 			log_frame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_Frame_TUMformat_results_log.txt"
-			> $keyFrame_TUMformat_results
-			> $frame_TUMformat_results
-			> $log_frame_TUMformat_results
+			#> $keyFrame_TUMformat_results
+			#> $frame_TUMformat_results
+			#> $log_frame_TUMformat_results
 			. ./evaluate_experiment.sh 
 			
 			evaluationName="before"
@@ -312,9 +312,9 @@ then
 			keyFrame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_KeyFrame_TUMformat_results.txt"
 			frame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_Frame_TUMformat_results.txt"
 			log_frame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_Frame_TUMformat_results_log.txt"
-			> $keyFrame_TUMformat_results
-			> $frame_TUMformat_results
-			> $log_frame_TUMformat_results
+			#> $keyFrame_TUMformat_results
+			#> $frame_TUMformat_results
+			#> $log_frame_TUMformat_results
 			. ./evaluate_experiment.sh 
 			
 			evaluationName="after"
@@ -324,9 +324,9 @@ then
 			keyFrame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_KeyFrame_TUMformat_results.txt"
 			frame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_Frame_TUMformat_results.txt"
 			log_frame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_Frame_TUMformat_results_log.txt"
-			> $keyFrame_TUMformat_results
-			> $frame_TUMformat_results
-			> $log_frame_TUMformat_results
+			#> $keyFrame_TUMformat_results
+			#> $frame_TUMformat_results
+			#> $log_frame_TUMformat_results
 			. ./evaluate_experiment.sh 
 		fi
 										

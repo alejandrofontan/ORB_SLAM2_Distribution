@@ -2,10 +2,12 @@
 echo ""
 echo "Executing evaluate_experiment.sh : ${evaluationName}"
 
-keyFrameTrajectory_TUMformat_results="${evaluationSequenceFolder}/${evaluationName}_KeyFrame_TUMformat_results.txt"
-frameTrajectory_TUMformat_results="${evaluationSequenceFolder}/${evaluationName}_Frame_TUMformat_results.txt"
-#> $keyFrameTrajectory_TUMformat_results
-> $frameTrajectory_TUMformat_results
+#keyFrameTrajectory_TUMformat_results="${evaluationSequenceFolder}/${evaluationName}_KeyFrame_TUMformat_results.txt"
+#frameTrajectory_TUMformat_results="${evaluationSequenceFolder}/${evaluationName}_Frame_TUMformat_results.txt"
+
+#> $keyFrame_TUMformat_results
+> $frame_TUMformat_results
+> $log_frame_TUMformat_results
 
 #echo "    evaluating ${#txtKeyFrameFiles[@]} KeyFrame trajectories of $sequenceName"
 echo "    evaluating ${#txtFrameFiles[@]} Frame trajectories of $sequenceName"
@@ -24,7 +26,7 @@ echo "    evaluating ${#txtFrameFiles[@]} Frame trajectories of $sequenceName"
 				
 #	rpe=$(python2 ${evaluate_rpe_script} --delta ${frequence}  --delta_unit 'f' --scale ${scale} $groundtruth_file $j)
 #	numKey_ate_scale_rpe="${numKey_ate_scale} ${rpe}"
-#	(echo ${numKey_ate_scale_rpe}) >> $keyFrameTrajectory_TUMformat_results	
+#	(echo ${numKey_ate_scale_rpe}) >> $keyFrame_TUMformat_results	
 #	txtIndex=$((txtIndex + 1))	    	      	          
 #done
 	
@@ -42,7 +44,7 @@ do
 				
 	rpe=$(python2 ${evaluate_rpe_script} --delta ${frequence}  --delta_unit 'f' --scale ${scale} $groundtruth_file $j)
 	numKey_ate_scale_rpe="${numKey_ate_scale} ${rpe}"
-	(echo ${numKey_ate_scale_rpe}) >> $frameTrajectory_TUMformat_results	
+	(echo ${numKey_ate_scale_rpe}) >> $frame_TUMformat_results	
 	
 	(echo ${trajectoryFile}) >> $log_frame_TUMformat_results	
 	txtIndex=$((txtIndex + 1))	    	      	          

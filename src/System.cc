@@ -483,13 +483,13 @@ void UpdateChi2(const double& chi2){
 
     // Define Ablation Variable
     string ablationVariableName1{"probability"};
-    vector<double> ablationVariable1{0.5,0.6,0.7,0.8,0.9,0.95};
+    vector<double> ablationVariable1{0.5,0.6,0.7,0.75,0.8,0.85,0.9,0.95,0.99,0.999};
     Optimizer::parameters.estimateThreshold = true;
     GBA_ablation(ablationVariable1,ablationVariableName1,UpdateProbability);
 
     // Define Ablation Variable
     string ablationVariableName2{"chi2"};
-    vector<double> ablationVariable2{2.0,3.0,5.9,6.0};
+    vector<double> ablationVariable2{0.5,1.0,2.0,3.0,4.0,5.0,5.991,7.0,8.0,9.0};
     Optimizer::parameters.estimateThreshold = false;
     GBA_ablation(ablationVariable2,ablationVariableName2, UpdateChi2);
 
@@ -515,7 +515,7 @@ void System::GBA_ablation(const vector<double>& ablationVariable, const string& 
             mapPoint->SetWorldPos(Converter::toCvMat(slamGraph->getXYZ(mapPoint->mnId)));
 
         // Update ablation variable
-        cout << "Ablation "<< ablationId << " with variable value = " << ablationVariable[ablationId] << endl;
+        cout << "Ablation "<< ablationId << " with variable " << ablationVariableName << " = " << ablationVariable[ablationId] << endl;
         operation(ablationVariable[ablationId]);
 
         // Global Bundle Adjustment
@@ -750,23 +750,24 @@ void System::readImage(cv::Mat& im, const string& imagePath){
 
 void System::SaveStatisticsToFiles(const string& pathToFiles){
     cout << "Saving Statistics Files: "<< pathToFiles << endl;
-#ifdef COMPILED_DEBUG
 #ifdef COMPILED_ABLATION_GBA
+    cout << "    "<< "ablationParameters.txt" << endl;
+    vector<double> ablationParameters{Optimizer::parameters.inlierProbability,Optimizer::parameters.pExp, Optimizer::parameters.th2_2dof};
+    saveVectorToFile(ablationParameters,pathToFiles + "ablationParameters.txt");
+    #ifdef COMPILED_DEBUG
     cout << "    "<< "residuals_u.txt" << endl;
     saveVectorToFile(Optimizer::residuals_u,pathToFiles + "residuals_u.txt");
     cout << "    "<< "residuals_v.txt" << endl;
     saveVectorToFile(Optimizer::residuals_v,pathToFiles + "residuals_v.txt");
+    #endif
 #endif
 
+#ifdef COMPILED_DEBUG
     cout << "    "<< "inlierThreshold.txt" << endl;
     saveVectorToFile(Optimizer::inlierThreshold,pathToFiles + "inlierThreshold.txt");
 
     cout << "    "<< "outlierPercentage.txt" << endl;
     saveVectorToFile(Optimizer::outlierPercentage,pathToFiles + "outlierPercentage.txt");
-
-    cout << "    "<< "ablationParameters.txt" << endl;
-    vector<double> ablationParameters{Optimizer::parameters.inlierProbability,Optimizer::parameters.pExp, Optimizer::parameters.th2_2dof};
-    saveVectorToFile(ablationParameters,pathToFiles + "ablationParameters.txt");
 
     auto mapPoints = mpMap->GetAllMapPoints();
     int numberOfObservations = 0;

@@ -1,6 +1,6 @@
 
 
-experimentName_="chi2_full_075"
+experimentName_="outlierAblation"
 systemVersion_="ORB_SLAM2_${experimentName_}"
 datasets=("rgbdtum" "kitti" "eth" "euroc")
 sequenceGroups=("testGroup" "testGroup" "testGroup" "testGroup")	

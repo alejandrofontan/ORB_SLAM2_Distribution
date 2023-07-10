@@ -127,9 +127,9 @@ void LocalMapping::RunSequential()
         }
 
         // Local BA
-        if(mpMap->KeyFramesInMap()>2){
+        if(mpMap->KeyFramesInMap() > 2){
             bool mbAbortBA_sequential = false;
-            Optimizer::RobustLocalBundleAdjustment(mpCurrentKeyFrame,&mbAbortBA_sequential, mpMap);
+            Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame,&mbAbortBA_sequential, mpMap);
         }
 
         // Check redundant local Keyframes
