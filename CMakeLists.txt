@@ -2,10 +2,11 @@ cmake_minimum_required(VERSION 2.8)
 project(ORB_SLAM2_Distribution)
 
 option(COMPILE_WITH_PANGOLIN "Compile using Pangolin for Visualization" ON)
-option(COMPILE_SEQUENTIAL "Compile Sequential Version Of ORB_SLAM2" OFF)
+option(COMPILE_SEQUENTIAL "Compile Sequential Version Of ORB_SLAM2" ON)
 option(COMPILE_DETERMINISTIC "Compile Deterministic Version Of ORB_SLAM2" OFF)
 option(COMPILE_DEBUG "Compile DEBUG Version Of ORB_SLAM2" OFF)
 option(COMPILE_ABLATION "Compile ABLATION Version Of ORB_SLAM2" OFF)
+option(COMPILE_ABLATION_GBA "Compile GBA ABLATION Version Of ORB_SLAM2" ON)
 option(COMPILE_FITRESOLUTION "Compile FIT RESOLUTION Version Of ORB_SLAM2" OFF)
 
 if(COMPILE_WITH_PANGOLIN)
@@ -26,6 +27,10 @@ endif()
 
 if(COMPILE_ABLATION)
     add_definitions(-DCOMPILED_ABLATION=1)
+endif()
+
+if(COMPILE_ABLATION_GBA)
+    add_definitions(-DCOMPILED_ABLATION_GBA=1)
 endif()
 
 if(COMPILE_FITRESOLUTION)
@@ -122,21 +127,21 @@ if(COMPILE_WITH_PANGOLIN)
 endif()
 
 # Build examples
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/rgbd)
+#set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/rgbd)
 
-add_executable(rgbd_tum
-Examples/rgbd/rgbd_tum.cc)
-target_link_libraries(rgbd_tum ${PROJECT_NAME})
+#add_executable(rgbd_tum
+#Examples/rgbd/rgbd_tum.cc)
+#target_link_libraries(rgbd_tum ${PROJECT_NAME})
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/stereo)
+#set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/stereo)
 
-add_executable(stereo_kitti
-Examples/stereo/stereo_kitti.cc)
-target_link_libraries(stereo_kitti ${PROJECT_NAME})
+#add_executable(stereo_kitti
+#Examples/stereo/stereo_kitti.cc)
+#target_link_libraries(stereo_kitti ${PROJECT_NAME})
 
-add_executable(stereo_euroc
-Examples/stereo/stereo_euroc.cc)
-target_link_libraries(stereo_euroc ${PROJECT_NAME})
+#add_executable(stereo_euroc
+#Examples/stereo/stereo_euroc.cc)
+#target_link_libraries(stereo_euroc ${PROJECT_NAME})
 
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/mono)
@@ -157,23 +162,23 @@ add_executable(mono_euroc
         Examples/mono/mono_euroc.cc)
 target_link_libraries(mono_euroc ${PROJECT_NAME})
 
-add_executable(mono_vector
-        Examples/mono/mono_vector.cc)
-target_link_libraries(mono_vector ${PROJECT_NAME})
+#add_executable(mono_vector
+#        Examples/mono/mono_vector.cc)
+#target_link_libraries(mono_vector ${PROJECT_NAME})
 
-add_executable(mono_fourseasons
-        Examples/mono/mono_fourseasons.cc)
-target_link_libraries(mono_fourseasons ${PROJECT_NAME})
+#add_executable(mono_fourseasons
+#        Examples/mono/mono_fourseasons.cc)
+#target_link_libraries(mono_fourseasons ${PROJECT_NAME})
 
 add_executable(mono_eth
         Examples/mono/mono_eth.cc)
 target_link_libraries(mono_eth ${PROJECT_NAME})
 
-add_executable(mono_oxford
-        Examples/mono/mono_oxford.cc)
-target_link_libraries(mono_oxford ${PROJECT_NAME})
+#add_executable(mono_oxford
+#        Examples/mono/mono_oxford.cc)
+#target_link_libraries(mono_oxford ${PROJECT_NAME})
 
-add_executable(mono_interior
-        Examples/mono/mono_interior.cc)
-target_link_libraries(mono_interior ${PROJECT_NAME})
+#add_executable(mono_interior
+#        Examples/mono/mono_interior.cc)
+#target_link_libraries(mono_interior ${PROJECT_NAME})
 

@@ -27,6 +27,8 @@
 
 #include <thread>
 #include <iomanip>
+#include <iostream>
+#include <fstream>
 
 #ifdef COMPILED_WITH_PANGOLIN
 #include<pangolin/pangolin.h>
@@ -444,11 +446,60 @@ void System::Shutdown()
 #endif
 
 #ifdef COMPILED_ABLATION_GBA
-    // Save
-    SaveFrameTrajectoryTUM(resultsPath + "_FrameTrajectoryBeforeBA.txt");
-    SaveKeyFrameTrajectoryTUM(resultsPath + "_KeyFrameTrajectoryBeforeBA.txt");
 
+    cout << "\n[GBA Ablation] exp id " << expId << " starts ... "<< endl;
+
+    // Create log file
+    const std::string filename = resultsPath + "/GBA_Ablation_log.txt";
+    std::ofstream file(filename, std::ios::out | std::ios::app);
+
+    string resultsPath_expId = resultsPath + "/" + ORB_SLAM2::paddingZeros(to_string(expId));
+
+    // Save trajectory before Global Bundle Adjustment
+    SaveFrameTrajectoryTUM(resultsPath_expId + "_FrameTrajectoryBeforeBA.txt");
+    SaveKeyFrameTrajectoryTUM(resultsPath_expId + "_KeyFrameTrajectoryBeforeBA.txt");
+
+    // Global Bundle Adjustment
     GlobalRobustBundleAdjustment();
+
+    // Save trajectory after Global Bundle Adjustment
+    SaveFrameTrajectoryTUM(resultsPath_expId + "_FrameTrajectoryAfterBA.txt");
+    SaveKeyFrameTrajectoryTUM(resultsPath_expId + "_KeyFrameTrajectoryAfterBA.txt");
+
+    // Save a copy of the Map (keyframes and mapPoints)
+    for(auto& mapPoint: mpMap->GetAllMapPoints())
+        slamGraph->addMapPoint(mapPoint->mnId,mapPoint->GetXYZ());
+    slamGraph->saveMap();
+
+    // Add noise to the saved copy
+    slamGraph->addNoiseToSavedMap(0.1);
+
+    // Define Ablation Variable
+    vector<double> ablationVariable{0.5,0.6,0.7,0.8,0.9,0.95};
+
+    // Ablation loop
+    for(int ablationId{0}; ablationId < ablationVariable.size(); ablationId++){
+        // Reset Map (keyframes and mapPoints) from copy
+        slamGraph->resetMapFromCopy();
+        for(auto& keyframe: mpMap->GetAllKeyFrames())
+            keyframe->SetPose(Converter::toCvMat(slamGraph->getTcw(keyframe->mnFrameId)));
+        for(auto& mapPoint: mpMap->GetAllMapPoints())
+            mapPoint->SetWorldPos(Converter::toCvMat(slamGraph->getXYZ(mapPoint->mnId)));
+
+        // Update ablation variable
+        cout << "Ablation "<< ablationId << " with variable value = " << ablationVariable[ablationId] << endl;
+        Optimizer::parameters.UpdateInlierProbability(ablationVariable[ablationId]);
+
+        // Global Bundle Adjustment
+        GlobalRobustBundleAdjustment();
+
+        // Save iteration results
+        string resultsPath_ = resultsPath_expId + "_" + ORB_SLAM2::paddingZeros(to_string(ablationId));
+        SaveFrameTrajectoryTUM(resultsPath_ + "_AblationFrame.txt");
+        SaveKeyFrameTrajectoryTUM(resultsPath_ + "_AblationKeyFrame.txt");
+        file << resultsPath_ + "_AblationFrame.txt " << expId << " " << ablationId << " " << ablationVariable[ablationId]  << std::endl;
+
+    }
 #endif
 }
 

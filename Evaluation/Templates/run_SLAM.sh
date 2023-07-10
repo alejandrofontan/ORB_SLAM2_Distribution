@@ -263,64 +263,54 @@ then
 
 		if [ $mode == 'mono' ]
 		then
-			
-			keyFrameTrajectory_TUMformat_results="$sequenceFolder/KeyFrameTrajectory_TUMformat_results.txt"
-			frameTrajectory_TUMformat_results="$sequenceFolder/FrameTrajectory_TUMformat_results.txt"
-			> $keyFrameTrajectory_TUMformat_results
-			> $frameTrajectory_TUMformat_results
+			evaluationName="trajectory"			
 			txtKeyFrameFiles=($(ls ${sequenceFolder}/*_KeyFrameTrajectory.txt))
 			txtFrameFiles=($(ls ${sequenceFolder}/*_FrameTrajectory.txt))
-			echo "    evaluating ${#txtKeyFrameFiles[@]} KeyFrame trajectories of $sequenceName"
-			echo "    evaluating ${#txtFrameFiles[@]} Frame trajectories of $sequenceName"
 			
-			txtIndex=0
-			for j in "${txtKeyFrameFiles[@]}"
-			do
-				echo $j
-				trajectoryFile="${j%.txt}"
-				alignedTrajectoryFile="${trajectoryFile}_aligned"
-				> $alignedTrajectoryFile
-				alignedTrajectoryPlot="${trajectoryFile}_alignedPlot"
-				
-				#if [ ${hpc} == "y" ]
-				#then
-				#	numKey_ate_scale=$(python2 ${evaluate_ate_scale_script} --save_associations ${alignedTrajectoryFile} --max_difference ${max_diff} $groundtruth_file $j)
-				#	scale=$(python2 ${evaluate_scale_script} --max_difference ${max_diff} $groundtruth_file $j)
-				#else
-					numKey_ate_scale=$(python2 ${evaluate_ate_scale_script} --plot ${alignedTrajectoryPlot} --save_associations ${alignedTrajectoryFile} --max_difference ${max_diff} $groundtruth_file $j)
-					scale=$(python2 ${evaluate_scale_script} --max_difference ${max_diff} $groundtruth_file $j)					
-				#fi
-				
-				
-				rpe=$(python2 ${evaluate_rpe_script} --delta ${frequence}  --delta_unit 'f' --scale ${scale} $groundtruth_file $j)
-				numKey_ate_scale_rpe="${numKey_ate_scale} ${rpe}"
-				(echo ${numKey_ate_scale_rpe}) >> $keyFrameTrajectory_TUMformat_results	
-				txtIndex=$((txtIndex + 1))	    	      	          
-			done
+			keyFrame_TUMformat_results="$sequenceFolder/${evaluationName}_KeyFrame_TUMformat_results.txt"
+			frame_TUMformat_results="$sequenceFolder/${evaluationName}_Frame_TUMformat_results.txt"
+			log_frame_TUMformat_results="$sequenceFolder/${evaluationName}_Frame_TUMformat_results_log.txt"
 			
-			txtIndex=0
-			for j in "${txtFrameFiles[@]}"
-			do
-				echo $j
-				trajectoryFile="${j%.txt}"
-				alignedTrajectoryFile="${trajectoryFile}_aligned"
-				> $alignedTrajectoryFile
-				alignedTrajectoryPlot="${trajectoryFile}_alignedPlot"
+			> $keyFrame_TUMformat_results
+			> $frame_TUMformat_results
+			> $log_frame_TUMformat_results
+			. ./evaluate_experiment.sh 
 				
-				#if [ ${hpc} == "y" ]
-				#then
-				#	numKey_ate_scale=$(python2 ${evaluate_ate_scale_script} --save_associations ${alignedTrajectoryFile} --max_difference ${max_diff} $groundtruth_file $j)
-				#	scale=$(python2 ${evaluate_scale_script} --max_difference ${max_diff} $groundtruth_file $j)
-				#else
-					numKey_ate_scale=$(python2 ${evaluate_ate_scale_script} --plot ${alignedTrajectoryPlot} --save_associations ${alignedTrajectoryFile} --max_difference ${max_diff} $groundtruth_file $j)
-					scale=$(python2 ${evaluate_scale_script} --max_difference ${max_diff} $groundtruth_file $j)
-				#fi
-				
-				rpe=$(python2 ${evaluate_rpe_script} --delta ${frequence} --delta_unit 'f' --scale ${scale} $groundtruth_file $j)
-				numKey_ate_scale_rpe="${numKey_ate_scale} ${rpe}"
-				(echo ${numKey_ate_scale_rpe} ) >> $frameTrajectory_TUMformat_results	
-				txtIndex=$((txtIndex + 1))	    	      	          
-			done
+			evaluationName="ablation"
+			txtKeyFrameFiles=($(ls ${sequenceFolder}/*_AblationKeyFrame.txt))
+			txtFrameFiles=($(ls ${sequenceFolder}/*_AblationFrame.txt))
+			
+			keyFrame_TUMformat_results="$sequenceFolder/${evaluationName}_KeyFrame_TUMformat_results.txt"
+			frame_TUMformat_results="$sequenceFolder/${evaluationName}_Frame_TUMformat_results.txt"
+			log_frame_TUMformat_results="$sequenceFolder/${evaluationName}_Frame_TUMformat_results_log.txt"
+			> $keyFrame_TUMformat_results
+			> $frame_TUMformat_results
+			> $log_frame_TUMformat_results
+			. ./evaluate_experiment.sh 
+			
+			evaluationName="before"
+			txtKeyFrameFiles=($(ls ${sequenceFolder}/*_KeyFrameTrajectoryBeforeBA.txt))
+			txtFrameFiles=($(ls ${sequenceFolder}/*_FrameTrajectoryBeforeBA.txt))
+			
+			keyFrame_TUMformat_results="$sequenceFolder/${evaluationName}_KeyFrame_TUMformat_results.txt"
+			frame_TUMformat_results="$sequenceFolder/${evaluationName}_Frame_TUMformat_results.txt"
+			log_frame_TUMformat_results="$sequenceFolder/${evaluationName}_Frame_TUMformat_results_log.txt"
+			> $keyFrame_TUMformat_results
+			> $frame_TUMformat_results
+			> $log_frame_TUMformat_results
+			. ./evaluate_experiment.sh 
+			
+			evaluationName="after"
+			txtKeyFrameFiles=($(ls ${sequenceFolder}/*_FrameTrajectoryAfterBA.txt))
+			txtFrameFiles=($(ls ${sequenceFolder}/*_KeyFrameTrajectoryAfterBA.txt))
+			
+			keyFrame_TUMformat_results="$sequenceFolder/${evaluationName}_KeyFrame_TUMformat_results.txt"
+			frame_TUMformat_results="$sequenceFolder/${evaluationName}_Frame_TUMformat_results.txt"
+			log_frame_TUMformat_results="$sequenceFolder/${evaluationName}_Frame_TUMformat_results_log.txt"
+			> $keyFrame_TUMformat_results
+			> $frame_TUMformat_results
+			> $log_frame_TUMformat_results
+			. ./evaluate_experiment.sh 
 		fi
 										
 	done

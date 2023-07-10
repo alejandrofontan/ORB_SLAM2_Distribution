@@ -75,7 +75,7 @@ int main(int argc, char **argv)
                            ORB_SLAM2::System::MONOCULAR,
                            stoi(experimentIndex),
                            activateVisualization,
-                           resultsPath);
+                           path_to_output);
 
     // Vector for tracking time statistics
     vector<ORB_SLAM2::Seconds> timesTrack{};

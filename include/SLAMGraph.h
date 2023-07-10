@@ -122,7 +122,7 @@ namespace SLAM_GRAPH {
 
         void saveMap();
         void resetMapFromCopy();
-        void addNoiseToMap(const double& noise_);
+        void addNoiseToSavedMap(const double& noise_);
 
     private:
         VerbosityLevel verbosity{};

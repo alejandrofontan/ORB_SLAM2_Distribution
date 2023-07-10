@@ -185,8 +185,6 @@ void SLAM_GRAPH::SLAMGraph::saveMap(){
     mapPointXYZ_0.clear();
     for(const auto& mapPoint: mapPoints)
         mapPointXYZ_0.insert(pair{mapPoint.second->getId(),mapPoint.second->getXYZ()});
-
-    addNoiseToMap(0.01);
 }
 
 void SLAM_GRAPH::SLAMGraph::resetMapFromCopy(){
@@ -197,8 +195,9 @@ void SLAM_GRAPH::SLAMGraph::resetMapFromCopy(){
         mapPoints.find(mapPointXYZ.first)->second->updateXYZ(mapPointXYZ.second);
 }
 
-void SLAM_GRAPH::SLAMGraph::addNoiseToMap(const double& noise_){
+void SLAM_GRAPH::SLAMGraph::addNoiseToSavedMap(const double& noise_){
 
+    // Estimate mean distance between consecutive keyframes
     double meanKeyframeDistance{0.0};
 
     auto it = keyframeTwc_0.begin();
@@ -214,13 +213,38 @@ void SLAM_GRAPH::SLAMGraph::addNoiseToMap(const double& noise_){
     for(auto& keyframeTwc: keyframeTwc_0){
         mat4 Twc = keyframeTwc.second;
         Twc.block<3,1>(0,3) += noise * vec3::Random();
-        //Twc.block<3,3>(0,0).eulerAngles()
+
+        /*Eigen::Quaterniond quaternion(Twc.block<3,3>(0,0));
+
+        Eigen::Vector3d euler = quaternion.toRotationMatrix().eulerAngles(2, 1, 0);  // ZYX order
+        euler += 0.1 * vec3::Random();
+
+        double roll, pitch, yaw;
+        roll = euler[2];
+        pitch = euler[1];
+        yaw = euler[0];
+
+        // Create the rotation matrix from the Euler angles
+        Eigen::AngleAxisd rollAngle(roll, Eigen::Vector3d::UnitX());
+        Eigen::AngleAxisd pitchAngle(pitch, Eigen::Vector3d::UnitY());
+        Eigen::AngleAxisd yawAngle(yaw, Eigen::Vector3d::UnitZ());
+        Eigen::Quaternion<double> q = rollAngle * yawAngle * pitchAngle;
+
+        cout << "add noise" << endl;
+        cout << Twc.block<3,3>(0,0) << endl;
+        cout << q.matrix() << endl;
+
+        Twc.block<3,3>(0,0) = q.matrix();*/
+
+        //keyframes.find(keyframeTwc.first)->second->updateTwc(Twc);
         keyframeTwc.second = Twc;
     }
 
     for(auto& mapPointXYZ: mapPointXYZ_0){
         vec3 XYZ = mapPointXYZ.second;
         XYZ += noise * vec3::Random();
+
+        //mapPoints.find(mapPointXYZ.first)->second->updateXYZ(XYZ);
         mapPointXYZ.second = XYZ;
     }
 
