@@ -1,9 +1,9 @@
 
 
-experimentName_="outlierAblation"
+experimentName_="exponentAblation"
 systemVersion_="ORB_SLAM2_${experimentName_}"
 datasets=("rgbdtum" "kitti" "eth" "euroc")
-sequenceGroups=("testGroup" "testGroup" "testGroup" "testGroup")	
+sequenceGroups=("miniTestGroup" "miniTestGroup" "miniTestGroup" "miniTestGroup")	
 
 workspacePath_="/home/fontan"
 resultsFolder_="ORB_SLAM2_Ablation"
