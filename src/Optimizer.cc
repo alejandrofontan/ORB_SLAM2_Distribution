@@ -33,7 +33,7 @@ namespace ORB_SLAM2
 
 OptimizerParameters Optimizer::parameters{};
 #ifdef COMPILED_DEBUG
-    #ifdef COMPILED_ABLATION
+    #ifdef COMPILED_ABLATION_GBA
     vector<double> Optimizer::residuals_u{};
     vector<double> Optimizer::residuals_v{};
     #endif
@@ -45,11 +45,7 @@ void Optimizer::GlobalBundleAdjustment(Map* pMap, int nIterations, bool* pbStopF
 {
     vector<Keyframe> keyframes = pMap->GetAllKeyFrames();
     vector<MapPt> mapPoints = pMap->GetAllMapPoints();
-#ifdef COMPILED_ABLATION
-    RobustBundleAdjustment(keyframes,mapPoints,nLoopKF);
-#else
     BundleAdjustment(keyframes,mapPoints,nIterations,pbStopFlag, nLoopKF, bRobust);
-#endif
 }
 
 void Optimizer::GlobalRobustBundleAdjustment(Map* pMap)
@@ -224,7 +220,7 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
     // Check inlier observations
     setInliers(edgesMono, isInlierMono);
     setInliers(edgesStereo, isInlierStereo);
-#ifdef COMPILED_ABLATION
+#ifdef COMPILED_ABLATION_GBA
     #ifdef COMPILED_DEBUG
     residuals_u.clear();
     residuals_v.clear();
@@ -700,11 +696,11 @@ int Optimizer::PoseOptimization(Frame *pFrame)
     cv::Mat pose = Converter::toCvMat(SE3quat_recov);
     pFrame->SetPose(pose);
 
-#ifdef COMPILED_ABLATION
-    SetAllObservationsAsInliers(vnIndexEdgeMono,pFrame);
-    SetAllObservationsAsInliers(vnIndexEdgeStereo,pFrame);
-    nBad = 0;
-#endif
+//#ifdef COMPILED_ABLATION
+    //SetAllObservationsAsInliers(vnIndexEdgeMono,pFrame);
+    //SetAllObservationsAsInliers(vnIndexEdgeStereo,pFrame);
+    //nBad = 0;
+//#endif
     return nInitialCorrespondences-nBad;
 }
 

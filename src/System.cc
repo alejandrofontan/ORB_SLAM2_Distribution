@@ -442,7 +442,7 @@ void System::Shutdown()
         pangolin::BindToContext("ORB-SLAM2: Map Viewer");
 #endif
 
-#ifdef COMPILED_ABLATION
+#ifdef COMPILED_ABLATION_GBA
     GlobalRobustBundleAdjustment();
 #endif
 }
@@ -669,7 +669,7 @@ void System::readImage(cv::Mat& im, const string& imagePath){
 void System::SaveStatisticsToFiles(const string& pathToFiles){
     cout << "Saving Statistics Files: "<< pathToFiles << endl;
 #ifdef COMPILED_DEBUG
-#ifdef COMPILED_ABLATION
+#ifdef COMPILED_ABLATION_GBA
     cout << "    "<< "residuals_u.txt" << endl;
     saveVectorToFile(Optimizer::residuals_u,pathToFiles + "residuals_u.txt");
     cout << "    "<< "residuals_v.txt" << endl;

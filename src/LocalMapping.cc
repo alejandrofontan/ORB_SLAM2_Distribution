@@ -676,15 +676,6 @@ void LocalMapping::KeyFrameCulling()
             ++iMapPt;
         }
 
-
-#ifdef COMPILED_ABLATION
-        if(keyframe->mnId != 0){
-            if((nRedundantObservations > 0.7*nMPs)&&(keyframe->mnId % 20 != 0)){
-                slamGraph->removeKeyframe(keyframe->mnId);
-                keyframe->SetBadFlag();
-            }
-        }
-#else
         if(nRedundantObservations > 0.9*nMPs){
 
             if(keyframe->mnId != 0){
@@ -692,7 +683,6 @@ void LocalMapping::KeyFrameCulling()
             }
             keyframe->SetBadFlag();
         }
-#endif
     }
 }
 

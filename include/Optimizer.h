@@ -46,7 +46,7 @@ class Optimizer {
 public:
     static OptimizerParameters parameters;
 #ifdef COMPILED_DEBUG
-    #ifdef COMPILED_ABLATION
+    #ifdef COMPILED_ABLATION_GBA
     static vector<double> residuals_u, residuals_v;
     #endif
     static vector<double> inlierThreshold;
