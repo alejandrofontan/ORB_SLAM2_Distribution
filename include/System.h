@@ -201,6 +201,7 @@ private:
     // Test Variables
     int expId{0};
     string resultsPath{""};
+    void GBA_ablation(const vector<double>& ablationVariable, const string& ablationVariableName, void (*operation)(const double&));
 
 public:
     // Image resolution

@@ -186,6 +186,7 @@ public:
     double th_3dof{sqrt(th2_3dof)};
     double inlierProbability{0.85};
     double pExp{0.75};
+    bool estimateThreshold{false};
 
     PoseOptimizationParameters poseOptimization{};
     LocalBundleAdjustmentParameters localBundleAdjustment{};

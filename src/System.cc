@@ -420,7 +420,18 @@ void System::Reset()
     mbReset = true;
 }
 
-void System::Shutdown()
+///////////////////////////////// Ablation Functions
+void UpdateProbability(const double& probability){
+    Optimizer::parameters.UpdateInlierProbability(probability);
+}
+
+void UpdateChi2(const double& chi2){
+    Optimizer::parameters.UpdateInlierThresholds(chi2,chi2);
+}
+
+///////////////////////////////// Ablation Functions
+
+    void System::Shutdown()
 {
 
     mpLocalMapper->RequestFinish();
@@ -449,10 +460,6 @@ void System::Shutdown()
 
     cout << "\n[GBA Ablation] exp id " << expId << " starts ... "<< endl;
 
-    // Create log file
-    const std::string filename = resultsPath + "/GBA_Ablation_log.txt";
-    std::ofstream file(filename, std::ios::out | std::ios::app);
-
     string resultsPath_expId = resultsPath + "/" + ORB_SLAM2::paddingZeros(to_string(expId));
 
     // Save trajectory before Global Bundle Adjustment
@@ -475,7 +482,28 @@ void System::Shutdown()
     slamGraph->addNoiseToSavedMap(0.1);
 
     // Define Ablation Variable
-    vector<double> ablationVariable{0.5,0.6,0.7,0.8,0.9,0.95};
+    string ablationVariableName1{"probability"};
+    vector<double> ablationVariable1{0.5,0.6,0.7,0.8,0.9,0.95};
+    Optimizer::parameters.estimateThreshold = true;
+    GBA_ablation(ablationVariable1,ablationVariableName1,UpdateProbability);
+
+    // Define Ablation Variable
+    string ablationVariableName2{"chi2"};
+    vector<double> ablationVariable2{2.0,3.0,5.9,6.0};
+    Optimizer::parameters.estimateThreshold = false;
+    GBA_ablation(ablationVariable2,ablationVariableName2, UpdateChi2);
+
+#endif
+}
+
+void System::GBA_ablation(const vector<double>& ablationVariable, const string& ablationVariableName,void (*operation)(const double&)){
+
+    // Create log file
+    const std::string filename = resultsPath + "/" + ablationVariableName +  "_GBA_Ablation_log.txt";
+    std::ofstream file(filename, std::ios::out | std::ios::app);
+
+    // Ablation results path
+    string resultsPath_expId = resultsPath + "/" + ORB_SLAM2::paddingZeros(to_string(expId));
 
     // Ablation loop
     for(int ablationId{0}; ablationId < ablationVariable.size(); ablationId++){
@@ -488,19 +516,17 @@ void System::Shutdown()
 
         // Update ablation variable
         cout << "Ablation "<< ablationId << " with variable value = " << ablationVariable[ablationId] << endl;
-        Optimizer::parameters.UpdateInlierProbability(ablationVariable[ablationId]);
+        operation(ablationVariable[ablationId]);
 
         // Global Bundle Adjustment
         GlobalRobustBundleAdjustment();
 
         // Save iteration results
         string resultsPath_ = resultsPath_expId + "_" + ORB_SLAM2::paddingZeros(to_string(ablationId));
-        SaveFrameTrajectoryTUM(resultsPath_ + "_AblationFrame.txt");
-        SaveKeyFrameTrajectoryTUM(resultsPath_ + "_AblationKeyFrame.txt");
+        SaveFrameTrajectoryTUM(resultsPath_ + "_" + ablationVariableName + "_AblationFrame.txt");
+        SaveKeyFrameTrajectoryTUM(resultsPath_ + "_" + ablationVariableName + "_AblationKeyFrame.txt");
         file << resultsPath_ + "_AblationFrame.txt " << expId << " " << ablationId << " " << ablationVariable[ablationId]  << std::endl;
-
     }
-#endif
 }
 
 void System::SaveTrajectoryTUM(const string &filename)

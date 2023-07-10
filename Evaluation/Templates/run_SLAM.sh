@@ -258,7 +258,12 @@ then
 	for sequenceName in "${sequenceNames[@]}"
 	do	
 		sequenceFolder="$experimentFolder/$sequenceName"
-		
+		evaluationSequenceFolder="$experimentFolder/$sequenceName/evaluationFiles"
+		if [ ! -d "$evaluationSequenceFolder" ] 
+		then
+			mkdir $evaluationSequenceFolder 			
+		fi    	
+	
 		. ./datasetConfiguration.sh
 
 		if [ $mode == 'mono' ]
@@ -267,22 +272,34 @@ then
 			txtKeyFrameFiles=($(ls ${sequenceFolder}/*_KeyFrameTrajectory.txt))
 			txtFrameFiles=($(ls ${sequenceFolder}/*_FrameTrajectory.txt))
 			
-			keyFrame_TUMformat_results="$sequenceFolder/${evaluationName}_KeyFrame_TUMformat_results.txt"
-			frame_TUMformat_results="$sequenceFolder/${evaluationName}_Frame_TUMformat_results.txt"
-			log_frame_TUMformat_results="$sequenceFolder/${evaluationName}_Frame_TUMformat_results_log.txt"
+			keyFrame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_KeyFrame_TUMformat_results.txt"
+			frame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_Frame_TUMformat_results.txt"
+			log_frame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_Frame_TUMformat_results_log.txt"
 			
 			> $keyFrame_TUMformat_results
 			> $frame_TUMformat_results
 			> $log_frame_TUMformat_results
 			. ./evaluate_experiment.sh 
 				
-			evaluationName="ablation"
-			txtKeyFrameFiles=($(ls ${sequenceFolder}/*_AblationKeyFrame.txt))
-			txtFrameFiles=($(ls ${sequenceFolder}/*_AblationFrame.txt))
+			evaluationName="chi2"
+			txtKeyFrameFiles=($(ls ${sequenceFolder}/*_${evaluationName}_AblationKeyFrame.txt))
+			txtFrameFiles=($(ls ${sequenceFolder}/*_${evaluationName}_AblationFrame.txt))
 			
-			keyFrame_TUMformat_results="$sequenceFolder/${evaluationName}_KeyFrame_TUMformat_results.txt"
-			frame_TUMformat_results="$sequenceFolder/${evaluationName}_Frame_TUMformat_results.txt"
-			log_frame_TUMformat_results="$sequenceFolder/${evaluationName}_Frame_TUMformat_results_log.txt"
+			keyFrame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_KeyFrame_TUMformat_results.txt"
+			frame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_Frame_TUMformat_results.txt"
+			log_frame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_Frame_TUMformat_results_log.txt"
+			> $keyFrame_TUMformat_results
+			> $frame_TUMformat_results
+			> $log_frame_TUMformat_results
+			. ./evaluate_experiment.sh 
+			
+			evaluationName="probability"
+			txtKeyFrameFiles=($(ls ${sequenceFolder}/*_${evaluationName}_AblationKeyFrame.txt))
+			txtFrameFiles=($(ls ${sequenceFolder}/*_${evaluationName}_AblationFrame.txt))
+			
+			keyFrame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_KeyFrame_TUMformat_results.txt"
+			frame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_Frame_TUMformat_results.txt"
+			log_frame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_Frame_TUMformat_results_log.txt"
 			> $keyFrame_TUMformat_results
 			> $frame_TUMformat_results
 			> $log_frame_TUMformat_results
@@ -292,9 +309,9 @@ then
 			txtKeyFrameFiles=($(ls ${sequenceFolder}/*_KeyFrameTrajectoryBeforeBA.txt))
 			txtFrameFiles=($(ls ${sequenceFolder}/*_FrameTrajectoryBeforeBA.txt))
 			
-			keyFrame_TUMformat_results="$sequenceFolder/${evaluationName}_KeyFrame_TUMformat_results.txt"
-			frame_TUMformat_results="$sequenceFolder/${evaluationName}_Frame_TUMformat_results.txt"
-			log_frame_TUMformat_results="$sequenceFolder/${evaluationName}_Frame_TUMformat_results_log.txt"
+			keyFrame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_KeyFrame_TUMformat_results.txt"
+			frame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_Frame_TUMformat_results.txt"
+			log_frame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_Frame_TUMformat_results_log.txt"
 			> $keyFrame_TUMformat_results
 			> $frame_TUMformat_results
 			> $log_frame_TUMformat_results
@@ -304,9 +321,9 @@ then
 			txtKeyFrameFiles=($(ls ${sequenceFolder}/*_FrameTrajectoryAfterBA.txt))
 			txtFrameFiles=($(ls ${sequenceFolder}/*_KeyFrameTrajectoryAfterBA.txt))
 			
-			keyFrame_TUMformat_results="$sequenceFolder/${evaluationName}_KeyFrame_TUMformat_results.txt"
-			frame_TUMformat_results="$sequenceFolder/${evaluationName}_Frame_TUMformat_results.txt"
-			log_frame_TUMformat_results="$sequenceFolder/${evaluationName}_Frame_TUMformat_results_log.txt"
+			keyFrame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_KeyFrame_TUMformat_results.txt"
+			frame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_Frame_TUMformat_results.txt"
+			log_frame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_Frame_TUMformat_results_log.txt"
 			> $keyFrame_TUMformat_results
 			> $frame_TUMformat_results
 			> $log_frame_TUMformat_results
