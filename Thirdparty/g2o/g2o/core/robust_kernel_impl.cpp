@@ -90,6 +90,26 @@ void RobustKernelHuber::robustify(double e, Eigen::Vector3d& rho) const
   }
 }
 
+void RobustKernelGeneralizedGaussian::setExponent(double n_, double maxChi2_)
+{
+    n = n_;
+    normTerm = 100.0*pow(maxChi2_,n/2.0);
+}
+
+void RobustKernelGeneralizedGaussian::robustify(double e, Eigen::Vector3d& rho) const
+{
+    // e = absolut value of the error
+    double n_2 = n/2.0;
+    rho[0] = pow(e,n_2)/normTerm;                              // rho(e)   = e^(n/2)
+    rho[1] = n_2 * pow(e,n_2 - 1.0)/normTerm;                  // rho'(e)  = (n/2) * e^(n/2 - 1)
+    rho[2] = n_2 * (n_2 - 1.0) * pow(e,n_2 - 2.0)/normTerm;    // rho''(e)  = (n/2) * (n/2 - 1) * e^(n/2 - 2)
+}
+void RobustKernelGeneralizedGaussian::setDelta(double delta)
+{
+    dsqr = delta*delta;
+    _delta = delta;
+}
+
 void RobustKernelTukey::setDeltaSqr(const double &deltaSqr, const double &inv)
 {
  _deltaSqr = deltaSqr;

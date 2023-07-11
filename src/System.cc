@@ -429,9 +429,13 @@ void UpdateChi2(const double& chi2){
     Optimizer::parameters.UpdateInlierThresholds(chi2,chi2);
 }
 
+void UpdateExponent(const double& exponent){
+    Optimizer::parameters.UpdateExponent(exponent);
+}
+
 ///////////////////////////////// Ablation Functions
 
-    void System::Shutdown()
+void System::Shutdown()
 {
 
     mpLocalMapper->RequestFinish();
@@ -482,16 +486,22 @@ void UpdateChi2(const double& chi2){
     slamGraph->addNoiseToSavedMap(0.1);
 
     // Define Ablation Variable
-    string ablationVariableName1{"probability"};
-    vector<double> ablationVariable1{0.5,0.6,0.7,0.75,0.8,0.85,0.9,0.95,0.99,0.999};
-    Optimizer::parameters.estimateThreshold = true;
-    GBA_ablation(ablationVariable1,ablationVariableName1,UpdateProbability);
+    //string ablationVariableName1{"probability"};
+    //vector<double> ablationVariable1{0.5,0.6,0.7,0.75,0.8,0.85,0.9,0.95,0.99,0.999};
+    //Optimizer::parameters.estimateThreshold = true;
+    //GBA_ablation(ablationVariable1,ablationVariableName1,UpdateProbability);
 
     // Define Ablation Variable
-    string ablationVariableName2{"chi2"};
-    vector<double> ablationVariable2{0.5,1.0,2.0,3.0,4.0,5.0,5.991,7.0,8.0,9.0};
+    //string ablationVariableName2{"chi2"};
+    //vector<double> ablationVariable2{0.5,1.0,2.0,3.0,4.0,5.0,5.991,7.0,8.0,9.0};
+    //Optimizer::parameters.estimateThreshold = false;
+    //GBA_ablation(ablationVariable2,ablationVariableName2, UpdateChi2);
+
+    // Define Ablation Variable
+    string ablationVariableName3{"exp"};
+    vector<double> ablationVariable3{0.125,0.25,0.5,1.0,2.0,3.0,4.0,5.0,6.0,6.5,7.0,7.5,8.0,9.0,11.0,13.0,15.0};
     Optimizer::parameters.estimateThreshold = false;
-    GBA_ablation(ablationVariable2,ablationVariableName2, UpdateChi2);
+    GBA_ablation(ablationVariable3,ablationVariableName3, UpdateExponent);
 
 #endif
 }

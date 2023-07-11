@@ -203,7 +203,6 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
     int endIdx = int(mahalanobisDistancesSorted.size()) * parameters.pExp;
     std::vector<double> subset(mahalanobisDistancesSorted.begin(), mahalanobisDistancesSorted.begin() + endIdx + 1);
 
-
     double mu{parameters.localBundleAdjustment.mu_lognormal}, sigma{parameters.localBundleAdjustment.sigma_lognormal};
     DIST_FITTER::DistributionFitter::FitLogNormal(subset,mu,sigma);
 
@@ -246,6 +245,9 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
 
     deactivateRobustKernel(edgesMono);
     deactivateRobustKernel(edgesStereo);
+
+    setGeneralizedGaussian(edgesMono,parameters.exponent);
+    setGeneralizedGaussian(edgesStereo,parameters.exponent);
 
     // Optimize again without the outliers
     ResetOptimizerVariables(keyframes,mapPoints,optimizer,maxKeyId,mapPtsNotInclude);
@@ -1984,6 +1986,27 @@ void Optimizer::SetAllObservationsAsInliers(const vector<size_t>& indexes, Frame
         frame->mvbOutlier[idx] = false;
 }
 
+template <typename Edge_>
+void Optimizer::setGeneralizedGaussian(vector<Edge_*>& edges, const double& exponent){
+    double maxChi2{0.0};
+    for(auto& e: edges){
+        e->computeError();
+        double chi2 = e->chi2();
+        if(chi2 > maxChi2)
+            maxChi2 = chi2;
+    }
+
+    for(auto& e: edges){
+        auto* rk = new g2o::RobustKernelGeneralizedGaussian;
+        e->setRobustKernel(rk);
+        rk->setDelta(0.0);
+        rk->setExponent(exponent,maxChi2);
+        auto info = e->information();
+        info(0,0) = pow(info(0,0),exponent/2.0);
+        info(1,1) = pow(info(1,1),exponent/2.0);
+        e->setInformation(info);
+    }
+}
 
 } //namespace ORB_SLAM
 

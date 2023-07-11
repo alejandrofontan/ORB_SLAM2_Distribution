@@ -112,6 +112,8 @@ public:
     template <typename Edge_>
     static void deactivateRobustKernel(vector<Edge_*>& edges);
 
+    template <typename Edge_>
+    static void setGeneralizedGaussian(vector<Edge_*>& edges, const double& exponent);
 };
 
 class OptimizerParameters {
@@ -187,6 +189,7 @@ public:
     double inlierProbability{0.85};
     double pExp{0.75};
     bool estimateThreshold{false};
+    double exponent{2.0};
 
     PoseOptimizationParameters poseOptimization{};
     LocalBundleAdjustmentParameters localBundleAdjustment{};
@@ -234,6 +237,10 @@ public:
         th2_3dof = th2_3dof_;
         th_2dof = sqrt(th2_2dof);
         th_3dof = sqrt(th2_3dof);
+    }
+
+    void UpdateExponent(const double& exponent_){
+        exponent = exponent_;
     }
 };
 

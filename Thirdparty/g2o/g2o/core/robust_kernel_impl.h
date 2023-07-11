@@ -84,6 +84,18 @@ namespace g2o {
       float dsqr;
   };
 
+  class  RobustKernelGeneralizedGaussian : public RobustKernel
+  {
+    public:
+        virtual void setExponent(double n_, double maxChi2_);
+        virtual void robustify(double e2, Eigen::Vector3d& rho) const;
+        virtual void setDelta(double delta);
+    private:
+        double n{2.0};
+        double normTerm{1.0};
+        float dsqr;
+  };
+
    /**
    * \brief Tukey Cost Function
    *
