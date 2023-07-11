@@ -46,6 +46,14 @@ class ORBextractor
 public:
     
     enum {HARRIS_SCORE=0, FAST_SCORE=1 };
+    enum DescriptorType{
+        ORB = 0,
+        SUPERPOINT = 1,
+        KAZE = 2,
+        SIFT = 3
+    };
+
+    static DescriptorType descriptorType;
 
     ORBextractor(int nfeatures, float scaleFactor, int nlevels,
                  int iniThFAST, int minThFAST);
@@ -56,8 +64,12 @@ public:
     // ORB are dispersed on the image using an octree.
     // Mask is ignored in the current implementation.
     void operator()( cv::InputArray image, cv::InputArray mask,
+                     std::vector<cv::KeyPoint>& keypoints,
+                     cv::OutputArray descriptors);
+    void operator()( cv::InputArray image, cv::InputArray mask,
       std::vector<cv::KeyPoint>& keypoints,
-      cv::OutputArray descriptors);
+      cv::OutputArray descriptors,
+      std::vector<std::vector<std::string>>& featuresTxt_);
 
     int inline GetLevels(){
         return nlevels;}
@@ -92,6 +104,9 @@ protected:
 
     void ComputeKeyPointsOld(std::vector<std::vector<cv::KeyPoint> >& allKeypoints);
     std::vector<cv::Point> pattern;
+
+    static void computeDescriptors(const cv::Mat& image, std::vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors, const std::vector<cv::Point>& pattern);
+    static void computeDescriptors(cv::Mat& descriptors, const std::vector<cv::KeyPoint>& keypoints, const std::vector<std::vector<std::string>>& featuresTxt);
 
     int nfeatures;
     double scaleFactor;

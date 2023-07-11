@@ -7,6 +7,7 @@ option(COMPILE_DETERMINISTIC "Compile Deterministic Version Of ORB_SLAM2" OFF)
 option(COMPILE_DEBUG "Compile DEBUG Version Of ORB_SLAM2" OFF)
 option(COMPILE_ABLATION "Compile ABLATION Version Of ORB_SLAM2" OFF)
 option(COMPILE_ABLATION_GBA "Compile GBA ABLATION Version Of ORB_SLAM2" OFF)
+option(COMPILE_PRE_COMPUTE_FEATURES "Compile FIT PRE COMPUTE FEATURES Version Of ORB_SLAM2" OFF)
 option(COMPILE_FITRESOLUTION "Compile FIT RESOLUTION Version Of ORB_SLAM2" OFF)
 
 if(COMPILE_WITH_PANGOLIN)
@@ -31,6 +32,10 @@ endif()
 
 if(COMPILE_ABLATION_GBA)
     add_definitions(-DCOMPILED_ABLATION_GBA=1)
+endif()
+
+if(COMPILE_PRE_COMPUTE_FEATURES)
+    add_definitions(-DCOMPILED_PRE_COMPUTE_FEATURES=1)
 endif()
 
 if(COMPILE_FITRESOLUTION)
@@ -94,7 +99,7 @@ src/Tracking.cc
 src/LocalMapping.cc
 src/LoopClosing.cc
 src/ORBextractor.cc
-src/ORBmatcher.cc
+        src/Matcher.cc
 src/FrameDrawer.cc
 src/Converter.cc
 src/MapPoint.cc

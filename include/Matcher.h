@@ -34,14 +34,26 @@
 namespace ORB_SLAM2
 {
 
-class ORBmatcher
-{    
+class MatcherParameters;
+
+class Matcher
+{
 public:
 
-    ORBmatcher(float nnratio=0.6, bool checkOri=true);
+    enum DescriptorType{
+        ORB = 0,
+        SUPERPOINT = 1,
+        KAZE = 2,
+        SIFT = 3
+    };
+
+    static MatcherParameters parameters;
+    static DescriptorType descriptorType;
+
+    Matcher(float nnratio=0.6, bool checkOri=true);
 
     // Computes the Hamming distance between two ORB descriptors
-    static int DescriptorDistance(const cv::Mat &a, const cv::Mat &b);
+    static DESCRIPTOR_DISTANCE_TYPE DescriptorDistance(const cv::Mat &a, const cv::Mat &b);
 
     // Search matches between Frame keypoints and projected MapPoints. Returns number of matches
     // Used to track the local map (Tracking)
@@ -53,7 +65,7 @@ public:
 
     // Project MapPoints seen in KeyFrame into the Frame and search matches.
     // Used in relocalisation (Tracking)
-    int SearchByProjection(Frame &CurrentFrame, KeyFrame* pKF, const std::set<MapPoint*> &sAlreadyFound, const float th, const int ORBdist);
+    int SearchByProjection(Frame &CurrentFrame, KeyFrame* pKF, const std::set<MapPoint*> &sAlreadyFound, const float th, const DESCRIPTOR_DISTANCE_TYPE ORBdist);
 
     // Project MapPoints using a Similarity Transformation and search matches.
     // Used in loop detection (Loop Closing)
@@ -84,10 +96,7 @@ public:
 
 public:
 
-    static const int TH_LOW;
-    static const int TH_HIGH;
     static const int HISTO_LENGTH;
-
 
 protected:
 
@@ -101,6 +110,18 @@ protected:
     bool mbCheckOrientation;
 };
 
+class MatcherParameters {
+
+public:
+    friend std::ostream& operator<<(std::ostream& outstream, const MatcherParameters& parameters);
+    friend class Matcher;
+
+    DESCRIPTOR_DISTANCE_TYPE DistanceThreshold_low{50};
+    DESCRIPTOR_DISTANCE_TYPE DistanceThreshold_high{100};
+
+    const DESCRIPTOR_DISTANCE_TYPE HighestPossibleDistanceValue{std::numeric_limits<DESCRIPTOR_DISTANCE_TYPE>::max()};
+
+};
 }// namespace ORB_SLAM
 
 #endif // ORBMATCHER_H

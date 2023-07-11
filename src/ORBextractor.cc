@@ -61,6 +61,7 @@
 #include <vector>
 
 #include "ORBextractor.h"
+#include "Definitions.h"
 
 
 using namespace cv;
@@ -68,6 +69,8 @@ using namespace std;
 
 namespace ORB_SLAM2
 {
+
+ORBextractor::DescriptorType ORBextractor::descriptorType{DESCRIPTOR_TYPE};
 
 const int PATCH_SIZE = 31;
 const int HALF_PATCH_SIZE = 15;
@@ -149,6 +152,17 @@ static void computeOrbDescriptor(const KeyPoint& kpt,
     #undef GET_VALUE
 }
 
+static void computeSuperpointDescriptors(Mat& descriptors, const vector<KeyPoint>& keypoints, const std::vector<std::vector<std::string>>& featuresTxt)
+{
+    descriptors = Mat::zeros((int)keypoints.size(), DESCRIPTOR_SIZE, DESCRIPTOR_MAT_TYPE);
+
+    for (size_t i = 0; i < keypoints.size(); i++)
+    {
+        for (size_t iDescriptor = 0; iDescriptor < DESCRIPTOR_SIZE; iDescriptor++){
+            descriptors.at<DESCRIPTOR_DISTANCE_TYPE>(i,iDescriptor) = stof(featuresTxt[keypoints[i].size][iDescriptor + 6]);
+        }
+    }
+}
 
 static int bit_pattern_31_[256*4] =
 {
@@ -1034,13 +1048,21 @@ void ORBextractor::ComputeKeyPointsOld(std::vector<std::vector<KeyPoint> > &allK
         computeOrientation(mvImagePyramid[level], allKeypoints[level], umax);
 }
 
-static void computeDescriptors(const Mat& image, vector<KeyPoint>& keypoints, Mat& descriptors,
-                               const vector<Point>& pattern)
+void ORBextractor::computeDescriptors(const Mat& image, vector<KeyPoint>& keypoints, Mat& descriptors, const vector<Point>& pattern)
 {
-    descriptors = Mat::zeros((int)keypoints.size(), 32, CV_8UC1);
+    descriptors = Mat::zeros((int)keypoints.size(), DESCRIPTOR_SIZE, DESCRIPTOR_MAT_TYPE);
 
-    for (size_t i = 0; i < keypoints.size(); i++)
-        computeOrbDescriptor(keypoints[i], image, &pattern[0], descriptors.ptr((int)i));
+    if(descriptorType == ORB)
+        for (size_t i = 0; i < keypoints.size(); i++)
+            computeOrbDescriptor(keypoints[i], image, &pattern[0], descriptors.ptr((int)i));
+}
+
+void ORBextractor::computeDescriptors(Mat& descriptors, const vector<KeyPoint>& keypoints, const std::vector<std::vector<std::string>>& featuresTxt)
+{
+    descriptors = Mat::zeros((int)keypoints.size(), DESCRIPTOR_SIZE, DESCRIPTOR_MAT_TYPE);
+
+    if(descriptorType == SUPERPOINT)
+        computeSuperpointDescriptors(descriptors,keypoints,featuresTxt);
 }
 
 void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPoint>& _keypoints,
@@ -1100,6 +1122,60 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
             float scale = mvScaleFactor[level]; //getScale(level, firstLevel, scaleFactor);
             for (vector<KeyPoint>::iterator keypoint = keypoints.begin(),
                  keypointEnd = keypoints.end(); keypoint != keypointEnd; ++keypoint)
+                keypoint->pt *= scale;
+        }
+        // And add the keypoints to the output
+        _keypoints.insert(_keypoints.end(), keypoints.begin(), keypoints.end());
+    }
+}
+
+void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPoint>& _keypoints,
+                                OutputArray _descriptors,
+                                std::vector<std::vector<std::string>>& featuresTxt)
+{
+    if(_image.empty())
+        return;
+
+    vector < vector<KeyPoint> > allKeypoints;
+    ComputeKeyPointsOctTree(allKeypoints);
+
+    Mat descriptors;
+
+    int nkeypoints = 0;
+    for (int level = 0; level < nlevels; ++level)
+        nkeypoints += (int)allKeypoints[level].size();
+    if( nkeypoints == 0 )
+        _descriptors.release();
+    else
+    {
+        _descriptors.create(nkeypoints, DESCRIPTOR_SIZE, DESCRIPTOR_MAT_TYPE);
+        descriptors = _descriptors.getMat();
+    }
+
+    _keypoints.clear();
+    _keypoints.reserve(nkeypoints);
+
+    int offset = 0;
+    for (int level = 0; level < nlevels; ++level)
+    {
+        vector<KeyPoint>& keypoints = allKeypoints[level];
+        int nkeypointsLevel = (int)keypoints.size();
+
+        if(nkeypointsLevel==0)
+            continue;
+
+        // Compute the descriptors
+        Mat desc = descriptors.rowRange(offset, offset + nkeypointsLevel);
+        computeDescriptors( desc,keypoints,featuresTxt);
+
+        offset += nkeypointsLevel;
+
+        // Scale keypoint coordinates
+        if (level != 0)
+        {
+            float scale = mvScaleFactor[level]; //getScale(level, firstLevel, scaleFactor);
+            for (vector<KeyPoint>::iterator keypoint = keypoints.begin(),
+                    keypointEnd = keypoints.end(); keypoint != keypointEnd; ++keypoint)
                 keypoint->pt *= scale;
         }
         // And add the keypoints to the output

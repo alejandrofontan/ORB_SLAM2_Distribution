@@ -19,7 +19,7 @@
 */
 
 #include "MapPoint.h"
-#include "ORBmatcher.h"
+#include "Matcher.h"
 
 #include<mutex>
 
@@ -335,26 +335,26 @@ MapPt MapPoint::ComputeDistinctiveDescriptors()
     // Compute distances between descriptors
     const size_t N = descriptors.size();
 
-    float Distances[N][N];
+    DESCRIPTOR_DISTANCE_TYPE Distances[N][N];
     for(size_t i=0;i<N;i++)
     {
         Distances[i][i]=0;
         for(size_t j=i+1;j<N;j++)
         {
-            int distij = ORBmatcher::DescriptorDistance(descriptors[i],descriptors[j]);
-            Distances[i][j] = float(distij);
-            Distances[j][i] = float(distij);
+            DESCRIPTOR_DISTANCE_TYPE distij = Matcher::DescriptorDistance(descriptors[i], descriptors[j]);
+            Distances[i][j] = distij;
+            Distances[j][i] = distij;
         }
     }
 
     // Take the descriptor with least median distance to the rest
-    int BestMedian = INT_MAX;
+    DESCRIPTOR_DISTANCE_TYPE BestMedian{std::numeric_limits<DESCRIPTOR_DISTANCE_TYPE>::max()};
     int BestIdx = 0;
     for(size_t i=0;i<N;i++)
     {
-        vector<int> vDists(Distances[i],Distances[i]+N);
+        vector<DESCRIPTOR_DISTANCE_TYPE> vDists(Distances[i],Distances[i]+N);
         sort(vDists.begin(),vDists.end());
-        int median = vDists[0.5*(N-1)];
+        DESCRIPTOR_DISTANCE_TYPE median = vDists[0.5*(N-1)];
 
         if(median<BestMedian)
         {

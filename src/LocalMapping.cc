@@ -20,7 +20,7 @@
 
 #include "LocalMapping.h"
 #include "LoopClosing.h"
-#include "ORBmatcher.h"
+#include "Matcher.h"
 #include "Optimizer.h"
 #include "Converter.h"
 
@@ -228,7 +228,7 @@ void LocalMapping::CreateNewMapPoints(KeyFrame *keyframe) {
 
     const vector<KeyFrame *> neighbors = keyframe->GetBestCovisibilityKeyFrames(numberOfNeighbors);
 
-    ORBmatcher matcher(0.6, false);
+    Matcher matcher(0.6, false);
 
     cv::Mat Rcw1 = keyframe->GetRotation();
     cv::Mat Rwc1 = Rcw1.t();
@@ -477,7 +477,7 @@ void LocalMapping::SearchInNeighbors(Keyframe keyframe)
     }
 
     // Search matches by projection from current KF in target KFs
-    ORBmatcher matcher;
+    Matcher matcher;
     vector<MapPoint*> mapPointMatches = keyframe->GetMapPointMatches();
     for(auto& targetKeyframe: targetKeyframes)
         matcher.Fuse(targetKeyframe,mapPointMatches,3.0f);
