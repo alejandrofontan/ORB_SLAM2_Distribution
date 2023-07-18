@@ -37,12 +37,12 @@ for j in "${txtFrameFiles[@]}"
 do
 	echo "        $j"
 	trajectoryFile="${j%.txt}"
-	numKey_ate_scale=$(python2 ${evaluate_ate_scale_script} --max_difference ${max_diff} ${groundtruth_file} $j)
+	#numKey_ate_scale=$(python2 ${evaluate_ate_scale_script} --max_difference ${max_diff} ${groundtruth_file} $j)
 	
-	#alignedTrajectoryFile="${trajectoryFile}_aligned"
-	#> $alignedTrajectoryFile	
-	#alignedTrajectoryPlot="${trajectoryFile}_alignedPlot"
-	#numKey_ate_scale=$(python2 ${evaluate_ate_scale_script} --plot ${alignedTrajectoryPlot} --save_associations ${alignedTrajectoryFile} --max_difference ${max_diff} ${groundtruth_file} $j)
+	alignedTrajectoryFile="${trajectoryFile}_aligned"
+	> $alignedTrajectoryFile	
+	alignedTrajectoryPlot="${trajectoryFile}_alignedPlot"
+	numKey_ate_scale=$(python2 ${evaluate_ate_scale_script} --plot ${alignedTrajectoryPlot} --save_associations ${alignedTrajectoryFile} --max_difference ${max_diff} ${groundtruth_file} $j)
 	#scale=$(python2 ${evaluate_scale_script} --max_difference ${max_diff} $groundtruth_file $j)								
 	#rpe=$(python2 ${evaluate_rpe_script} --delta ${frequence}  --delta_unit 'f' --scale ${scale} $groundtruth_file $j)
 	#numKey_ate_scale_rpe="${numKey_ate_scale} ${rpe}"
