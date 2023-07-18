@@ -20,6 +20,7 @@
 #include <gsl/gsl_statistics.h>
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_roots.h>
+#include <boost/math/special_functions/gamma.hpp>
 
 using namespace std;
 namespace DIST_FITTER {
@@ -44,7 +45,8 @@ namespace DIST_FITTER {
 
         enum DistributionType{
             LOGNORMAL = 0,
-            BURR = 1,
+            TSTUDENT = 1,
+            BURR = 2,
         };
 
         static DistributionFitterParameters params;
@@ -53,6 +55,7 @@ namespace DIST_FITTER {
 
         void static FitLogNormal(vector<double>& data_, double& mu, double& sigma);
         void static FitBurr(vector<double>& data_, double& k, double& alpha, double& beta);
+        void static FitTStudent(vector<double>& data_, double& nu, double& sigma);
 
         double static Lognormal_icdf(const double& probability, const double& mu, const double& sigma);
         double static Burr_icdf(const double& probability, const double& k, const double& alpha, const double& beta, double icdf_0 = 1.0);
@@ -63,6 +66,9 @@ namespace DIST_FITTER {
     private:
         double static lognormal_pdf(double x, double mu, double sigma);
         double static logNormal_loglikelihood(const gsl_vector* params, void* data);
+
+        double static tstudent_pdf(double x, double nu, double sigma);
+        double static tstudent_loglikelihood(const gsl_vector* params, void* data);
 
         double static burr_pdf(double x, double k, double alpha, double beta);
         double static burr_loglikelihood(const gsl_vector* params, void* data);
@@ -79,6 +85,15 @@ namespace DIST_FITTER {
             double tolerance{1e-4};
             LogNormal() = default;
             LogNormal(const int& maxNumberIterations, const double& stepSize, const double& tolerance):
+                    maxNumberIterations(maxNumberIterations),stepSize(stepSize),tolerance(tolerance){};
+        };
+
+        struct TStudent{
+            int maxNumberIterations{100};
+            double stepSize{0.1};
+            double tolerance{1e-4};
+            TStudent() = default;
+            TStudent(const int& maxNumberIterations, const double& stepSize, const double& tolerance):
                     maxNumberIterations(maxNumberIterations),stepSize(stepSize),tolerance(tolerance){};
         };
 
@@ -99,12 +114,14 @@ namespace DIST_FITTER {
         friend class DistributionFitter;
 
         LogNormal logNormal{};
+        TStudent tStudent{};
         Burr burr{};
         const double minResidual{1e-8};
 
     public:
-        void SetParameters(const LogNormal& logNormal_, const Burr& burr_){
+        void SetParameters(const LogNormal& logNormal_, const TStudent& tStudent_, const Burr& burr_){
             logNormal = logNormal_;
+            tStudent = tStudent_;
             burr = burr_;
         }
     };

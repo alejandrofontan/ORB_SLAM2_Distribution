@@ -72,6 +72,67 @@ void DistributionFitter::FitLogNormal(vector<double> &data_, double &mu, double 
     }
 }
 
+void DistributionFitter::FitTStudent(vector<double> &data_, double &nu, double &sigma) {
+
+    // Filter points with negligible residuals
+    vector<double> data{};
+    for(const auto& value: data_){
+        if(value > params.minResidual)
+            data.push_back(value);
+    }
+
+    // Vector for parameters (nu, sigma)
+    gsl_vector *fittedParams = gsl_vector_alloc(2);
+
+    // Initialize the parameters with initial guesses
+    gsl_vector_set(fittedParams, 0, nu);
+    gsl_vector_set(fittedParams, 1, sigma);
+
+    // Initialize loglikelihood function
+    gsl_multimin_function loglike_func;
+    loglike_func.n = 2;
+    loglike_func.f = &tstudent_loglikelihood;
+    loglike_func.params = &data;
+
+    const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex2;
+    gsl_multimin_fminimizer *s = gsl_multimin_fminimizer_alloc(T, 2);
+
+    // Set initial step sizes
+    gsl_vector *stepSize = gsl_vector_alloc(2);
+    gsl_vector_set(stepSize, 0, params.tStudent.stepSize);
+    gsl_vector_set(stepSize, 1, params.tStudent.stepSize);
+
+    gsl_multimin_fminimizer_set(s, &loglike_func, fittedParams, stepSize);
+
+    // Optimize
+    int iter{0};
+    int status;
+    do {
+        iter++;
+        status = gsl_multimin_fminimizer_iterate(s);
+        if (status != GSL_SUCCESS)
+            break;
+
+        double size = gsl_multimin_fminimizer_size(s);
+        status = gsl_multimin_test_size(size, params.logNormal.tolerance);
+    } while (status == GSL_CONTINUE && iter < params.logNormal.maxNumberIterations);
+
+    // Recover fitted parameters
+    nu = gsl_vector_get(s->x, 0);
+    sigma = gsl_vector_get(s->x, 1);
+
+    gsl_multimin_fminimizer_free(s);
+    gsl_vector_free(fittedParams);
+    gsl_vector_free(stepSize);
+
+    if (verbosity >= MEDIUM) {
+        cout << "[DistributionFitter] FitTStudent(): " << endl;
+        std::cout << "    Fitted T Student Distribution:\n";
+        std::cout << "    Nu: " << nu << "\n";
+        std::cout << "    Sigma: " << sigma << "\n";
+    }
+}
+
 void DistributionFitter::FitBurr(vector<double>& data_, double& k, double& alpha, double& beta){
 
     // Filter points with negligible residuals
@@ -223,6 +284,30 @@ double DistributionFitter::logNormal_loglikelihood(const gsl_vector *fittedParam
     double loglikelihood = 0.0;
     for (const auto &value: *dataset) {
         loglikelihood += log(lognormal_pdf(value, mu, sigma));
+    }
+
+    return -loglikelihood;
+}
+
+double DistributionFitter::tstudent_pdf(double x, double nu, double sigma) {
+    double term0 = (nu + 1)/2.0;
+    double term1 = boost::math::tgamma(term0);
+    double term2 = sigma*sqrt(nu*M_PI)*boost::math::tgamma(nu/2.0);
+    double term3 = (nu + (pow(x,2)/pow(sigma,2)))/nu;
+    double pdf = term1/term2 * pow(term3, -term0);
+
+    return pdf;
+}
+
+double DistributionFitter::tstudent_loglikelihood(const gsl_vector *fittedParams, void *data) {
+    double nu = gsl_vector_get(fittedParams, 0);
+    double sigma = gsl_vector_get(fittedParams, 1);
+
+    auto *dataset = static_cast<std::vector<double> *>(data);
+
+    double loglikelihood = 0.0;
+    for (const auto &value: *dataset) {
+        loglikelihood += log(tstudent_pdf(value, nu, sigma));
     }
 
     return -loglikelihood;

@@ -142,13 +142,17 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
             settingsFile["DistributionFitter.logNormal.maxNumberIterations"],
             settingsFile["DistributionFitter.logNormal.stepSize"],
             settingsFile["DistributionFitter.logNormal.tolerance"]);
+    DIST_FITTER::DistributionFitterParameters::TStudent tStudent(
+            settingsFile["DistributionFitter.logNormal.maxNumberIterations"],
+            settingsFile["DistributionFitter.logNormal.stepSize"],
+            settingsFile["DistributionFitter.logNormal.tolerance"]);
     DIST_FITTER::DistributionFitterParameters::Burr burr(
             settingsFile["DistributionFitter.burr.maxNumberIterations"],
             settingsFile["DistributionFitter.burr.stepSize"],
             settingsFile["DistributionFitter.burr.tolerance"]);
 
     DIST_FITTER::DistributionFitter::verbosity = DIST_FITTER::DistributionFitter::VerbosityLevel::MEDIUM;
-    DIST_FITTER::DistributionFitter::params.SetParameters(logNormal,burr);
+    DIST_FITTER::DistributionFitter::params.SetParameters(logNormal,tStudent,burr);
 
 #ifdef COMPILED_ABLATION
     vector<double> probabilities{0.5,0.6,
@@ -478,12 +482,12 @@ void System::Shutdown()
     SaveKeyFrameTrajectoryTUM(resultsPath_expId + "_KeyFrameTrajectoryAfterBA.txt");
 
     // Save a copy of the Map (keyframes and mapPoints)
-    for(auto& mapPoint: mpMap->GetAllMapPoints())
-        slamGraph->addMapPoint(mapPoint->mnId,mapPoint->GetXYZ());
-    slamGraph->saveMap();
+    //for(auto& mapPoint: mpMap->GetAllMapPoints())
+        //slamGraph->addMapPoint(mapPoint->mnId,mapPoint->GetXYZ());
+    //slamGraph->saveMap();
 
     // Add noise to the saved copy
-    slamGraph->addNoiseToSavedMap(0.1);
+    //slamGraph->addNoiseToSavedMap(0.1);
 
     // Define Ablation Variable
     //string ablationVariableName1{"probability"};
@@ -498,10 +502,10 @@ void System::Shutdown()
     //GBA_ablation(ablationVariable2,ablationVariableName2, UpdateChi2);
 
     // Define Ablation Variable
-    string ablationVariableName3{"exp"};
-    vector<double> ablationVariable3{0.125,0.25,0.5,1.0,2.0,3.0,4.0,5.0,6.0,6.5,7.0,7.5,8.0,9.0,11.0,13.0,15.0};
-    Optimizer::parameters.estimateThreshold = false;
-    GBA_ablation(ablationVariable3,ablationVariableName3, UpdateExponent);
+    //string ablationVariableName3{"exp"};
+    //vector<double> ablationVariable3{0.125,0.25,0.5,1.0,2.0,3.0,4.0,5.0,6.0,6.5,7.0,7.5,8.0,9.0,11.0,13.0,15.0};
+    //Optimizer::parameters.estimateThreshold = false;
+    //GBA_ablation(ablationVariable3,ablationVariableName3, UpdateExponent);
 
 #endif
 }
