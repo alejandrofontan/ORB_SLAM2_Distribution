@@ -475,6 +475,9 @@ void System::Shutdown()
     SaveKeyFrameTrajectoryTUM(resultsPath_expId + "_KeyFrameTrajectoryBeforeBA.txt");
 
     // Global Bundle Adjustment
+    Optimizer::parameters.globalRobustBundleAdjustment.estimateOutlierThreshold = false;
+    Optimizer::parameters.globalRobustBundleAdjustment.useGeneralizedGaussian = false;
+    Optimizer::parameters.globalRobustBundleAdjustment.useTStudent = false;
     GlobalRobustBundleAdjustment();
 
     // Save trajectory after Global Bundle Adjustment

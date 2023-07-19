@@ -182,75 +182,74 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
 
     // Compute Mahalanobis distances
     vector<double> mahalanobisDistancesMono{};
+    vector<double> residualsMono{};
+    #ifdef COMPILED_ABLATION_GBA
+    #ifdef COMPILED_DEBUG
+    residuals_u.clear();
+    residuals_v.clear();
+    #endif
+    #endif
     for(const auto& edge: edgesMono){
         edge->computeError();
         mahalanobisDistancesMono.push_back(edge->chi2());
-    }
-    vector<double> mahalanobisDistancesStereo{};
-    for(const auto& edge: edgesStereo){
-        edge->computeError();
-        mahalanobisDistancesStereo.push_back(edge->chi2());
-    }
 
-    std::vector<double> mahalanobisDistances(mahalanobisDistancesMono.begin(), mahalanobisDistancesMono.end());
-    mahalanobisDistances.insert(mahalanobisDistances.end(), mahalanobisDistancesStereo.begin(), mahalanobisDistancesStereo.end());
+        auto error = edge->error();
+        auto inf = edge->information();
+        double u_mahalanobis = error(0)*sqrt(inf(0,0));
+        double v_mahalanobis = error(1)*sqrt(inf(1,1));
+        residualsMono.push_back(u_mahalanobis);
+        residualsMono.push_back(v_mahalanobis);
+        #ifdef COMPILED_ABLATION_GBA
+        #ifdef COMPILED_DEBUG
+        residuals_u.push_back(u_mahalanobis);
+        residuals_v.push_back(v_mahalanobis);
+        #endif
+        #endif
+    }
 
     // Sort Mahalanobis distances
-    std::vector<double> mahalanobisDistancesSorted = mahalanobisDistances;
+    std::vector<double> mahalanobisDistancesSorted = mahalanobisDistancesMono;
     std::sort(mahalanobisDistancesSorted.begin(),mahalanobisDistancesSorted.end());
 
     // Get subset of the distribution
     int endIdx = int(mahalanobisDistancesSorted.size()) * parameters.pExp;
     std::vector<double> subset(mahalanobisDistancesSorted.begin(), mahalanobisDistancesSorted.begin() + endIdx + 1);
 
-    double mu{parameters.localBundleAdjustment.mu_lognormal}, sigma{parameters.localBundleAdjustment.sigma_lognormal};
-    DIST_FITTER::DistributionFitter::FitLogNormal(subset,mu,sigma);
-
+    // Estimate outlier threshold
     double correctionFactor{1.0};
     double th2_2dof{parameters.th2_2dof},th2_3dof{parameters.th2_3dof};
-    if(parameters.estimateThreshold){
+    if(parameters.globalRobustBundleAdjustment.estimateOutlierThreshold){
+        double mu{parameters.localBundleAdjustment.mu_lognormal}, sigma{parameters.localBundleAdjustment.sigma_lognormal};
+        DIST_FITTER::DistributionFitter::FitLogNormal(subset,mu,sigma);
         correctionFactor = DIST_FITTER::DistributionFitter::GetCorrectionFactor(parameters.pExp,parameters.inlierProbability,sigma);
         th2_2dof = DIST_FITTER::DistributionFitter::Lognormal_icdf(parameters.inlierProbability,mu,sigma);
     }
-
     cout << "[Robust bundle adjustment] th2_2dof = "<< th2_2dof << endl;
     cout << "[Robust bundle adjustment] correctionFactor = "<< correctionFactor << endl;
     cout << "[Robust bundle adjustment] new th2_2dof = "<< correctionFactor*th2_2dof << endl;
 
+    // Set inlier observations
     vector<bool> isInlierMono =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesMono,correctionFactor*th2_2dof);
-    vector<bool> isInlierStereo =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesStereo,th2_3dof);
-
-    // Check inlier observations
     setInliers(edgesMono, isInlierMono);
-    setInliers(edgesStereo, isInlierStereo);
-#ifdef COMPILED_ABLATION_GBA
-    #ifdef COMPILED_DEBUG
-    residuals_u.clear();
-    residuals_v.clear();
-    for(size_t iEdge{0}; iEdge < edgesMono.size(); iEdge++)
-    {
-        auto* e = edgesMono[iEdge];
-        e->computeError();
-        auto error = e->error();
-        auto inf = e->information();
-        double u_mahalanobis = error(0)*sqrt(inf(0,0));
-        double v_mahalanobis = error(1)*sqrt(inf(1,1));
-        residuals_u.push_back(u_mahalanobis);
-        residuals_v.push_back(v_mahalanobis);
-    }
-    #endif
-#endif
-    //setEdgesRobustKernel(edgesMono, float(sqrt(inlierThresholdMono)));
-    //setEdgesRobustKernel(edgesStereo, float(sqrt(inlierThresholdStereo)));
 
+    // Use Generalized Gaussian distribution
     deactivateRobustKernel(edgesMono);
     deactivateRobustKernel(edgesStereo);
+    if(parameters.globalRobustBundleAdjustment.useGeneralizedGaussian) {
+        setGeneralizedGaussian(edgesMono,parameters.exponent);
+    }
 
-    setGeneralizedGaussian(edgesMono,parameters.exponent);
-    setGeneralizedGaussian(edgesStereo,parameters.exponent);
+    // Use T-Student distribution
+    if(parameters.globalRobustBundleAdjustment.useTStudent) {
+        double nu{2.0};
+        double sigma_{0.35};
+        DIST_FITTER::DistributionFitter::FitTStudent(residualsMono,nu,sigma_);
+        setTStudent(edgesMono, nu, sigma_);
+    }
 
     // Optimize again without the outliers
     ResetOptimizerVariables(keyframes,mapPoints,optimizer,maxKeyId,mapPtsNotInclude);
+    optimizer.setVerbose(true);
     optimizer.initializeOptimization();
     optimizer.optimize(parameters.globalRobustBundleAdjustment.optimizerItsFine);
 
@@ -2005,6 +2004,22 @@ void Optimizer::setGeneralizedGaussian(vector<Edge_*>& edges, const double& expo
         info(0,0) = pow(info(0,0),exponent/2.0);
         info(1,1) = pow(info(1,1),exponent/2.0);
         e->setInformation(info);
+    }
+}
+
+template <typename Edge_>
+void Optimizer::setTStudent(vector<Edge_*>& edges, const double& nu, const double& sigma){
+    for(auto& e: edges){
+        auto info = e->information();
+        auto* rk = new g2o::RobustKernelTstudent;
+        e->setRobustKernel(rk);
+
+        //e->setInformation(Eigen::Matrix2d::Identity());
+        //e->setInformation(info);
+        //rk->setDelta(0.0);
+        rk->setParameters(nu,sigma*sigma);
+        rk->setInformation(info(0,0));
+        rk->SetUnidimensionalError();
     }
 }
 

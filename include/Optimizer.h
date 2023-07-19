@@ -114,6 +114,9 @@ public:
 
     template <typename Edge_>
     static void setGeneralizedGaussian(vector<Edge_*>& edges, const double& exponent);
+
+    template <typename Edge_>
+    static void setTStudent(vector<Edge_*>& edges, const double& nu, const double& sigma);
 };
 
 class OptimizerParameters {
@@ -166,6 +169,9 @@ public:
     struct GlobalRobustBundleAdjustment{
         int optimizerItsCoarse{100};
         int optimizerItsFine{100};
+        bool estimateOutlierThreshold{false};
+        bool useGeneralizedGaussian{false};
+        bool useTStudent{false};
 
         GlobalRobustBundleAdjustment() = default;
         GlobalRobustBundleAdjustment(const int& optimizerItsCoarse, const int& optimizerItsFine):
@@ -188,7 +194,6 @@ public:
     double th_3dof{sqrt(th2_3dof)};
     double inlierProbability{0.85};
     double pExp{0.75};
-    bool estimateThreshold{false};
     double exponent{2.0};
 
     PoseOptimizationParameters poseOptimization{};
