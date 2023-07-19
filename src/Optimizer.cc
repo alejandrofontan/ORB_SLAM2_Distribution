@@ -244,7 +244,6 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
         double nu{2.0};
         double sigma_{0.35};
         DIST_FITTER::DistributionFitter::FitTStudent(residualsMono,nu,sigma_);
-        setTStudent(edgesMono, nu, sigma_);
     }
 
     // Optimize again without the outliers
@@ -2004,22 +2003,6 @@ void Optimizer::setGeneralizedGaussian(vector<Edge_*>& edges, const double& expo
         info(0,0) = pow(info(0,0),exponent/2.0);
         info(1,1) = pow(info(1,1),exponent/2.0);
         e->setInformation(info);
-    }
-}
-
-template <typename Edge_>
-void Optimizer::setTStudent(vector<Edge_*>& edges, const double& nu, const double& sigma){
-    for(auto& e: edges){
-        auto info = e->information();
-        auto* rk = new g2o::RobustKernelTstudent;
-        e->setRobustKernel(rk);
-
-        //e->setInformation(Eigen::Matrix2d::Identity());
-        //e->setInformation(info);
-        //rk->setDelta(0.0);
-        rk->setParameters(nu,sigma*sigma);
-        rk->setInformation(info(0,0));
-        rk->SetUnidimensionalError();
     }
 }
 

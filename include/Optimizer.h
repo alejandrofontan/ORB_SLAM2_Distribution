@@ -115,8 +115,6 @@ public:
     template <typename Edge_>
     static void setGeneralizedGaussian(vector<Edge_*>& edges, const double& exponent);
 
-    template <typename Edge_>
-    static void setTStudent(vector<Edge_*>& edges, const double& nu, const double& sigma);
 };
 
 class OptimizerParameters {
