@@ -1,6 +1,6 @@
 
 
-experimentName_="exponentAblation"
+experimentName_="ORB"
 systemVersion_="ORB_SLAM2_${experimentName_}"
 datasets=("rgbdtum" "kitti" "eth" "euroc")
 sequenceGroups=("miniTestGroup" "miniTestGroup" "miniTestGroup" "miniTestGroup")	

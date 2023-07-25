@@ -18,7 +18,7 @@ rm -rf build
 mkdir build
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release > /dev/null 2>&1
-make -j16 > /dev/null 2>&1
+make -j12 > /dev/null 2>&1
 make -j1 | sed 's/^/        /'
 
 cd ../../g2o
@@ -29,7 +29,7 @@ rm -rf build
 mkdir build
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release > /dev/null 2>&1
-make -j16 > /dev/null 2>&1
+make -j12 > /dev/null 2>&1
 make -j1 | sed 's/^/        /'
 
 cd ../../../
@@ -46,5 +46,5 @@ rm -rf build
 mkdir build
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release > /dev/null 2>&1
-make -j16 > /dev/null 2>&1
+make -j12 > /dev/null 2>&1
 make -j1 | sed 's/^/        /'

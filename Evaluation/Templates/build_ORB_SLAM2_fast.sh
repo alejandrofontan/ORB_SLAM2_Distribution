@@ -16,5 +16,5 @@ echo "Configuring and building ORB_SLAM2 ..."
 
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release > /dev/null 2>&1
-make -j16 > /dev/null 2>&1
+make -j12 > /dev/null 2>&1
 make -j1 | sed 's/^/        /'
