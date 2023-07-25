@@ -25,7 +25,7 @@
 #include<opencv2/core/core.hpp>
 #include<opencv2/features2d/features2d.hpp>
 
-#include "Thirdparty/DBoW2/DBoW2/FeatureVector.h"
+#include DBOW_SRC_FEATUREVECTOR
 
 #include<stdint-gcc.h>
 
@@ -37,10 +37,38 @@ namespace ORB_SLAM2
 const int Matcher::HISTO_LENGTH = 30;
 
 MatcherParameters Matcher::parameters{};
-Matcher::DescriptorType Matcher::descriptorType{DESCRIPTOR_TYPE};
+DescriptorType Matcher::descriptorType{DESCRIPTOR_TYPE};
 
 Matcher::Matcher(float nnratio, bool checkOri): mfNNratio(nnratio), mbCheckOrientation(checkOri)
 {
+    switch (descriptorType) {
+        case ORB:{
+            parameters.DistanceThreshold_high = DESCRIPTOR_DISTANCE_TYPE(100);
+            parameters.DistanceThreshold_low = DESCRIPTOR_DISTANCE_TYPE(50);
+            break;
+        }
+        case BRIEF:{
+            parameters.DistanceThreshold_high = DESCRIPTOR_DISTANCE_TYPE(100);
+            parameters.DistanceThreshold_low = DESCRIPTOR_DISTANCE_TYPE(50);
+            break;
+        }
+        case AKAZE:{
+            parameters.DistanceThreshold_high = DESCRIPTOR_DISTANCE_TYPE(186);
+            parameters.DistanceThreshold_low = DESCRIPTOR_DISTANCE_TYPE(93);
+            break;
+        }
+        case KAZE:
+        case SURF:
+        case SIFT:{
+            parameters.DistanceThreshold_high = DESCRIPTOR_DISTANCE_TYPE(0.005*DESCRIPTOR_SIZE);
+            parameters.DistanceThreshold_low = DESCRIPTOR_DISTANCE_TYPE(parameters.DistanceThreshold_high/2.0);
+            break;
+        }
+        default:{
+            cout << "SET UP DISTANCE THRESHOLDS!!!!!!!!!!!!!!!!"<< endl;
+            terminate();
+        }
+    }
 }
 
 int Matcher::SearchByProjection(Frame &F, const vector<MapPoint*> &vpMapPoints, const float th)
@@ -137,6 +165,7 @@ float Matcher::RadiusByViewingCos(const float &viewCos)
 
 bool Matcher::CheckDistEpipolarLine(const cv::KeyPoint &kp1, const cv::KeyPoint &kp2, const cv::Mat &F12, const KeyFrame* pKF2)
 {
+
     // Epipolar line in second image l = x1'F12 = [a b c]
     const float a = kp1.pt.x*F12.at<float>(0,0)+kp1.pt.y*F12.at<float>(1,0)+F12.at<float>(2,0);
     const float b = kp1.pt.x*F12.at<float>(0,1)+kp1.pt.y*F12.at<float>(1,1)+F12.at<float>(2,1);
@@ -150,7 +179,6 @@ bool Matcher::CheckDistEpipolarLine(const cv::KeyPoint &kp1, const cv::KeyPoint 
         return false;
 
     const float dsqr = num*num/den;
-
     return dsqr<3.84*pKF2->mvLevelSigma2[kp2.octave];
 }
 
@@ -160,7 +188,7 @@ int Matcher::SearchByBoW(KeyFrame* pKF, Frame &F, vector<MapPoint*> &vpMapPointM
 
     vpMapPointMatches = vector<MapPoint*>(F.N,static_cast<MapPoint*>(NULL));
 
-    const DBoW2::FeatureVector &vFeatVecKF = pKF->mFeatVec;
+    const DBOW::FeatureVector &vFeatVecKF = pKF->mFeatVec;
 
     int nmatches=0;
 
@@ -170,10 +198,10 @@ int Matcher::SearchByBoW(KeyFrame* pKF, Frame &F, vector<MapPoint*> &vpMapPointM
     const float factor = 1.0f/HISTO_LENGTH;
 
     // We perform the matching over ORB that belong to the same vocabulary node (at a certain level)
-    DBoW2::FeatureVector::const_iterator KFit = vFeatVecKF.begin();
-    DBoW2::FeatureVector::const_iterator Fit = F.mFeatVec.begin();
-    DBoW2::FeatureVector::const_iterator KFend = vFeatVecKF.end();
-    DBoW2::FeatureVector::const_iterator Fend = F.mFeatVec.end();
+    DBOW::FeatureVector::const_iterator KFit = vFeatVecKF.begin();
+    DBOW::FeatureVector::const_iterator Fit = F.mFeatVec.begin();
+    DBOW::FeatureVector::const_iterator KFend = vFeatVecKF.end();
+    DBOW::FeatureVector::const_iterator Fend = F.mFeatVec.end();
 
     while(KFit != KFend && Fit != Fend)
     {
@@ -259,7 +287,6 @@ int Matcher::SearchByBoW(KeyFrame* pKF, Frame &F, vector<MapPoint*> &vpMapPointM
             Fit = F.mFeatVec.lower_bound(KFit->first);
         }
     }
-
 
     if(mbCheckOrientation)
     {
@@ -401,6 +428,7 @@ int Matcher::SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const vector<MapPoin
 
 int Matcher::SearchForInitialization(Frame &F1, Frame &F2, vector<cv::Point2f> &vbPrevMatched, vector<int> &vnMatches12, int windowSize)
 {
+
     int nmatches=0;
     vnMatches12 = vector<int>(F1.mvKeysUn.size(),-1);
 
@@ -454,7 +482,7 @@ int Matcher::SearchForInitialization(Frame &F1, Frame &F2, vector<cv::Point2f> &
 
         if(bestDist <= parameters.DistanceThreshold_low)
         {
-            if(bestDist<(float)bestDist2*mfNNratio)
+            if(bestDist < (float)bestDist2*mfNNratio)
             {
                 if(vnMatches21[bestIdx2]>=0)
                 {
@@ -504,7 +532,6 @@ int Matcher::SearchForInitialization(Frame &F1, Frame &F2, vector<cv::Point2f> &
                 }
             }
         }
-
     }
 
     //Update prev matched
@@ -518,12 +545,12 @@ int Matcher::SearchForInitialization(Frame &F1, Frame &F2, vector<cv::Point2f> &
 int Matcher::SearchByBoW(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &vpMatches12)
 {
     const vector<cv::KeyPoint> &vKeysUn1 = pKF1->mvKeysUn;
-    const DBoW2::FeatureVector &vFeatVec1 = pKF1->mFeatVec;
+    const DBOW::FeatureVector &vFeatVec1 = pKF1->mFeatVec;
     const vector<MapPoint*> vpMapPoints1 = pKF1->GetMapPointMatches();
     const cv::Mat &Descriptors1 = pKF1->mDescriptors;
 
     const vector<cv::KeyPoint> &vKeysUn2 = pKF2->mvKeysUn;
-    const DBoW2::FeatureVector &vFeatVec2 = pKF2->mFeatVec;
+    const DBOW::FeatureVector &vFeatVec2 = pKF2->mFeatVec;
     const vector<MapPoint*> vpMapPoints2 = pKF2->GetMapPointMatches();
     const cv::Mat &Descriptors2 = pKF2->mDescriptors;
 
@@ -538,10 +565,10 @@ int Matcher::SearchByBoW(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &vpM
 
     int nmatches = 0;
 
-    DBoW2::FeatureVector::const_iterator f1it = vFeatVec1.begin();
-    DBoW2::FeatureVector::const_iterator f2it = vFeatVec2.begin();
-    DBoW2::FeatureVector::const_iterator f1end = vFeatVec1.end();
-    DBoW2::FeatureVector::const_iterator f2end = vFeatVec2.end();
+    DBOW::FeatureVector::const_iterator f1it = vFeatVec1.begin();
+    DBOW::FeatureVector::const_iterator f2it = vFeatVec2.begin();
+    DBOW::FeatureVector::const_iterator f1end = vFeatVec1.end();
+    DBOW::FeatureVector::const_iterator f2end = vFeatVec2.end();
 
     while(f1it != f1end && f2it != f2end)
     {
@@ -651,9 +678,11 @@ int Matcher::SearchByBoW(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &vpM
 
 int Matcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F12,
                                     vector<pair<size_t, size_t> > &vMatchedPairs, const bool bOnlyStereo)
-{    
-    const DBoW2::FeatureVector &vFeatVec1 = pKF1->mFeatVec;
-    const DBoW2::FeatureVector &vFeatVec2 = pKF2->mFeatVec;
+{
+
+
+    const DBOW::FeatureVector &vFeatVec1 = pKF1->mFeatVec;
+    const DBOW::FeatureVector &vFeatVec2 = pKF2->mFeatVec;
 
     //Compute epipole in second image
     cv::Mat Cw = pKF1->GetCameraCenter();
@@ -678,10 +707,10 @@ int Matcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F12,
 
     const float factor = 1.0f/HISTO_LENGTH;
 
-    DBoW2::FeatureVector::const_iterator f1it = vFeatVec1.begin();
-    DBoW2::FeatureVector::const_iterator f2it = vFeatVec2.begin();
-    DBoW2::FeatureVector::const_iterator f1end = vFeatVec1.end();
-    DBoW2::FeatureVector::const_iterator f2end = vFeatVec2.end();
+    DBOW::FeatureVector::const_iterator f1it = vFeatVec1.begin();
+    DBOW::FeatureVector::const_iterator f2it = vFeatVec2.begin();
+    DBOW::FeatureVector::const_iterator f1end = vFeatVec1.end();
+    DBOW::FeatureVector::const_iterator f2end = vFeatVec2.end();
 
     while(f1it!=f1end && f2it!=f2end)
     {
@@ -704,7 +733,7 @@ int Matcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F12,
                         continue;
                 
                 const cv::KeyPoint &kp1 = pKF1->mvKeysUn[idx1];
-                
+
                 const cv::Mat &d1 = pKF1->mDescriptors.row(idx1);
 
                 DESCRIPTOR_DISTANCE_TYPE bestDist = parameters.DistanceThreshold_low;
@@ -713,7 +742,7 @@ int Matcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F12,
                 for(size_t i2=0, iend2=f2it->second.size(); i2<iend2; i2++)
                 {
                     size_t idx2 = f2it->second[i2];
-                    
+
                     MapPoint* pMP2 = pKF2->GetMapPoint(idx2);
                     
                     // If we have already matched or there is a MapPoint skip
@@ -749,7 +778,7 @@ int Matcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F12,
                         bestDist = dist;
                     }
                 }
-                
+
                 if(bestIdx2>=0)
                 {
                     const cv::KeyPoint &kp2 = pKF2->mvKeysUn[bestIdx2];
@@ -1464,7 +1493,7 @@ int Matcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, con
     return nmatches;
 }
 
-int Matcher::SearchByProjection(Frame &CurrentFrame, KeyFrame *pKF, const set<MapPoint*> &sAlreadyFound, const float th , const int ORBdist)
+int Matcher::SearchByProjection(Frame &CurrentFrame, KeyFrame *pKF, const set<MapPoint*> &sAlreadyFound, const float th , const DESCRIPTOR_DISTANCE_TYPE ORBdist)
 {
     int nmatches = 0;
 
@@ -1641,7 +1670,6 @@ void Matcher::ComputeThreeMaxima(vector<int>* histo, const int L, int &ind1, int
 // http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
 DESCRIPTOR_DISTANCE_TYPE Matcher::DescriptorDistance(const cv::Mat &a, const cv::Mat &b)
 {
-
     if(descriptorType == ORB){
         DESCRIPTOR_DISTANCE_TYPE dist{};
 
@@ -1656,7 +1684,7 @@ DESCRIPTOR_DISTANCE_TYPE Matcher::DescriptorDistance(const cv::Mat &a, const cv:
         }
         return dist;
     }
-
+    //cout << (DESCRIPTOR_DISTANCE_TYPE) cv::norm(a,b,DESCRIPTOR_DISTANCE_FUNCTION) << endl;
     return (DESCRIPTOR_DISTANCE_TYPE) cv::norm(a,b,DESCRIPTOR_DISTANCE_FUNCTION);
 }
 

@@ -40,13 +40,6 @@ class Matcher
 {
 public:
 
-    enum DescriptorType{
-        ORB = 0,
-        SUPERPOINT = 1,
-        KAZE = 2,
-        SIFT = 3
-    };
-
     static MatcherParameters parameters;
     static DescriptorType descriptorType;
 
@@ -116,11 +109,15 @@ public:
     friend std::ostream& operator<<(std::ostream& outstream, const MatcherParameters& parameters);
     friend class Matcher;
 
-    DESCRIPTOR_DISTANCE_TYPE DistanceThreshold_low{50};
-    DESCRIPTOR_DISTANCE_TYPE DistanceThreshold_high{100};
+#ifdef BINARY_DESCRIPTOR
+        DESCRIPTOR_DISTANCE_TYPE DistanceThreshold_high{};
+        DESCRIPTOR_DISTANCE_TYPE DistanceThreshold_low{};
+#else
+        DESCRIPTOR_DISTANCE_TYPE DistanceThreshold_high{0.3}; // 100
+        DESCRIPTOR_DISTANCE_TYPE DistanceThreshold_low{DESCRIPTOR_DISTANCE_TYPE(DistanceThreshold_high/2.0)}; //50
+#endif
 
     const DESCRIPTOR_DISTANCE_TYPE HighestPossibleDistanceValue{std::numeric_limits<DESCRIPTOR_DISTANCE_TYPE>::max()};
-
 };
 }// namespace ORB_SLAM
 
