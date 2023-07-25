@@ -74,10 +74,18 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
 
 
     //Load ORB Vocabulary
-    cout << endl << "Loading ORB Vocabulary. This could take a while..." << endl;
+    cout << endl << "Loading "<< DESCRIPTOR_NAME <<" vocabulary. This could take a while..." << endl;
 
-    mpVocabulary = new ORBVocabulary();
-    bool bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
+    bool bVocLoad{true};
+#ifdef COMPILED_WITH_DBOW2
+    mpVocabulary = new FEATUREVocabulary();
+    mpVocabulary->load("Vocabulary/" + string(VOCABULARY_FILE));
+#endif
+#ifdef COMPILED_WITH_DBOW3
+    mpVocabulary = new FEATUREVocabulary(strVocFile);
+    //mpVocabulary->load_fromtxt(strVocFile);
+#endif
+
     if(!bVocLoad)
     {
         cerr << "Wrong path to vocabulary. " << endl;

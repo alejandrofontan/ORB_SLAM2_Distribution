@@ -43,7 +43,7 @@ class KeyFrameDatabase
 {
 public:
 
-    KeyFrameDatabase(const ORBVocabulary &voc);
+    KeyFrameDatabase(const FEATUREVocabulary &voc);
 
    void add(KeyFrame* pKF);
 
@@ -60,10 +60,10 @@ public:
 protected:
 
   // Associated vocabulary
-  const ORBVocabulary* mpVoc;
+  const FEATUREVocabulary* mpVoc;
 
   // Inverted file
-  std::vector<list<KeyFrame*> > mvInvertedFile;
+  std::vector<std::list<KeyFrame*> > mvInvertedFile;
 
   // Mutex
   std::mutex mMutex;

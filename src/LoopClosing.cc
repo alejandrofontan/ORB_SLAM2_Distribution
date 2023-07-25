@@ -39,7 +39,7 @@ LoopConnections::LoopConnections(const KeyframeId & keyframeId, const Keyframe& 
     keyframeId(keyframeId), keyframe(keyframe), connections(connections){
 }
 
-LoopClosing::LoopClosing(Map *pMap, KeyFrameDatabase *pDB, ORBVocabulary *pVoc, const bool bFixScale):
+LoopClosing::LoopClosing(Map *pMap, KeyFrameDatabase *pDB, FEATUREVocabulary *pVoc, const bool bFixScale):
     mbResetRequested(false), mbFinishRequested(false), mbFinished(true), mpMap(pMap),
     mpKeyFrameDB(pDB), mpORBVocabulary(pVoc), mpMatchedKF(NULL), mLastLoopKFid(0), mbRunningGBA(false), mbFinishedGBA(true),
     mbStopGBA(false), mpThreadGBA(NULL), mbFixScale(bFixScale), mnFullBAIdx(0)
@@ -149,14 +149,14 @@ bool LoopClosing::DetectLoop()
     // This is the lowest score to a connected keyframe in the covisibility graph
     // We will impose loop candidates to have a higher similarity than this
     const vector<KeyFrame*> vpConnectedKeyFrames = mpCurrentKF->GetVectorCovisibleKeyFrames();
-    const DBoW2::BowVector &CurrentBowVec = mpCurrentKF->mBowVec;
+    const DBOW::BowVector &CurrentBowVec = mpCurrentKF->mBowVec;
     float minScore = 1;
     for(size_t i=0; i<vpConnectedKeyFrames.size(); i++)
     {
         KeyFrame* pKF = vpConnectedKeyFrames[i];
         if(pKF->isBad())
             continue;
-        const DBoW2::BowVector &BowVec = pKF->mBowVec;
+        const DBOW::BowVector &BowVec = pKF->mBowVec;
 
         float score = mpORBVocabulary->score(CurrentBowVec, BowVec);
 

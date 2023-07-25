@@ -43,7 +43,7 @@ using namespace std;
 namespace ORB_SLAM2
 {
 
-Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer,
+Tracking::Tracking(System *pSys, FEATUREVocabulary* pVoc, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer,
                    Map *pMap,SLAM_GRAPH::SlamGraph& slamGraph,
                    KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor):
     mState(NO_IMAGES_YET), mSensor(sensor), mbOnlyTracking(false), mbVO(false), mpORBVocabulary(pVoc),
@@ -341,10 +341,13 @@ void Tracking::Track()
                     if(!mVelocity.empty())
                     {
                         bOK = TrackWithMotionModel();
+                        cout << "3) bOK = "<< bOK<< endl;
+
                     }
                     else
                     {
                         bOK = TrackReferenceKeyFrame();
+                        cout << "4) bOK = "<< bOK<< endl;
                     }
                 }
                 else
@@ -1453,7 +1456,7 @@ bool Tracking::Relocalization()
                 // If few inliers, search by projection in a coarse window and optimize again
                 if(nGood<50)
                 {
-                    int nadditional =matcher2.SearchByProjection(mCurrentFrame,vpCandidateKFs[i],sFound,10,100);
+                    int nadditional =matcher2.SearchByProjection(mCurrentFrame,vpCandidateKFs[i],sFound,10,DESCRIPTOR_DISTANCE_TYPE(100));
 
                     if(nadditional+nGood>=50)
                     {
@@ -1467,7 +1470,7 @@ bool Tracking::Relocalization()
                             for(int ip =0; ip<mCurrentFrame.N; ip++)
                                 if(mCurrentFrame.mvpMapPoints[ip])
                                     sFound.insert(mCurrentFrame.mvpMapPoints[ip]);
-                            nadditional =matcher2.SearchByProjection(mCurrentFrame,vpCandidateKFs[i],sFound,3,64);
+                            nadditional =matcher2.SearchByProjection(mCurrentFrame,vpCandidateKFs[i],sFound,3,DESCRIPTOR_DISTANCE_TYPE(64));
 
                             // Final optimization
                             if(nGood+nadditional>=50)

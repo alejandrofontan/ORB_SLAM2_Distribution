@@ -278,6 +278,7 @@ void LocalMapping::CreateNewMapPoints(KeyFrame *keyframe) {
 
         // Search matches that fullfil epipolar constraint
         vector<pair<size_t, size_t> > vMatchedIndices;
+
         matcher.SearchForTriangulation(keyframe, neighor, F12, vMatchedIndices, false);
 
         cv::Mat Rcw2 = neighor->GetRotation();
