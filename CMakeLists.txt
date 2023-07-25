@@ -2,13 +2,15 @@ cmake_minimum_required(VERSION 2.8)
 project(ORB_SLAM2_Distribution)
 
 option(COMPILE_WITH_PANGOLIN "Compile using Pangolin for Visualization" ON)
-option(COMPILE_SEQUENTIAL "Compile Sequential Version Of ORB_SLAM2" OFF)
-option(COMPILE_DETERMINISTIC "Compile Deterministic Version Of ORB_SLAM2" OFF)
+option(COMPILE_SEQUENTIAL "Compile Sequential Version Of ORB_SLAM2" ON)
+option(COMPILE_DETERMINISTIC "Compile Deterministic Version Of ORB_SLAM2" ON)
 option(COMPILE_DEBUG "Compile DEBUG Version Of ORB_SLAM2" OFF)
 option(COMPILE_ABLATION "Compile ABLATION Version Of ORB_SLAM2" OFF)
 option(COMPILE_ABLATION_GBA "Compile GBA ABLATION Version Of ORB_SLAM2" OFF)
 option(COMPILE_PRE_COMPUTE_FEATURES "Compile FIT PRE COMPUTE FEATURES Version Of ORB_SLAM2" OFF)
 option(COMPILE_FITRESOLUTION "Compile FIT RESOLUTION Version Of ORB_SLAM2" OFF)
+option(COMPILE_WITH_DBOW2 "Compile with DBoW2" ON)
+option(COMPILE_WITH_DBOW3 "Compile with DBoW3" OFF)
 
 if(COMPILE_WITH_PANGOLIN)
     add_definitions(-DCOMPILED_WITH_PANGOLIN=1)
@@ -40,6 +42,14 @@ endif()
 
 if(COMPILE_FITRESOLUTION)
     add_definitions(-DCOMPILED_FITRESOLUTION=1)
+endif()
+
+if(COMPILE_WITH_DBOW2)
+    add_definitions(-DCOMPILED_WITH_DBOW2=1)
+endif()
+
+if(COMPILE_WITH_DBOW3)
+    add_definitions(-DCOMPILED_WITH_DBOW3=1)
 endif()
 
 set(OPENCV_LOCAL_VERSION "4.7.0")
@@ -100,7 +110,7 @@ src/Tracking.cc
 src/LocalMapping.cc
 src/LoopClosing.cc
 src/ORBextractor.cc
-        src/Matcher.cc
+src/Matcher.cc
 src/FrameDrawer.cc
 src/Converter.cc
 src/MapPoint.cc
@@ -116,19 +126,31 @@ src/Initializer.cc
 src/Viewer.cc
 src/Utils.cpp
 src/SLAMGraph.cpp
-src/DistributionFitter.cpp)
+src/DistributionFitter.cpp
+)
 
 target_link_libraries(${PROJECT_NAME}
 ${OpenCV_LIBS}
 ${EIGEN3_LIBS}
 ${GSL_LIBRARIES}
-${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
 ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
 )
 if(COMPILE_WITH_PANGOLIN)
     target_link_libraries(
             ${PROJECT_NAME}
             ${Pangolin_LIBRARIES}
+    )
+endif()
+
+if(COMPILE_WITH_DBOW2)
+    target_link_libraries(${PROJECT_NAME}
+            ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
+    )
+endif()
+
+if(COMPILE_WITH_DBOW3)
+    target_link_libraries(${PROJECT_NAME}
+            ${PROJECT_SOURCE_DIR}/Thirdparty/DBow3/lib/libDBoW3.so.0.0.1
     )
 endif()
 
