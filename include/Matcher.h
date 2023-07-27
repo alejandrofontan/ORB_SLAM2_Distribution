@@ -87,6 +87,7 @@ public:
 public:
 
     static const int HISTO_LENGTH;
+    static const float FACTOR;
 
 protected:
 
@@ -94,7 +95,9 @@ protected:
 
     float RadiusByViewingCos(const float &viewCos);
 
-    void ComputeThreeMaxima(std::vector<int>* histo, const int L, int &ind1, int &ind2, int &ind3);
+    void ComputeThreeMaxima(vector<vector<int>>& rotationHistogram, const int L, int &ind1, int &ind2, int &ind3);
+
+    static void InitializeRotationHistogram(vector<vector<int>>& rotationHistogram);
 
     float mfNNratio;
     bool mbCheckOrientation;

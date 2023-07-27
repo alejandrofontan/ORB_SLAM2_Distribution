@@ -158,4 +158,5 @@ typedef Eigen::Matrix<dataType,3,3> mat3;
 typedef Eigen::Matrix<dataType,4,4> mat4;
 typedef Eigen::Quaterniond quat;
 
+
 #endif //ORB_SLAM2_DISTRIBUTION_DEFINITIONS_H
