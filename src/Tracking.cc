@@ -112,19 +112,19 @@ Tracking::Tracking(System *pSys, FEATUREVocabulary* pVoc, FrameDrawer *pFrameDra
 
     // Load ORB parameters
 
-    int nFeatures = fSettings["ORBextractor.nFeatures"];
-    float fScaleFactor = fSettings["ORBextractor.scaleFactor"];
-    int nLevels = fSettings["ORBextractor.nLevels"];
-    int fIniThFAST = fSettings["ORBextractor.iniThFAST"];
-    int fMinThFAST = fSettings["ORBextractor.minThFAST"];
+    int nFeatures = fSettings["FeatureExtractor.nFeatures"];
+    float fScaleFactor = fSettings["FeatureExtractor.scaleFactor"];
+    int nLevels = fSettings["FeatureExtractor.nLevels"];
+    int fIniThFAST = fSettings["FeatureExtractor.iniThFAST"];
+    int fMinThFAST = fSettings["FeatureExtractor.minThFAST"];
 
-    mpORBextractorLeft = new ORBextractor(nFeatures,fScaleFactor,nLevels,fIniThFAST,fMinThFAST);
+    mpORBextractorLeft = new FeatureExtractor(nFeatures, fScaleFactor, nLevels, fIniThFAST, fMinThFAST);
 
     if(sensor==System::STEREO)
-        mpORBextractorRight = new ORBextractor(nFeatures,fScaleFactor,nLevels,fIniThFAST,fMinThFAST);
+        mpORBextractorRight = new FeatureExtractor(nFeatures, fScaleFactor, nLevels, fIniThFAST, fMinThFAST);
 
     if(sensor==System::MONOCULAR)
-        mpIniORBextractor = new ORBextractor(2*nFeatures,fScaleFactor,nLevels,fIniThFAST,fMinThFAST);
+        mpIniORBextractor = new FeatureExtractor(2 * nFeatures, fScaleFactor, nLevels, fIniThFAST, fMinThFAST);
 
     cout << endl  << "ORB Extractor Parameters: " << endl;
     cout << "- Number of Features: " << nFeatures << endl;

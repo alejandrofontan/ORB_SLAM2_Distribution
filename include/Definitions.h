@@ -10,13 +10,13 @@
 namespace ORB_SLAM2 {
     enum DescriptorType {
         ORB = 0,
-        SUPERPOINT = 1,
-        AKAZE = 2,
-        SIFT = 3,
+        AKAZE16 = 1,
+        AKAZE32 = 2,
+        AKAZE61 = 3,
         BRISK = 4,
-        KAZE = 5,
-        SURF = 6,
-        BRIEF = 7
+        SIFT = 5,
+        KAZE = 6,
+        SURF = 7,
     };
 }
 
@@ -34,27 +34,51 @@ namespace ORB_SLAM2 {
 #define BINARY_DESCRIPTOR
 #endif
 
-#ifdef AKAZE_FEATURE
-#define DESCRIPTOR_NAME "akaze"
-#define DESCRIPTOR_TYPE ORB_SLAM2::DescriptorType::AKAZE
-#define DESCRIPTOR_SIZE 61
+#ifdef AKAZE16_FEATURE
+#define DESCRIPTOR_NAME "akaze16"
+#define DESCRIPTOR_TYPE ORB_SLAM2::DescriptorType::AKAZE16
+#define DESCRIPTOR_SIZE 16
 #define DETECTOR_CV cv::AKAZE
 #define DESCRIPTOR_CV cv::AKAZE
-#define DBOW_SRC_F "Thirdparty/DBoW2/include/DBoW2/FAKAZE.h"
-#define DESCRIPTOR_F FAKAZE
-#define VOCABULARY_FILE "akaze_DBoW2_voc.yml"
+#define DBOW_SRC_F "Thirdparty/DBoW2/include/DBoW2/FAkaze16.h"
+#define DESCRIPTOR_F FAkaze16
+#define VOCABULARY_FILE "akaze16_DBoW2_voc.yml"
 #define BINARY_DESCRIPTOR
 #endif
 
-#ifdef BRIEF_FEATURE
-#define DESCRIPTOR_NAME "brief"
-#define DESCRIPTOR_TYPE ORB_SLAM2::DescriptorType::BRIEF
+#ifdef AKAZE32_FEATURE
+#define DESCRIPTOR_NAME "akaze32"
+#define DESCRIPTOR_TYPE ORB_SLAM2::DescriptorType::AKAZE32
 #define DESCRIPTOR_SIZE 32
-#define DETECTOR_CV cv::xfeatures2d::StarDetector
-#define DESCRIPTOR_CV cv::xfeatures2d::BriefDescriptorExtractor
-#define DBOW_SRC_F "Thirdparty/DBoW2/include/DBoW2/FBrief.h"
-#define DESCRIPTOR_F FBrief
-#define VOCABULARY_FILE "brief_DBoW2_voc.yml"
+#define DETECTOR_CV cv::AKAZE
+#define DESCRIPTOR_CV cv::AKAZE
+#define DBOW_SRC_F "Thirdparty/DBoW2/include/DBoW2/FAkaze32.h"
+#define DESCRIPTOR_F FAkaze32
+#define VOCABULARY_FILE "akaze32_DBoW2_voc.yml"
+#define BINARY_DESCRIPTOR
+#endif
+
+#ifdef AKAZE61_FEATURE
+#define DESCRIPTOR_NAME "akaze61"
+#define DESCRIPTOR_TYPE ORB_SLAM2::DescriptorType::AKAZE61
+#define DESCRIPTOR_SIZE 61
+#define DETECTOR_CV cv::AKAZE
+#define DESCRIPTOR_CV cv::AKAZE
+#define DBOW_SRC_F "Thirdparty/DBoW2/include/DBoW2/FAkaze61.h"
+#define DESCRIPTOR_F FAkaze61
+#define VOCABULARY_FILE "akaze61_DBoW2_voc.yml"
+#define BINARY_DESCRIPTOR
+#endif
+
+#ifdef BRISK_FEATURE
+#define DESCRIPTOR_NAME "brisk"
+#define DESCRIPTOR_TYPE ORB_SLAM2::DescriptorType::BRISK
+#define DESCRIPTOR_SIZE 64
+#define DETECTOR_CV cv::BRISK
+#define DESCRIPTOR_CV cv::BRISK
+#define DBOW_SRC_F "Thirdparty/DBoW2/include/DBoW2/FBrisk.h"
+#define DESCRIPTOR_F FBrisk
+#define VOCABULARY_FILE "brisk_DBoW2_voc.yml"
 #define BINARY_DESCRIPTOR
 #endif
 
@@ -67,6 +91,8 @@ namespace ORB_SLAM2 {
 #define DBOW_SRC_F "Thirdparty/DBoW2/include/DBoW2/FKAZE.h"
 #define DESCRIPTOR_F FKAZE
 #define VOCABULARY_FILE "kaze_DBoW2_voc.yml"
+#define DESCRIPTOR_MAT_TYPE CV_32F
+#define DESCRIPTOR_FORMAT std::vector<float>
 #endif
 
 #ifdef SURF_FEATURE
@@ -78,6 +104,8 @@ namespace ORB_SLAM2 {
 #define DBOW_SRC_F "Thirdparty/DBoW2/include/DBoW2/FSurf64.h"
 #define DESCRIPTOR_F FSurf64
 #define VOCABULARY_FILE "surf_DBoW2_voc.yml"
+#define DESCRIPTOR_MAT_TYPE CV_32F
+#define DESCRIPTOR_FORMAT std::vector<float>
 #endif
 
 #ifdef SIFT_FEATURE
@@ -89,6 +117,8 @@ namespace ORB_SLAM2 {
 #define DBOW_SRC_F "Thirdparty/DBoW2/include/DBoW2/FSift.h"
 #define DESCRIPTOR_F FSift
 #define VOCABULARY_FILE "sift_DBoW2_voc.yml"
+#define DESCRIPTOR_MAT_TYPE CV_8U
+#define DESCRIPTOR_FORMAT std::vector<int>
 #endif
 
 #ifdef BINARY_DESCRIPTOR
@@ -99,8 +129,6 @@ namespace ORB_SLAM2 {
 #else
     #define DESCRIPTOR_DISTANCE_TYPE float
     #define DESCRIPTOR_DISTANCE_FUNCTION cv::NORM_L2SQR
-    #define DESCRIPTOR_MAT_TYPE CV_32F
-    #define DESCRIPTOR_FORMAT std::vector<float>
 #endif
 
 //#define DESCRIPTOR_TYPE ORB_SLAM2::DescriptorType::BRISK
@@ -122,14 +150,6 @@ namespace ORB_SLAM2 {
 #define DBOW_SRC_BOWVECTOR "Thirdparty/DBoW2/include/DBoW2/BowVector.h"
 #define DBOW_SRC_FEATUREVECTOR "Thirdparty/DBoW2/include/DBoW2/FeatureVector.h"
 #define DBOW_SRC_TEMPLATEDVOCABULARY "Thirdparty/DBoW2/include/DBoW2/TemplatedVocabulary.h"
-#endif
-
-#ifdef COMPILED_WITH_DBOW3
-#define DBOW DBoW3
-#define DBOW_SRC_BOWVECTOR "Thirdparty/DBow3/src/BowVector.h"
-#define DBOW_SRC_FEATUREVECTOR "Thirdparty/DBow3/src/FeatureVector.h"
-#define DBOW_SRC_RANDOM "Thirdparty/DBow3/src/Random.h"
-#define DBOW_SRC_DBOW3 "Thirdparty/DBow3/src/DBoW3.h"
 #endif
 
 typedef double dataType;

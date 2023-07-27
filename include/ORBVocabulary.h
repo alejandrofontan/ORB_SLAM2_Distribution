@@ -29,10 +29,6 @@
 #include DBOW_SRC_TEMPLATEDVOCABULARY
 #endif
 
-#ifdef COMPILED_WITH_DBOW3
-#include DBOW_SRC_DBOW3
-#endif
-
 namespace ORB_SLAM2
 {
 
@@ -40,9 +36,6 @@ namespace ORB_SLAM2
     typedef DBOW::TemplatedVocabulary<DBOW::DESCRIPTOR_F::TDescriptor, DBOW::DESCRIPTOR_F> FEATUREVocabulary;
 #endif
 
-#ifdef COMPILED_WITH_DBOW3
-    typedef DBOW::Vocabulary FEATUREVocabulary;
-#endif
 
 } //namespace ORB_SLAM
 

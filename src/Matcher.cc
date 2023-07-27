@@ -23,7 +23,6 @@
 #include<limits.h>
 
 #include<opencv2/core/core.hpp>
-#include<opencv2/features2d/features2d.hpp>
 
 #include DBOW_SRC_FEATUREVECTOR
 
@@ -47,20 +46,33 @@ Matcher::Matcher(float nnratio, bool checkOri): mfNNratio(nnratio), mbCheckOrien
             parameters.DistanceThreshold_low = DESCRIPTOR_DISTANCE_TYPE(50);
             break;
         }
-        case BRIEF:{
+        case AKAZE16:{
+            parameters.DistanceThreshold_high = DESCRIPTOR_DISTANCE_TYPE(53);
+            parameters.DistanceThreshold_low = DESCRIPTOR_DISTANCE_TYPE(16);
+            break;
+        }
+        case AKAZE32:{
             parameters.DistanceThreshold_high = DESCRIPTOR_DISTANCE_TYPE(100);
             parameters.DistanceThreshold_low = DESCRIPTOR_DISTANCE_TYPE(50);
             break;
         }
-        case AKAZE:{
+        case AKAZE61:{
             parameters.DistanceThreshold_high = DESCRIPTOR_DISTANCE_TYPE(186);
             parameters.DistanceThreshold_low = DESCRIPTOR_DISTANCE_TYPE(93);
             break;
         }
+        case BRISK:{
+            parameters.DistanceThreshold_high = DESCRIPTOR_DISTANCE_TYPE(195);
+            parameters.DistanceThreshold_low = DESCRIPTOR_DISTANCE_TYPE(97);
+            break;
+        }
         case KAZE:
         case SURF:
-        case SIFT:{
             parameters.DistanceThreshold_high = DESCRIPTOR_DISTANCE_TYPE(0.005*DESCRIPTOR_SIZE);
+            parameters.DistanceThreshold_low = DESCRIPTOR_DISTANCE_TYPE(parameters.DistanceThreshold_high/2.0);
+            break;
+        case SIFT:{
+            parameters.DistanceThreshold_high = DESCRIPTOR_DISTANCE_TYPE(100000);
             parameters.DistanceThreshold_low = DESCRIPTOR_DISTANCE_TYPE(parameters.DistanceThreshold_high/2.0);
             break;
         }

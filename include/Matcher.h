@@ -23,9 +23,6 @@
 #define ORBMATCHER_H
 
 #include<vector>
-#include<opencv2/core/core.hpp>
-#include<opencv2/features2d/features2d.hpp>
-
 #include"MapPoint.h"
 #include"KeyFrame.h"
 #include"Frame.h"
@@ -109,13 +106,8 @@ public:
     friend std::ostream& operator<<(std::ostream& outstream, const MatcherParameters& parameters);
     friend class Matcher;
 
-#ifdef BINARY_DESCRIPTOR
-        DESCRIPTOR_DISTANCE_TYPE DistanceThreshold_high{};
-        DESCRIPTOR_DISTANCE_TYPE DistanceThreshold_low{};
-#else
-        DESCRIPTOR_DISTANCE_TYPE DistanceThreshold_high{0.3}; // 100
-        DESCRIPTOR_DISTANCE_TYPE DistanceThreshold_low{DESCRIPTOR_DISTANCE_TYPE(DistanceThreshold_high/2.0)}; //50
-#endif
+    DESCRIPTOR_DISTANCE_TYPE DistanceThreshold_high{};
+    DESCRIPTOR_DISTANCE_TYPE DistanceThreshold_low{};
 
     const DESCRIPTOR_DISTANCE_TYPE HighestPossibleDistanceValue{std::numeric_limits<DESCRIPTOR_DISTANCE_TYPE>::max()};
 };

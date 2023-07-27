@@ -21,10 +21,20 @@
 #ifndef ORBEXTRACTOR_H
 #define ORBEXTRACTOR_H
 
+#include <Definitions.h>
+
 #include <vector>
 #include <list>
 #include <opencv2/opencv.hpp>
-#include <Definitions.h>
+#include<opencv2/core/core.hpp>
+#include<opencv2/features2d/features2d.hpp>
+#include <opencv2/xfeatures2d.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+
+const int PATCH_SIZE = 31;
+const int HALF_PATCH_SIZE = 15;
+const int EDGE_THRESHOLD = 19;
 
 namespace ORB_SLAM2
 {
@@ -42,7 +52,9 @@ public:
     bool bNoMore;
 };
 
-class ORBextractor
+
+
+class FeatureExtractor
 {
 public:
     
@@ -50,10 +62,10 @@ public:
 
     static DescriptorType descriptorType;
 
-    ORBextractor(int nfeatures, float scaleFactor, int nlevels,
-                 int iniThFAST, int minThFAST);
+    FeatureExtractor(int nfeatures, float scaleFactor, int nlevels,
+                     int iniThFAST, int minThFAST);
 
-    ~ORBextractor(){}
+    ~FeatureExtractor(){}
 
     // Compute the ORB features and descriptors on an image.
     // ORB are dispersed on the image using an octree.
@@ -65,10 +77,6 @@ public:
                      std::vector<cv::KeyPoint>& keypoints,
                      cv::Mat& descriptors);
 #endif
-    void operator()( cv::InputArray image, cv::InputArray mask,
-      std::vector<cv::KeyPoint>& keypoints,
-      cv::OutputArray descriptors,
-      std::vector<std::vector<std::string>>& featuresTxt_);
 
     int inline GetLevels(){
         return nlevels;}
@@ -96,16 +104,20 @@ public:
 
 protected:
 
+    void estimateDesiredNumberOfFeaturesPerLevel();
+    static void createDetector(cv::Ptr<DETECTOR_CV>& detector);
+    static void updateDetectorSettings(cv::Ptr<DETECTOR_CV>& detector, float factor = 2.0);
+    int estimateKeypointOctave(cv::KeyPoint& pt);
     void ComputePyramid(cv::Mat image);
-    void ComputeKeyPointsOctTree(std::vector<std::vector<cv::KeyPoint> >& allKeypoints);    
+
+    void ComputeKeyPointsOctTree(std::vector<std::vector<cv::KeyPoint> >& allKeypoints);
+    void ComputeKeyPointsAndDescriptors(cv::Mat& image, std::vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors);
+
     std::vector<cv::KeyPoint> DistributeOctTree(const std::vector<cv::KeyPoint>& vToDistributeKeys, const int &minX,
                                            const int &maxX, const int &minY, const int &maxY, const int &nFeatures, const int &level);
 
-    void ComputeKeyPointsOld(std::vector<std::vector<cv::KeyPoint> >& allKeypoints);
     std::vector<cv::Point> pattern;
-
-    void computeDescriptors(const cv::Mat& image, std::vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors, const std::vector<cv::Point>& pattern);
-    void computeDescriptors(cv::Mat& descriptors, const std::vector<cv::KeyPoint>& keypoints, const std::vector<std::vector<std::string>>& featuresTxt);
+    std::vector<int> umax;
 
     int nfeatures;
     double scaleFactor;
@@ -114,8 +126,6 @@ protected:
     int minThFAST;
 
     std::vector<int> mnFeaturesPerLevel;
-
-    std::vector<int> umax;
 
     std::vector<float> mvScaleFactor;
     std::vector<float> mvInvScaleFactor;    

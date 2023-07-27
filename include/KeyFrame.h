@@ -26,7 +26,7 @@
 #include DBOW_SRC_BOWVECTOR
 #include DBOW_SRC_FEATUREVECTOR
 #include "ORBVocabulary.h"
-#include "ORBextractor.h"
+#include "FeatureExtractor.h"
 #include "Frame.h"
 #include "KeyFrameDatabase.h"
 #include "Utils.h"

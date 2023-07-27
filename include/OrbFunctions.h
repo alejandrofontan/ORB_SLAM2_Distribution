@@ -5,6 +5,19 @@
 #ifndef ORB_SLAM2_BITPATTERNS_H
 #define ORB_SLAM2_BITPATTERNS_H
 
+#include "FeatureExtractor.h"
+
+namespace ORB_SLAM2{
+
+class OrbFunctions{
+public:
+    static void computeDescriptors(const cv::Mat& image, std::vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors, const std::vector<cv::Point>& pattern);
+    static float IC_Angle(const cv::Mat& image, cv::Point2f pt,  const std::vector<int> & u_max);
+    static void computeOrientation(const cv::Mat& image, std::vector<cv::KeyPoint>& keypoints, const std::vector<int>& umax);
+    static void computeOrbDescriptor(const cv::KeyPoint& kpt,const cv::Mat& img, const cv::Point* pattern, uchar* desc);
+    static void  computeEndRowCircularPatch(std::vector<cv::Point>& pattern_, std::vector<int>& umax_);
+};
+
 static int bit_pattern_31_[256*4] =
         {
                 8,-3, 9,5/*mean (0), correlation (0)*/,
@@ -264,5 +277,5 @@ static int bit_pattern_31_[256*4] =
                 7,0, 12,-2/*mean (0.127002), correlation (0.537452)*/,
                 -1,-6, 0,-11/*mean (0.127148), correlation (0.547401)*/
         };
-
+}
 #endif //ORB_SLAM2_BITPATTERNS_H

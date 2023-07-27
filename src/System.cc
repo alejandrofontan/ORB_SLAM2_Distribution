@@ -81,10 +81,6 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     mpVocabulary = new FEATUREVocabulary();
     mpVocabulary->load("Vocabulary/" + string(VOCABULARY_FILE));
 #endif
-#ifdef COMPILED_WITH_DBOW3
-    mpVocabulary = new FEATUREVocabulary(strVocFile);
-    //mpVocabulary->load_fromtxt(strVocFile);
-#endif
 
     if(!bVocLoad)
     {

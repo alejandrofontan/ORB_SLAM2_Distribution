@@ -33,7 +33,7 @@
 #include"Frame.h"
 #include "ORBVocabulary.h"
 #include"KeyFrameDatabase.h"
-#include"ORBextractor.h"
+#include"FeatureExtractor.h"
 #include "Initializer.h"
 #include "MapDrawer.h"
 #include "System.h"
@@ -158,8 +158,8 @@ protected:
     LoopClosing* mpLoopClosing;
 
     //ORB
-    ORBextractor* mpORBextractorLeft, *mpORBextractorRight;
-    ORBextractor* mpIniORBextractor;
+    FeatureExtractor* mpORBextractorLeft, *mpORBextractorRight;
+    FeatureExtractor* mpIniORBextractor;
 
     //BoW
     FEATUREVocabulary* mpORBVocabulary;
