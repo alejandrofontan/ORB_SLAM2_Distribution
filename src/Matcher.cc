@@ -90,7 +90,7 @@ int Matcher::SearchByProjection(Frame &frame, const vector<MapPt> &mapPoints, co
 {
     int numberOfMatches{0};
 
-    map<size_t,int> lowerDistances{};
+    map<size_t,int> lowerDistances{}; // <keypoint index, descriptor distance>
     for(auto& pt: mapPoints)
     {
         if(!pt->mbTrackInView)
@@ -187,121 +187,128 @@ float Matcher::RadiusByViewingCos(const float &viewCos)
 }
 
 // Search By Projection v2 (used in Track with Motion Model)
-int Matcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, const float th, const bool bMono)
+int Matcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, const float radiusScalingFactor, const bool bMono)
 {
-        int nmatches = 0;
+    int numberOfMatches{0};
 
-        // Rotation Histogram (to check rotation consistency)
-        vector<vector<int>> rotationHistogram;
-        InitializeRotationHistogram(rotationHistogram);
+    // Rotation Histogram (to check rotation consistency)
+    vector<vector<int>> rotationHistogram;
+    InitializeRotationHistogram(rotationHistogram);
 
-        const cv::Mat Rcw = CurrentFrame.mTcw.rowRange(0,3).colRange(0,3);
-        const cv::Mat tcw = CurrentFrame.mTcw.rowRange(0,3).col(3);
+    const cv::Mat Rcw = CurrentFrame.mTcw.rowRange(0,3).colRange(0,3);
+    const cv::Mat tcw = CurrentFrame.mTcw.rowRange(0,3).col(3);
 
-        const cv::Mat twc = -Rcw.t()*tcw;
+    const cv::Mat twc = -Rcw.t()*tcw;
 
-        const cv::Mat Rlw = LastFrame.mTcw.rowRange(0,3).colRange(0,3);
-        const cv::Mat tlw = LastFrame.mTcw.rowRange(0,3).col(3);
+    const cv::Mat Rlw = LastFrame.mTcw.rowRange(0,3).colRange(0,3);
+    const cv::Mat tlw = LastFrame.mTcw.rowRange(0,3).col(3);
 
-        const cv::Mat tlc = Rlw*twc+tlw;
+    const cv::Mat tlc = Rlw*twc+tlw;
 
-        const bool bForward = tlc.at<float>(2)>CurrentFrame.mb && !bMono;
-        const bool bBackward = -tlc.at<float>(2)>CurrentFrame.mb && !bMono;
+    // TODO THIS IS RGB-D/STEREO STUFF
+    const bool bForward = tlc.at<float>(2)>CurrentFrame.mb && !bMono;
+    const bool bBackward = -tlc.at<float>(2)>CurrentFrame.mb && !bMono;
 
-        for(int i=0; i<LastFrame.N; i++)
+    map<size_t,int> lowerDistances{}; // <keypoint index, descriptor distance>
+    map<size_t,size_t> matches{}; // <keypoint index, map point index>
+    for(size_t iPt{0}; iPt < LastFrame.N; iPt++)
+    {
+        MapPt pt = LastFrame.mvpMapPoints[iPt];
+
+        if(pt && (!pt->isBad()))
         {
-            MapPoint* pMP = LastFrame.mvpMapPoints[i];
-
-            if(pMP)
+            if(!LastFrame.mvbOutlier[iPt])
             {
-                if(!LastFrame.mvbOutlier[i])
+                // Project in current frame with motion model
+                cv::Mat XYZ_w = pt->GetWorldPos();
+                float u, v, invzc;
+                if(!ProjectInsideImage(u, v, invzc, XYZ_w, Rcw, tcw))
+                    continue;
+
+                OctaveType lastOctave = OctaveType(LastFrame.mvKeys[iPt].octave);
+                OctaveType lowerOctave = lastOctave - 1;
+                OctaveType upperOctave = lastOctave + 1;
+
+                float radius = radiusScalingFactor * CurrentFrame.mvScaleFactors[lastOctave];
+
+                vector<size_t> keyPtIndices;
+                if(bForward)
+                    keyPtIndices = CurrentFrame.GetFeaturesInArea(u,v, radius, lastOctave);
+                else if(bBackward)
+                    keyPtIndices = CurrentFrame.GetFeaturesInArea(u,v, radius, 0, lastOctave);
+                else
+                    keyPtIndices = CurrentFrame.GetFeaturesInArea(u,v, radius, lowerOctave, upperOctave);
+
+                if(keyPtIndices.empty())
+                    continue;
+
+                const cv::Mat refDescriptor = pt->GetDescriptor();
+
+                DESCRIPTOR_DISTANCE_TYPE bestDist{parameters.HighestPossibleDistanceValue};
+                size_t bestIdx;
+
+                for(auto idx: keyPtIndices)
                 {
-                    // Project
-                    cv::Mat x3Dw = pMP->GetWorldPos();
-                    cv::Mat x3Dc = Rcw*x3Dw+tcw;
 
-                    const float xc = x3Dc.at<float>(0);
-                    const float yc = x3Dc.at<float>(1);
-                    const float invzc = 1.0/x3Dc.at<float>(2);
+                    if(CurrentFrame.mvpMapPoints[idx])
+                        if(CurrentFrame.mvpMapPoints[idx]->GetPointObservability()>0)
+                            continue;
 
-                    if(invzc<0)
-                        continue;
-
-                    float u = CurrentFrame.fx*xc*invzc+CurrentFrame.cx;
-                    float v = CurrentFrame.fy*yc*invzc+CurrentFrame.cy;
-
-                    if(u<CurrentFrame.mnMinX || u>CurrentFrame.mnMaxX)
-                        continue;
-                    if(v<CurrentFrame.mnMinY || v>CurrentFrame.mnMaxY)
-                        continue;
-
-                    int nLastOctave = LastFrame.mvKeys[i].octave;
-
-                    // Search in a window. Size depends on scale
-                    float radius = th*CurrentFrame.mvScaleFactors[nLastOctave];
-
-                    vector<size_t> vIndices2;
-
-                    if(bForward)
-                        vIndices2 = CurrentFrame.GetFeaturesInArea(u,v, radius, nLastOctave);
-                    else if(bBackward)
-                        vIndices2 = CurrentFrame.GetFeaturesInArea(u,v, radius, 0, nLastOctave);
-                    else
-                        vIndices2 = CurrentFrame.GetFeaturesInArea(u,v, radius, nLastOctave-1, nLastOctave+1);
-
-                    if(vIndices2.empty())
-                        continue;
-
-                    const cv::Mat dMP = pMP->GetDescriptor();
-
-                    DESCRIPTOR_DISTANCE_TYPE bestDist{parameters.HighestPossibleDistanceValue};
-                    int bestIdx2 = -1;
-
-                    for(vector<size_t>::const_iterator vit=vIndices2.begin(), vend=vIndices2.end(); vit!=vend; vit++)
+                    if(CurrentFrame.mvuRight[idx]>0) // TODO THIS IS RGB-D/STEREO STUFF
                     {
-                        const size_t i2 = *vit;
-                        if(CurrentFrame.mvpMapPoints[i2])
-                            if(CurrentFrame.mvpMapPoints[i2]->GetPointObservability()>0)
-                                continue;
-
-                        if(CurrentFrame.mvuRight[i2]>0)
-                        {
-                            const float ur = u - CurrentFrame.mbf*invzc;
-                            const float er = fabs(ur - CurrentFrame.mvuRight[i2]);
-                            if(er>radius)
-                                continue;
-                        }
-
-                        const cv::Mat &d = CurrentFrame.mDescriptors.row(i2);
-
-                        const DESCRIPTOR_DISTANCE_TYPE dist = DescriptorDistance(dMP,d);
-
-                        if(dist<bestDist)
-                        {
-                            bestDist=dist;
-                            bestIdx2=i2;
-                        }
+                        const float ur = u - CurrentFrame.mbf * invzc;
+                        const float er = fabs(ur - CurrentFrame.mvuRight[idx]);
+                        if(er > radius)
+                            continue;
                     }
 
-                    if(bestDist <= parameters.DistanceThreshold_high)
-                    {
-                        CurrentFrame.mvpMapPoints[bestIdx2]=pMP;
-                        nmatches++;
+                    const cv::Mat &descriptor = CurrentFrame.mDescriptors.row(int(idx));
 
-                        if(mbCheckOrientation)
+                    const DESCRIPTOR_DISTANCE_TYPE dist = DescriptorDistance(refDescriptor,descriptor);
+
+                    if(dist < bestDist)
+                    {
+                        bestDist = dist;
+                        bestIdx = idx;
+                    }
+                }
+
+                if(bestDist <= parameters.DistanceThreshold_high)
+                {
+                    auto lowestDist = lowerDistances.find(bestIdx);
+                    if(lowestDist == lowerDistances.end())
+                    {
+                        CurrentFrame.mvpMapPoints[bestIdx] = pt;
+                        lowerDistances[bestIdx] = bestDist;
+                        matches[bestIdx] = iPt;
+                        numberOfMatches++;
+                    }
+                    else
+                    {
+                        if(bestDist < lowestDist->second)
                         {
-                            int bin = ComputeBinForRotationHistogram(LastFrame.mvKeysUn[i],CurrentFrame.mvKeysUn[bestIdx2]);
-                            rotationHistogram[bin].push_back(bestIdx2);
+                            CurrentFrame.mvpMapPoints[bestIdx] = pt;
+                            matches[bestIdx] = iPt;
+                            lowestDist->second = bestDist;
                         }
                     }
                 }
             }
         }
+    }
 
-        if(mbCheckOrientation) //Apply rotation consistency
-            CheckOrientation(CurrentFrame.mvpMapPoints,  nmatches, rotationHistogram);
+    //Apply rotation consistency
+    if(mbCheckOrientation)
+    {
+        for(auto match: matches)
+        {
+            int bin = ComputeBinForRotationHistogram(LastFrame.mvKeysUn[match.second],CurrentFrame.mvKeysUn[match.first]);
+            rotationHistogram[bin].push_back(int(match.first));
+        }
+        CheckOrientation(CurrentFrame.mvpMapPoints, numberOfMatches, rotationHistogram);
+    }
 
-        return nmatches;
+    return numberOfMatches;
 }
 
 bool Matcher::CheckDistEpipolarLine(const cv::KeyPoint &kp1, const cv::KeyPoint &kp2, const cv::Mat &F12, const KeyFrame* pKF2)
@@ -1643,6 +1650,36 @@ DESCRIPTOR_DISTANCE_TYPE Matcher::DescriptorDistance(const cv::Mat &a, const cv:
     }
     //cout << (DESCRIPTOR_DISTANCE_TYPE) cv::norm(a,b,DESCRIPTOR_DISTANCE_FUNCTION) << endl;
     return (DESCRIPTOR_DISTANCE_TYPE) cv::norm(a,b,DESCRIPTOR_DISTANCE_FUNCTION);
+}
+
+void Matcher::ProjectIntoImage(float& u, float& v, const float& xc, const float& yc, const float& invzc){
+    u = ORB_SLAM2::Frame::fx * xc * invzc + ORB_SLAM2::Frame::cx;
+    v = ORB_SLAM2::Frame::fy * yc * invzc + ORB_SLAM2::Frame::cy;
+}
+
+void Matcher::ProjectIntoCameraCoordinateSystem(float& xc, float& yc, float& invzc, const cv::Mat& XYZ_w, const cv::Mat& Rcw, const cv::Mat& tcw){
+    cv::Mat x3Dc = Rcw*XYZ_w + tcw;
+    xc = x3Dc.at<float>(0);
+    yc = x3Dc.at<float>(1);
+    invzc = 1.0f/x3Dc.at<float>(2);
+}
+
+bool Matcher::ProjectInsideImage(float& u, float& v, float& invzc,  const cv::Mat& XYZ_w, const cv::Mat& Rcw, const cv::Mat& tcw){
+
+    float xc,yc;
+    ProjectIntoCameraCoordinateSystem(xc, yc, invzc, XYZ_w, Rcw, tcw);
+
+    if(invzc < 0.0)
+        return false;
+
+    ProjectIntoImage(u, v, xc, yc, invzc);
+
+    if(u < ORB_SLAM2::Frame::mnMinX || u > ORB_SLAM2::Frame::mnMaxX)
+        return false;
+    if(v < ORB_SLAM2::Frame::mnMinY || v > ORB_SLAM2::Frame::mnMaxY)
+        return false;
+
+    return true;
 }
 
 void Matcher::InitializeRotationHistogram(vector<vector<int>>& rotationHistogram){

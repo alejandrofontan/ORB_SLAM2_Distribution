@@ -51,7 +51,7 @@ public:
 
     // Project MapPoints tracked in last frame into the current frame and search matches.
     // Used to track from previous frame (Tracking)
-    int SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, const float th, const bool bMono);
+    int SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, float radiusScalingFactor, bool bMono);
 
     // Project MapPoints seen in KeyFrame into the Frame and search matches.
     // Used in relocalisation (Tracking)
@@ -94,6 +94,10 @@ protected:
     bool CheckDistEpipolarLine(const cv::KeyPoint &kp1, const cv::KeyPoint &kp2, const cv::Mat &F12, const KeyFrame *pKF);
 
     float RadiusByViewingCos(const float &viewCos);
+
+    static void ProjectIntoImage(float& u, float& v, const float& xc, const float& yc, const float& invzc);
+    static void ProjectIntoCameraCoordinateSystem(float& xc, float& yc, float& invzc, const cv::Mat& XYZ_w, const cv::Mat& Rcw, const cv::Mat& tcw);
+    static bool ProjectInsideImage(float& u, float& v, float& invzc,  const cv::Mat& XYZ_w, const cv::Mat& Rcw, const cv::Mat& tcw);
 
     void ComputeThreeMaxima(const vector<vector<int>>& rotationHistogram, const int L, int &ind1, int &ind2, int &ind3);
 
