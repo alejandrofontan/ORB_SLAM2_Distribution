@@ -311,6 +311,156 @@ int Matcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, con
     return numberOfMatches;
 }
 
+int Matcher::SearchForTriangulation(Keyframe keyframe1, Keyframe keyframe2, cv::Mat F12,
+                                        vector<pair<size_t, size_t> > &matchedPairs, const bool bOnlyStereo)
+    {
+
+
+        const DBOW::FeatureVector &featVec1 = keyframe1->mFeatVec;
+        const DBOW::FeatureVector &featVec2 = keyframe2->mFeatVec;
+
+        // Compute epipole in second image
+        cv::Mat Cw = keyframe1->GetCameraCenter();
+        cv::Mat R2w = keyframe2->GetRotation();
+        cv::Mat t2w = keyframe2->GetTranslation();
+        cv::Mat C2 = R2w * Cw + t2w;
+        const float invz = 1.0f/C2.at<float>(2);
+        const float ex =keyframe2->fx * C2.at<float>(0) * invz + keyframe2->cx;
+        const float ey =keyframe2->fy * C2.at<float>(1) * invz + keyframe2->cy;
+
+        // Find matches between not tracked keypoints
+        // Matching speed-up by Vocabulary
+        // Compare only features that share the same node
+
+        int numberOfMatches{0};
+
+        // Rotation Histogram (to check rotation consistency)
+        vector<vector<int>> rotationHistogram;
+        InitializeRotationHistogram(rotationHistogram);
+
+        DBOW::FeatureVector::const_iterator f1it = featVec1.begin();
+        DBOW::FeatureVector::const_iterator f2it = featVec2.begin();
+        DBOW::FeatureVector::const_iterator f1end = featVec1.end();
+        DBOW::FeatureVector::const_iterator f2end = featVec2.end();
+
+        map<size_t,int> lowerDistances{}; // <keypoint index, descriptor distance>
+        map<size_t,size_t> matches{}; // <keypoint 1, keypoint 2>
+        while(f1it!=f1end && f2it!=f2end)
+        {
+            if(f1it->first == f2it->first)
+            {
+                for(size_t i1=0, iend1=f1it->second.size(); i1<iend1; i1++)
+                {
+                    const size_t idx1 = f1it->second[i1];
+
+                    MapPt pMP1 = keyframe1->GetMapPoint(idx1);
+
+                    // If there is already a MapPoint skip
+                    if(pMP1)
+                        continue;
+
+                    const bool bStereo1 = keyframe1->mvuRight[idx1]>=0;
+
+                    if(bOnlyStereo)
+                        if(!bStereo1)
+                            continue;
+
+                    const cv::KeyPoint &kp1 = keyframe1->mvKeysUn[idx1];
+
+                    const cv::Mat &d1 = keyframe1->mDescriptors.row(idx1);
+
+                    DESCRIPTOR_DISTANCE_TYPE bestDist = parameters.DistanceThreshold_low;
+                    int bestIdx2 = -1;
+
+                    for(size_t i2=0, iend2=f2it->second.size(); i2<iend2; i2++)
+                    {
+                        size_t idx2 = f2it->second[i2];
+
+                        MapPt pMP2 = keyframe2->GetMapPoint(idx2);
+
+                        const bool bStereo2 = keyframe2->mvuRight[idx2]>=0;
+
+                        if(bOnlyStereo)
+                            if(!bStereo2)
+                                continue;
+
+                        const cv::Mat &d2 = keyframe2->mDescriptors.row(idx2);
+
+                        const DESCRIPTOR_DISTANCE_TYPE dist = DescriptorDistance(d1,d2);
+
+                        if(dist > parameters.DistanceThreshold_low || dist>bestDist)
+                            continue;
+
+                        const cv::KeyPoint &kp2 = keyframe2->mvKeysUn[idx2];
+
+                        if(!bStereo1 && !bStereo2)
+                        {
+                            const float distex = ex-kp2.pt.x;
+                            const float distey = ey-kp2.pt.y;
+                            if(distex*distex+distey*distey<100*keyframe2->mvScaleFactors[kp2.octave])
+                                continue;
+                        }
+
+                        if(CheckDistEpipolarLine(kp1,kp2,F12,keyframe2))
+                        {
+                            bestIdx2 = idx2;
+                            bestDist = dist;
+                        }
+                    }
+
+                    if(bestIdx2>=0)
+                    {
+                        const cv::KeyPoint &kp2 = keyframe2->mvKeysUn[bestIdx2];
+                        if(lowerDistances.find(bestIdx2) == lowerDistances.end())
+                        {
+                            lowerDistances[bestIdx2] = bestDist;
+                            matches[idx1] = bestIdx2;
+                            numberOfMatches++;
+                        }
+                        else
+                        {
+                            if(lowerDistances[bestIdx2] > bestDist)
+                            {
+                                lowerDistances[bestIdx2] = bestDist;
+                                matches[idx1] = bestIdx2;
+                            }
+                        }
+                    }
+                }
+
+                f1it++;
+                f2it++;
+            }
+            else if(f1it->first < f2it->first)
+            {
+                f1it = featVec1.lower_bound(f2it->first);
+            }
+            else
+            {
+                f2it = featVec2.lower_bound(f1it->first);
+            }
+        }
+
+        if(mbCheckOrientation)
+        {
+            for(const auto& index: matches)
+            {
+                int bin = ComputeBinForRotationHistogram(keyframe1->mvKeysUn[index.first],keyframe2->mvKeysUn[index.second]);
+                rotationHistogram[bin].push_back(int(index.first));
+            }
+            CheckOrientation(matches, numberOfMatches, rotationHistogram);
+        }
+
+        matchedPairs.clear();
+        matchedPairs.reserve(numberOfMatches);
+
+        for(auto match: matches)
+            matchedPairs.emplace_back(match.first,match.second);
+
+
+        return numberOfMatches;
+    }
+
 bool Matcher::CheckDistEpipolarLine(const cv::KeyPoint &kp1, const cv::KeyPoint &kp2, const cv::Mat &F12, const KeyFrame* pKF2)
 {
 
@@ -795,168 +945,6 @@ int Matcher::SearchByBoW(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &vpM
                 nmatches--;
             }
         }
-    }
-
-    return nmatches;
-}
-
-int Matcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F12,
-                                    vector<pair<size_t, size_t> > &vMatchedPairs, const bool bOnlyStereo)
-{
-
-
-    const DBOW::FeatureVector &vFeatVec1 = pKF1->mFeatVec;
-    const DBOW::FeatureVector &vFeatVec2 = pKF2->mFeatVec;
-
-    //Compute epipole in second image
-    cv::Mat Cw = pKF1->GetCameraCenter();
-    cv::Mat R2w = pKF2->GetRotation();
-    cv::Mat t2w = pKF2->GetTranslation();
-    cv::Mat C2 = R2w*Cw+t2w;
-    const float invz = 1.0f/C2.at<float>(2);
-    const float ex =pKF2->fx*C2.at<float>(0)*invz+pKF2->cx;
-    const float ey =pKF2->fy*C2.at<float>(1)*invz+pKF2->cy;
-
-    // Find matches between not tracked keypoints
-    // Matching speed-up by ORB Vocabulary
-    // Compare only ORB that share the same node
-
-    int nmatches=0;
-    vector<bool> vbMatched2(pKF2->N,false);
-    vector<int> vMatches12(pKF1->N,-1);
-
-    // Rotation Histogram (to check rotation consistency)
-    vector<vector<int>> rotationHistogram;
-    InitializeRotationHistogram(rotationHistogram);
-
-    DBOW::FeatureVector::const_iterator f1it = vFeatVec1.begin();
-    DBOW::FeatureVector::const_iterator f2it = vFeatVec2.begin();
-    DBOW::FeatureVector::const_iterator f1end = vFeatVec1.end();
-    DBOW::FeatureVector::const_iterator f2end = vFeatVec2.end();
-
-    while(f1it!=f1end && f2it!=f2end)
-    {
-        if(f1it->first == f2it->first)
-        {
-            for(size_t i1=0, iend1=f1it->second.size(); i1<iend1; i1++)
-            {
-                const size_t idx1 = f1it->second[i1];
-                
-                MapPoint* pMP1 = pKF1->GetMapPoint(idx1);
-                
-                // If there is already a MapPoint skip
-                if(pMP1)
-                    continue;
-
-                const bool bStereo1 = pKF1->mvuRight[idx1]>=0;
-
-                if(bOnlyStereo)
-                    if(!bStereo1)
-                        continue;
-                
-                const cv::KeyPoint &kp1 = pKF1->mvKeysUn[idx1];
-
-                const cv::Mat &d1 = pKF1->mDescriptors.row(idx1);
-
-                DESCRIPTOR_DISTANCE_TYPE bestDist = parameters.DistanceThreshold_low;
-                int bestIdx2 = -1;
-                
-                for(size_t i2=0, iend2=f2it->second.size(); i2<iend2; i2++)
-                {
-                    size_t idx2 = f2it->second[i2];
-
-                    MapPoint* pMP2 = pKF2->GetMapPoint(idx2);
-                    
-                    // If we have already matched or there is a MapPoint skip
-                    if(vbMatched2[idx2] || pMP2)
-                        continue;
-
-                    const bool bStereo2 = pKF2->mvuRight[idx2]>=0;
-
-                    if(bOnlyStereo)
-                        if(!bStereo2)
-                            continue;
-                    
-                    const cv::Mat &d2 = pKF2->mDescriptors.row(idx2);
-                    
-                    const DESCRIPTOR_DISTANCE_TYPE dist = DescriptorDistance(d1,d2);
-                    
-                    if(dist > parameters.DistanceThreshold_low || dist>bestDist)
-                        continue;
-
-                    const cv::KeyPoint &kp2 = pKF2->mvKeysUn[idx2];
-
-                    if(!bStereo1 && !bStereo2)
-                    {
-                        const float distex = ex-kp2.pt.x;
-                        const float distey = ey-kp2.pt.y;
-                        if(distex*distex+distey*distey<100*pKF2->mvScaleFactors[kp2.octave])
-                            continue;
-                    }
-
-                    if(CheckDistEpipolarLine(kp1,kp2,F12,pKF2))
-                    {
-                        bestIdx2 = idx2;
-                        bestDist = dist;
-                    }
-                }
-
-                if(bestIdx2>=0)
-                {
-                    const cv::KeyPoint &kp2 = pKF2->mvKeysUn[bestIdx2];
-                    vMatches12[idx1]=bestIdx2;
-                    nmatches++;
-
-                    if(mbCheckOrientation)
-                    {
-                        int bin = ComputeBinForRotationHistogram(kp1,kp2);
-                        rotationHistogram[bin].push_back(idx1);
-                    }
-                }
-            }
-
-            f1it++;
-            f2it++;
-        }
-        else if(f1it->first < f2it->first)
-        {
-            f1it = vFeatVec1.lower_bound(f2it->first);
-        }
-        else
-        {
-            f2it = vFeatVec2.lower_bound(f1it->first);
-        }
-    }
-
-    if(mbCheckOrientation)
-    {
-        int ind1=-1;
-        int ind2=-1;
-        int ind3=-1;
-
-        ComputeThreeMaxima(rotationHistogram,HISTO_LENGTH,ind1,ind2,ind3);
-
-        for(int i=0; i<HISTO_LENGTH; i++)
-        {
-            if(i==ind1 || i==ind2 || i==ind3)
-                continue;
-            for(size_t j=0, jend=rotationHistogram[i].size(); j<jend; j++)
-            {
-                vMatches12[rotationHistogram[i][j]]=-1;
-                nmatches--;
-            }
-        }
-
-    }
-
-    vMatchedPairs.clear();
-    vMatchedPairs.reserve(nmatches);
-
-    for(size_t i=0, iend=vMatches12.size(); i<iend; i++)
-    {
-        if(vMatches12[i]<0)
-            continue;
-        vMatchedPairs.push_back(make_pair(i,vMatches12[i]));
     }
 
     return nmatches;
@@ -1712,6 +1700,25 @@ void Matcher::CheckOrientation(vector<MapPt>& points, int& numberOfMatches, cons
         for(int pointIndex : rotationHistogram[i])
         {
             points[pointIndex] = static_cast<MapPoint*>(nullptr);
+            numberOfMatches--;
+        }
+    }
+}
+
+void Matcher::CheckOrientation(map<size_t,size_t>& matches, int& numberOfMatches, const vector<vector<int>>& rotationHistogram) {
+
+    int index1{-1}, index2{-1}, index3{-1};
+    ComputeThreeMaxima(rotationHistogram, HISTO_LENGTH, index1,index2,index3);
+
+    for(int i = 0; i < HISTO_LENGTH; i++)
+    {
+        if(i == index1 || i == index2 || i == index3)
+            continue;
+
+        for(int matchIndex : rotationHistogram[i])
+        {
+            //matches[matchIndex] = -1;
+            matches.erase(matchIndex);
             numberOfMatches--;
         }
     }

@@ -104,6 +104,7 @@ protected:
     static void InitializeRotationHistogram(vector<vector<int>>& rotationHistogram);
     static int ComputeBinForRotationHistogram(const cv::KeyPoint& kp1, const cv::KeyPoint& kp2) ;
     void CheckOrientation(vector<MapPt>& points, int& numberOfMatches, const vector<vector<int>>& rotationHistogram);
+    void CheckOrientation(map<size_t,size_t>& matches, int& numberOfMatches, const vector<vector<int>>& rotationHistogram);
 
     float mfNNratio;
     bool mbCheckOrientation;
