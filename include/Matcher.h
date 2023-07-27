@@ -47,7 +47,7 @@ public:
 
     // Search matches between Frame keypoints and projected MapPoints. Returns number of matches
     // Used to track the local map (Tracking)
-    int SearchByProjection(Frame &F, const std::vector<MapPoint*> &vpMapPoints, const float th=3);
+    int SearchByProjection(Frame &frame, const vector<MapPt> &mapPoints, float radiusScalingFactor = 3);
 
     // Project MapPoints tracked in last frame into the current frame and search matches.
     // Used to track from previous frame (Tracking)

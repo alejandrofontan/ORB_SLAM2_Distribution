@@ -86,87 +86,96 @@ Matcher::Matcher(float nnratio, bool checkOri): mfNNratio(nnratio), mbCheckOrien
 
 #ifdef COMPILED_ROBUST_MACHING
 // Search By Projection v1 (used in Track Local Map)
-int Matcher::SearchByProjection(Frame &F, const vector<MapPoint*> &vpMapPoints, const float th)
+int Matcher::SearchByProjection(Frame &frame, const vector<MapPt> &mapPoints, const float radiusScalingFactor)
 {
-    int nmatches=0;
+    int numberOfMatches{0};
 
-    const bool bFactor = th!=1.0;
-
-    for(size_t iMP=0; iMP<vpMapPoints.size(); iMP++)
+    map<size_t,int> lowerDistances{};
+    for(auto& pt: mapPoints)
     {
-        MapPoint* pMP = vpMapPoints[iMP];
-        if(!pMP->mbTrackInView)
+        if(!pt->mbTrackInView)
             continue;
 
-        if(pMP->isBad())
+        if(pt->isBad())
             continue;
 
-        const int &nPredictedLevel = pMP->mnTrackScaleLevel;
+        const OctaveType predictedLevel = pt->mnTrackScaleLevel;
+        const OctaveType lowerOctave = predictedLevel - 1;
+        const OctaveType upperOctave = predictedLevel;
 
-        // The size of the window will depend on the viewing direction
-        float r = RadiusByViewingCos(pMP->mTrackViewCos);
+        float radius = radiusScalingFactor * RadiusByViewingCos(pt->mTrackViewCos)* frame.mvScaleFactors[predictedLevel];
 
-        if(bFactor)
-            r*=th;
+        const vector<size_t> keyPtIndices =
+                frame.GetFeaturesInArea(pt->mTrackProjX,pt->mTrackProjY, radius*frame.mvScaleFactors[predictedLevel],
+                                        lowerOctave,upperOctave);
 
-        const vector<size_t> vIndices =
-                F.GetFeaturesInArea(pMP->mTrackProjX,pMP->mTrackProjY,r*F.mvScaleFactors[nPredictedLevel],nPredictedLevel-1,nPredictedLevel);
-
-        if(vIndices.empty())
+        if(keyPtIndices.empty())
             continue;
 
-        const cv::Mat MPdescriptor = pMP->GetDescriptor();
+        const cv::Mat refDescriptor = pt->GetDescriptor();
 
         DESCRIPTOR_DISTANCE_TYPE bestDist{parameters.HighestPossibleDistanceValue},bestDist2{parameters.HighestPossibleDistanceValue};
-        int bestLevel{-1},bestLevel2{-1},bestIdx{-1};
+        int bestLevel{-1},bestLevel2{-1};
+        size_t bestIdx;
 
         // Get best and second matches with near keypoints
-        for(vector<size_t>::const_iterator vit=vIndices.begin(), vend=vIndices.end(); vit!=vend; vit++)
+        for(const auto& idx: keyPtIndices)
         {
-            const size_t idx = *vit;
+            // If there is a match with a valid map point from a previous search then skip keypoint.
+            if((frame.mvpMapPoints[idx]) && (!frame.mvpMapPoints[idx]->isBad()) && (lowerDistances.find(idx) == lowerDistances.end()))
+                continue;
 
-            if(F.mvpMapPoints[idx])
-                if(F.mvpMapPoints[idx]->GetPointObservability() > 0)
-                    continue;
-
-            if(F.mvuRight[idx]>0)
+            if(frame.mvuRight[idx] > 0) // TODO THIS IS RGB-D/STEREO STUFF
             {
-                const float er = fabs(pMP->mTrackProjXR-F.mvuRight[idx]);
-                if(er>r*F.mvScaleFactors[nPredictedLevel])
+                const float er = fabs(pt->mTrackProjXR - frame.mvuRight[idx]);
+                if(er>radius * frame.mvScaleFactors[predictedLevel])
                     continue;
             }
 
-            const cv::Mat &d = F.mDescriptors.row(idx);
+            const cv::Mat &descriptor= frame.mDescriptors.row(int(idx));
 
-            const DESCRIPTOR_DISTANCE_TYPE dist = DescriptorDistance(MPdescriptor,d);
+            const DESCRIPTOR_DISTANCE_TYPE dist = DescriptorDistance(refDescriptor,descriptor);
 
-            if(dist<bestDist)
+            if(dist < bestDist)
             {
-                bestDist2=bestDist;
-                bestDist=dist;
+                bestDist2 = bestDist;
+                bestDist = dist;
                 bestLevel2 = bestLevel;
-                bestLevel = F.mvKeysUn[idx].octave;
-                bestIdx=idx;
+                bestLevel = frame.mvKeysUn[idx].octave;
+                bestIdx = idx;
             }
-            else if(dist<bestDist2)
+            else if(dist < bestDist2)
             {
-                bestLevel2 = F.mvKeysUn[idx].octave;
-                bestDist2=dist;
+                bestLevel2 = frame.mvKeysUn[idx].octave;
+                bestDist2 = dist;
             }
         }
 
         // Apply ratio to second match (only if best and second are in the same scale level)
         if(bestDist <= parameters.DistanceThreshold_high)
         {
-            if(bestLevel==bestLevel2 && bestDist>mfNNratio*bestDist2)
+            if(bestLevel==bestLevel2 && float(bestDist) > mfNNratio*float(bestDist2))
                 continue;
 
-            F.mvpMapPoints[bestIdx]=pMP;
-            nmatches++;
+            auto lowestDist = lowerDistances.find(bestIdx);
+            if(lowestDist == lowerDistances.end())
+            {
+                frame.mvpMapPoints[bestIdx] = pt;
+                lowerDistances[bestIdx] = bestDist;
+                numberOfMatches++;
+            }
+            else
+            {
+                if(bestDist < lowestDist->second)
+                {
+                    frame.mvpMapPoints[bestIdx] = pt;
+                    lowestDist->second = bestDist;
+                }
+            }
         }
     }
 
-    return nmatches;
+    return numberOfMatches;
 }
 
 float Matcher::RadiusByViewingCos(const float &viewCos)
