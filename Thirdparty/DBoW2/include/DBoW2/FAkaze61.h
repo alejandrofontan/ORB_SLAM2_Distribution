@@ -1,14 +1,14 @@
 /**
- * File: FAKAZE.h
- * Date: June 2012
- * Author: Dorian Galvez-Lopez
- * Description: functions for AKAZE descriptors
+ * File: FAkaze61.h
+ * Date: July 2023
+ * Author: Dorian Galvez-Lopez (Modified by Alejandro Fontan Villacampa)
+ * Description: functions for Akaze61 descriptors
  * License: see the LICENSE.txt file
  *
  */
 
-#ifndef __D_T_F_AKAZE__
-#define __D_T_F_AKAZE__
+#ifndef __D_T_F_AKAZE61__
+#define __D_T_F_AKAZE61__
 
 #include <opencv2/core.hpp>
 #include <vector>
@@ -16,7 +16,7 @@
 
 #include "FClass.h"
 
-#define DESCRIPTOR_CLASS_NAME FAKAZE
+#define DESCRIPTOR_CLASS_NAME FAkaze61
 #define DESCRIPTOR_FORMAT cv::Mat
 #define DESCRIPTOR_LENGTH 61
 
@@ -28,7 +28,7 @@ namespace DBoW2 {
     public:
 
         /// Descriptor type
-        typedef DESCRIPTOR_FORMAT TDescriptor; // CV_8U
+        typedef DESCRIPTOR_FORMAT TDescriptor;
         /// Pointer to a single descriptor
         typedef const TDescriptor *pDescriptor;
         /// Descriptor length (in bytes)

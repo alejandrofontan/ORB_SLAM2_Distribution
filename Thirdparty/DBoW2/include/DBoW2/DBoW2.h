@@ -54,59 +54,22 @@ namespace DBoW2
 #include "BowVector.h"
 #include "FeatureVector.h"
 #include "QueryResults.h"
-#include "FBrief.h"
-#include "FORB.h"
-#include "FAKAZE.h"
 #include "FKAZE.h"
 #include "FSurf64.h"
 #include "FSift.h"
 
+#include "FORB.h"
+#include "FAkaze16.h"
+#include "FAkaze32.h"
+#include "FAkaze61.h"
+#include "FBrisk.h"
+
 /// ORB Vocabulary
 typedef DBoW2::TemplatedVocabulary<DBoW2::FORB::TDescriptor, DBoW2::FORB> 
   OrbVocabulary;
-
 /// FORB Database
 typedef DBoW2::TemplatedDatabase<DBoW2::FORB::TDescriptor, DBoW2::FORB> 
   OrbDatabase;
-  
-/// BRIEF Vocabulary
-typedef DBoW2::TemplatedVocabulary<DBoW2::FBrief::TDescriptor, DBoW2::FBrief> 
-  BriefVocabulary;
 
-/// BRIEF Database
-typedef DBoW2::TemplatedDatabase<DBoW2::FBrief::TDescriptor, DBoW2::FBrief> 
-  BriefDatabase;
-
-/// AKAZE Vocabulary
-typedef DBoW2::TemplatedVocabulary<DBoW2::FAKAZE::TDescriptor, DBoW2::FAKAZE>
-        AkazeVocabulary;
-
-/// FAKAZE Database
-typedef DBoW2::TemplatedDatabase<DBoW2::FAKAZE::TDescriptor, DBoW2::FAKAZE>
-        AkazeDatabase;
-
-/// KAZE Vocabulary
-typedef DBoW2::TemplatedVocabulary<DBoW2::FKAZE::TDescriptor, DBoW2::FKAZE>
-        KazeVocabulary;
-
-/// FKAZE Database
-typedef DBoW2::TemplatedDatabase<DBoW2::FKAZE::TDescriptor, DBoW2::FKAZE>
-        KazeDatabase;
-
-/// SURF Vocabulary
-typedef DBoW2::TemplatedVocabulary<DBoW2::FSurf64::TDescriptor, DBoW2::FSurf64>
-        SurfVocabulary;
-
-/// FSURF Database
-typedef DBoW2::TemplatedDatabase<DBoW2::FSurf64::TDescriptor, DBoW2::FSurf64>
-        SurfDatabase;
-
-/// SIFT Vocabulary
-typedef DBoW2::TemplatedVocabulary<DBoW2::FSift::TDescriptor, DBoW2::FSift>
-        SiftVocabulary;
-
-/// FSIFT Database
-typedef DBoW2::TemplatedDatabase<DBoW2::FSift::TDescriptor, DBoW2::FSift>
-        SiftDatabase;
 #endif
 

@@ -1,14 +1,14 @@
 /**
-* File: FSift.h
-        * Date: July 2023
-* Author: Alejandro Fontan Villacampa
-        * Description: functions for Sift descriptors
-* License: see the LICENSE.txt file
-*
-*/
+ * File: FBrisk.h
+ * Date: July 2023
+ * Author: Dorian Galvez-Lopez (Modified by Alejandro Fontan Villacampa)
+ * Description: functions for Brisk descriptors
+ * License: see the LICENSE.txt file
+ *
+ */
 
-#ifndef __D_T_F_SIFT__
-#define __D_T_F_SIFT__
+#ifndef __D_T_F_BRISK__
+#define __D_T_F_BRISK__
 
 #include <opencv2/core.hpp>
 #include <vector>
@@ -16,12 +16,13 @@
 
 #include "FClass.h"
 
-#define DESCRIPTOR_CLASS_NAME FSift
-#define DESCRIPTOR_FORMAT std::vector<int>
+#define DESCRIPTOR_CLASS_NAME FBrisk
+#define DESCRIPTOR_FORMAT cv::Mat
+#define DESCRIPTOR_LENGTH 64
 
 namespace DBoW2 {
 
-/// Functions to manipulate SURF64 descriptors
+/// Functions to manipulate ORB descriptors
     class DESCRIPTOR_CLASS_NAME: protected FClass
     {
     public:
@@ -30,31 +31,22 @@ namespace DBoW2 {
         typedef DESCRIPTOR_FORMAT TDescriptor;
         /// Pointer to a single descriptor
         typedef const TDescriptor *pDescriptor;
-        /// Descriptor length
-        static const int L = 128;
-
-        /**
-         * Returns the number of dimensions of the descriptor space
-         * @return dimensions
-         */
-        inline static int dimensions()
-        {
-            return L;
-        }
+        /// Descriptor length (in bytes)
+        static const int L = DESCRIPTOR_LENGTH;
 
         /**
          * Calculates the mean value of a set of descriptors
-         * @param descriptors vector of pointers to descriptors
+         * @param descriptors
          * @param mean mean descriptor
          */
         static void meanValue(const std::vector<pDescriptor> &descriptors,
                               TDescriptor &mean);
 
         /**
-         * Calculates the (squared) distance between two descriptors
+         * Calculates the distance between two descriptors
          * @param a
          * @param b
-         * @return (squared) distance
+         * @return distance
          */
         static double distance(const TDescriptor &a, const TDescriptor &b);
 
@@ -80,8 +72,24 @@ namespace DBoW2 {
         static void toMat32F(const std::vector<TDescriptor> &descriptors,
                              cv::Mat &mat);
 
+        /**
+         * Returns a mat with the descriptors in float format
+         * @param descriptors NxL CV_8U matrix
+         * @param mat (out) NxL 32F matrix
+         */
+        static void toMat32F(const cv::Mat &descriptors, cv::Mat &mat);
+
+        /**
+         * Returns a matrix with the descriptor in OpenCV format
+         * @param descriptors vector of N row descriptors
+         * @param mat (out) NxL CV_8U matrix
+         */
+        static void toMat8U(const std::vector<TDescriptor> &descriptors,
+                            cv::Mat &mat);
+
     };
 
 } // namespace DBoW2
 
 #endif
+

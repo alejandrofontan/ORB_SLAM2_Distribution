@@ -36,19 +36,23 @@ else()
 endif()
 
 set(HDRS
-  include/DBoW2/BowVector.h           include/DBoW2/FBrief.h
-  include/DBoW2/QueryResults.h        include/DBoW2/TemplatedDatabase.h   include/DBoW2/FORB.h
+  include/DBoW2/BowVector.h
+  include/DBoW2/QueryResults.h        include/DBoW2/TemplatedDatabase.h
   include/DBoW2/DBoW2.h               include/DBoW2/FClass.h              include/DBoW2/FeatureVector.h
   include/DBoW2/ScoringObject.h       include/DBoW2/TemplatedVocabulary.h
   include/DBoW2/UtilsDBoW2.h
-  include/DBoW2/FAKAZE.h
+  include/DBoW2/FORB.h
+  include/DBoW2/FAkaze16.h  include/DBoW2/FAkaze32.h  include/DBoW2/FAkaze61.h
+  include/DBoW2/FBrisk.h
   include/DBoW2/FKAZE.h
   include/DBoW2/FSurf64.h
   include/DBoW2/FSift.h)
 set(SRCS 
-  src/BowVector.cpp     src/FBrief.cpp        src/FORB.cpp
+  src/BowVector.cpp
   src/FeatureVector.cpp src/QueryResults.cpp  src/ScoringObject.cpp
-  src/FAKAZE.cpp
+  src/FORB.cpp
+  src/FAkaze16.cpp src/FAkaze32.cpp src/FAkaze61.cpp
+  src/FBrisk.cpp
   src/FKAZE.cpp
   src/FSurf64.cpp
   src/FSift.cpp)

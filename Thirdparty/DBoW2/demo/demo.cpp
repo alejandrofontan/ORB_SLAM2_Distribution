@@ -30,16 +30,16 @@ using namespace std;
 
 enum DescriptorType {
     ORB = 0,
-    SUPERPOINT = 1,
-    AKAZE = 2,
-    SIFT = 3,
+    AKAZE16 = 1,
+    AKAZE32 = 2,
+    AKAZE61 = 3,
     BRISK = 4,
-    KAZE = 5,
-    BRIEF = 6,
-    SURF = 7
+    SIFT = 5,
+    KAZE = 6,
+    SURF = 7,
 };
 
-#define BRIEF_FEATURE
+#define AKAZE32_FEATURE
 
 #ifdef ORB_FEATURE
 #define DESCRIPTOR_TYPE DescriptorType::ORB
@@ -47,6 +47,36 @@ enum DescriptorType {
 #define DESCRIPTOR_F DBoW2::FORB
 #define DESCRIPTOR_FORMAT cv::Mat
 #endif
+
+#ifdef AKAZE16_FEATURE
+#define DESCRIPTOR_TYPE DescriptorType::AKAZE16
+#define DESCRIPTOR_CV cv::AKAZE
+#define DESCRIPTOR_F DBoW2::FAkaze16
+#define DESCRIPTOR_FORMAT cv::Mat
+#endif
+
+#ifdef AKAZE32_FEATURE
+#define DESCRIPTOR_TYPE DescriptorType::AKAZE32
+#define DESCRIPTOR_CV cv::AKAZE
+#define DESCRIPTOR_F DBoW2::FAkaze32
+#define DESCRIPTOR_FORMAT cv::Mat
+#endif
+
+#ifdef AKAZE61_FEATURE
+#define DESCRIPTOR_TYPE DescriptorType::AKAZE61
+#define DESCRIPTOR_CV cv::AKAZE
+#define DESCRIPTOR_F DBoW2::FAkaze61
+#define DESCRIPTOR_FORMAT cv::Mat
+#endif
+
+#ifdef BRISK_FEATURE
+#define DESCRIPTOR_TYPE DescriptorType::BRISK
+#define DESCRIPTOR_CV cv::BRISK
+#define DESCRIPTOR_F DBoW2::FBrisk
+#define DESCRIPTOR_FORMAT cv::Mat
+#endif
+
+
 
 #ifdef SURF_FEATURE
 #define DESCRIPTOR_TYPE DescriptorType::SURF
@@ -62,25 +92,11 @@ enum DescriptorType {
 #define DESCRIPTOR_FORMAT vector<float>
 #endif
 
-#ifdef AKAZE_FEATURE
-#define DESCRIPTOR_TYPE DescriptorType::AKAZE
-#define DESCRIPTOR_CV cv::AKAZE
-#define DESCRIPTOR_F DBoW2::FAKAZE
-#define DESCRIPTOR_FORMAT cv::Mat
-#endif
-
 #ifdef SIFT_FEATURE
 #define DESCRIPTOR_TYPE DescriptorType::SIFT
 #define DESCRIPTOR_CV cv::SIFT
 #define DESCRIPTOR_F DBoW2::FSift
-#define DESCRIPTOR_FORMAT vector<float>
-#endif
-
-#ifdef BRIEF_FEATURE
-#define DESCRIPTOR_TYPE DescriptorType::BRIEF
-#define DESCRIPTOR_CV cv::xfeatures2d::BriefDescriptorExtractor
-#define DESCRIPTOR_F DBoW2::FBrief
-#define DESCRIPTOR_FORMAT cv::Mat
+#define DESCRIPTOR_FORMAT vector<int>
 #endif
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -154,6 +170,22 @@ int main(int argc,char **argv)
             correctCompilation = (descriptor == "orb");
             break;
         }
+        case AKAZE16:{
+            correctCompilation = (descriptor == "akaze16");
+            break;
+        }
+        case AKAZE32:{
+            correctCompilation = (descriptor == "akaze32");
+            break;
+        }
+        case AKAZE61:{
+            correctCompilation = (descriptor == "akaze61");
+            break;
+        }
+        case BRISK:{
+            correctCompilation = (descriptor == "brisk");
+            break;
+        }
         case KAZE:{
             correctCompilation = (descriptor == "kaze");
             break;
@@ -162,16 +194,8 @@ int main(int argc,char **argv)
             correctCompilation = (descriptor == "surf");
             break;
         }
-        case AKAZE:{
-            correctCompilation = (descriptor == "akaze");
-            break;
-        }
         case SIFT:{
             correctCompilation = (descriptor == "sift");
-            break;
-        }
-        case BRIEF:{
-            correctCompilation = (descriptor == "brief");
             break;
         }
     }
@@ -184,7 +208,7 @@ int main(int argc,char **argv)
     }
     std::vector<std::vector<std::string>> imagesTxt = read_txt(imageFolder,1,' ',0);
     std::vector<std::string> imagePaths;
-    for(size_t imageId{0}; imageId < imagesTxt.size(); imageId = imageId + 7)
+    for(size_t imageId{0}; imageId < imagesTxt.size(); imageId = imageId + 6)
         imagePaths.push_back(imagesTxt[imageId][0]);
 
     numberOfImages = imagePaths.size();
@@ -209,10 +233,17 @@ void loadFeatures(vector<vector<DESCRIPTOR_FORMAT>> &features, const std::vector
 {
   features.clear();
   features.reserve(imagePaths.size());
-  cv::Ptr<DESCRIPTOR_CV> featureDetector = DESCRIPTOR_CV::create();
 
-#ifdef BRIEF_FEATURE
-  cv::Ptr<cv::xfeatures2d::StarDetector> starDetector = cv::xfeatures2d::StarDetector::create();
+#if defined(ORB_FEATURE) || defined(AKAZE61_FEATURE) || defined(BRISK_FEATURE) || defined(SURF_FEATURE) || defined(SIFT_FEATURE)
+    cv::Ptr<DESCRIPTOR_CV> featureDetector = DESCRIPTOR_CV::create();
+#endif
+
+#ifdef AKAZE16_FEATURE
+    cv::Ptr<DESCRIPTOR_CV> featureDetector = DESCRIPTOR_CV::create(cv::AKAZE::AKAZE::DESCRIPTOR_MLDB,16*8);
+#endif
+
+#ifdef AKAZE32_FEATURE
+    cv::Ptr<DESCRIPTOR_CV> featureDetector = DESCRIPTOR_CV::create(cv::AKAZE::AKAZE::DESCRIPTOR_MLDB,32*8);
 #endif
 
   cout << "Extracting " << descriptor <<" features..." << endl;
@@ -224,11 +255,9 @@ void loadFeatures(vector<vector<DESCRIPTOR_FORMAT>> &features, const std::vector
     cv::Mat mask;
     vector<cv::KeyPoint> keypoints;
     cv::Mat descriptors;
-#ifdef BRIEF_FEATURE
-    starDetector->detect(image, keypoints);
-    featureDetector->compute(image, keypoints, descriptors);
-#else
-    featureDetector->detectAndCompute(image, mask, keypoints, descriptors);
+
+#if defined(ORB_FEATURE) || defined(AKAZE16_FEATURE) || defined(AKAZE32_FEATURE) || defined(AKAZE61_FEATURE) || defined(BRISK_FEATURE) || defined(SURF_FEATURE) || defined(SIFT_FEATURE)
+      featureDetector->detectAndCompute(image, mask, keypoints, descriptors);
 #endif
 
     features.push_back(vector<DESCRIPTOR_FORMAT >());

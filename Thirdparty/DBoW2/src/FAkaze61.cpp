@@ -1,8 +1,8 @@
 /**
- * File: FAKAZE.cpp
- * Date: June 2012
- * Author: Dorian Galvez-Lopez
- * Description: functions for AKAZE descriptors
+ * File: FAKAZE61.cpp
+ * Date: July 2023
+ * Author: Dorian Galvez-Lopez (Modified by Alejandro Fontan Villacampa)
+ * Description: functions for Akaze61 descriptors
  * License: see the LICENSE.txt file
  *
  */
@@ -13,7 +13,7 @@
 #include <stdint.h>
 #include <limits.h>
 
-#include "FAKAZE.h"
+#include "FAkaze61.h"
 
 using namespace std;
 
