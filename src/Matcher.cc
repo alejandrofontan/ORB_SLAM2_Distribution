@@ -281,13 +281,7 @@ int Matcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, con
 
                         if(mbCheckOrientation)
                         {
-                            float rot = LastFrame.mvKeysUn[i].angle-CurrentFrame.mvKeysUn[bestIdx2].angle;
-                            if(rot<0.0)
-                                rot+=360.0f;
-                            int bin = round(rot*FACTOR);
-                            if(bin==HISTO_LENGTH)
-                                bin=0;
-                            assert(bin>=0 && bin<HISTO_LENGTH);
+                            int bin = ComputeBinForRotationHistogram(LastFrame.mvKeysUn[i],CurrentFrame.mvKeysUn[bestIdx2]);
                             rotationHistogram[bin].push_back(bestIdx2);
                         }
                     }
@@ -295,30 +289,11 @@ int Matcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, con
             }
         }
 
-        //Apply rotation consistency
-        if(mbCheckOrientation)
-        {
-            int ind1=-1;
-            int ind2=-1;
-            int ind3=-1;
-
-            ComputeThreeMaxima(rotationHistogram,HISTO_LENGTH,ind1,ind2,ind3);
-
-            for(int i=0; i<HISTO_LENGTH; i++)
-            {
-                if(i!=ind1 && i!=ind2 && i!=ind3)
-                {
-                    for(size_t j=0, jend=rotationHistogram[i].size(); j<jend; j++)
-                    {
-                        CurrentFrame.mvpMapPoints[rotationHistogram[i][j]]=static_cast<MapPoint*>(NULL);
-                        nmatches--;
-                    }
-                }
-            }
-        }
+        if(mbCheckOrientation) //Apply rotation consistency
+            CheckOrientation(CurrentFrame.mvpMapPoints,  nmatches, rotationHistogram);
 
         return nmatches;
-    }
+}
 
 bool Matcher::CheckDistEpipolarLine(const cv::KeyPoint &kp1, const cv::KeyPoint &kp2, const cv::Mat &F12, const KeyFrame* pKF2)
 {
@@ -416,13 +391,7 @@ int Matcher::SearchByBoW(KeyFrame* pKF, Frame &F, vector<MapPoint*> &vpMapPointM
 
                         if(mbCheckOrientation)
                         {
-                            float rot = kp.angle-F.mvKeys[bestIdxF].angle;
-                            if(rot<0.0)
-                                rot+=360.0f;
-                            int bin = round(rot*FACTOR);
-                            if(bin==HISTO_LENGTH)
-                                bin=0;
-                            assert(bin>=0 && bin<HISTO_LENGTH);
+                            int bin = ComputeBinForRotationHistogram(kp,F.mvKeys[bestIdxF]);
                             rotationHistogram[bin].push_back(bestIdxF);
                         }
                         nmatches++;
@@ -584,7 +553,6 @@ int Matcher::SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const vector<MapPoin
 
 int Matcher::SearchForInitialization(Frame &F1, Frame &F2, vector<cv::Point2f> &vbPrevMatched, vector<int> &vnMatches12, int windowSize)
 {
-    cout << "aaaaaaaaaaaaaaaaaaaaa"<<endl;
     int nmatches=0;
     vnMatches12 = vector<int>(F1.mvKeysUn.size(),-1);
 
@@ -651,24 +619,12 @@ int Matcher::SearchForInitialization(Frame &F1, Frame &F2, vector<cv::Point2f> &
 
                 if(mbCheckOrientation)
                 {
-                    cout << "aaaaaaaaaaaaaaaaaaaaa 1"<<endl;
-                    float rot = F1.mvKeysUn[i1].angle-F2.mvKeysUn[bestIdx2].angle;
-                    if(rot<0.0)
-                        rot+=360.0f;
-                    int bin = round(rot*FACTOR);
-                    if(bin==HISTO_LENGTH)
-                        bin=0;
-                    assert(bin>=0 && bin<HISTO_LENGTH);
-                    cout << "aaaaaaaaaaaaaaaaaaaaa 2"<<endl;
+                    int bin = ComputeBinForRotationHistogram(F1.mvKeysUn[i1],F2.mvKeysUn[bestIdx2]);
                     rotationHistogram[bin].push_back(i1);
-                    cout << "aaaaaaaaaaaaaaaaaaaaa 3"<<endl;
-
                 }
             }
         }
-
     }
-    cout << "aaaaaaaaaaaaaaaaaaaaa 2"<<endl;
 
     if(mbCheckOrientation)
     {
@@ -784,13 +740,7 @@ int Matcher::SearchByBoW(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &vpM
 
                         if(mbCheckOrientation)
                         {
-                            float rot = vKeysUn1[idx1].angle-vKeysUn2[bestIdx2].angle;
-                            if(rot<0.0)
-                                rot+=360.0f;
-                            int bin = round(rot*FACTOR);
-                            if(bin==HISTO_LENGTH)
-                                bin=0;
-                            assert(bin>=0 && bin<HISTO_LENGTH);
+                            int bin = ComputeBinForRotationHistogram(vKeysUn1[idx1],vKeysUn2[bestIdx2]);
                             rotationHistogram[bin].push_back(idx1);
                         }
                         nmatches++;
@@ -943,13 +893,7 @@ int Matcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F12,
 
                     if(mbCheckOrientation)
                     {
-                        float rot = kp1.angle-kp2.angle;
-                        if(rot<0.0)
-                            rot+=360.0f;
-                        int bin = round(rot*FACTOR);
-                        if(bin==HISTO_LENGTH)
-                            bin=0;
-                        assert(bin>=0 && bin<HISTO_LENGTH);
+                        int bin = ComputeBinForRotationHistogram(kp1,kp2);
                         rotationHistogram[bin].push_back(idx1);
                     }
                 }
@@ -1593,13 +1537,7 @@ int Matcher::SearchByProjection(Frame &CurrentFrame, KeyFrame *pKF, const set<Ma
 
                     if(mbCheckOrientation)
                     {
-                        float rot = pKF->mvKeysUn[i].angle-CurrentFrame.mvKeysUn[bestIdx2].angle;
-                        if(rot<0.0)
-                            rot+=360.0f;
-                        int bin = round(rot*FACTOR);
-                        if(bin==HISTO_LENGTH)
-                            bin=0;
-                        assert(bin>=0 && bin<HISTO_LENGTH);
+                        int bin = ComputeBinForRotationHistogram(pKF->mvKeysUn[i],CurrentFrame.mvKeysUn[bestIdx2]);
                         rotationHistogram[bin].push_back(bestIdx2);
                     }
                 }
@@ -1632,7 +1570,7 @@ int Matcher::SearchByProjection(Frame &CurrentFrame, KeyFrame *pKF, const set<Ma
     return nmatches;
 }
 
-void Matcher::ComputeThreeMaxima(vector<vector<int>>& rotationHistogram, const int L, int &ind1, int &ind2, int &ind3)
+void Matcher::ComputeThreeMaxima(const vector<vector<int>>& rotationHistogram, const int L, int &ind1, int &ind2, int &ind3)
 {
     int max1=0;
     int max2=0;
@@ -1702,6 +1640,35 @@ void Matcher::InitializeRotationHistogram(vector<vector<int>>& rotationHistogram
     rotationHistogram.resize(HISTO_LENGTH);
     for(vector<int>& bin : rotationHistogram)
         bin.reserve(500);
+}
+
+int Matcher::ComputeBinForRotationHistogram(const cv::KeyPoint& kp1, const cv::KeyPoint& kp2) {
+    float rotation = kp1.angle - kp2.angle;
+    if(rotation < 0.0)
+        rotation += 360.0f;
+    int bin = (int) round(rotation * FACTOR);
+    if(bin == HISTO_LENGTH)
+        bin = 0;
+    assert(bin >= 0 && bin < HISTO_LENGTH);
+    return bin;
+}
+
+void Matcher::CheckOrientation(vector<MapPt>& points, int& numberOfMatches, const vector<vector<int>>& rotationHistogram){
+
+    int index1{-1}, index2{-1}, index3{-1};
+    ComputeThreeMaxima(rotationHistogram, HISTO_LENGTH, index1,index2,index3);
+
+    for(int i = 0; i < HISTO_LENGTH; i++)
+    {
+        if(i == index1 || i == index2 || i == index3)
+            continue;
+
+        for(int pointIndex : rotationHistogram[i])
+        {
+            points[pointIndex] = static_cast<MapPoint*>(nullptr);
+            numberOfMatches--;
+        }
+    }
 }
 
 #else
