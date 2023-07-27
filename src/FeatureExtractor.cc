@@ -63,7 +63,7 @@
 
 #include <vector>
 
-#include "ORBextractor.h"
+#include "FeatureExtractor.h"
 #include "Definitions.h"
 
 
@@ -73,7 +73,7 @@ using namespace std;
 namespace ORB_SLAM2
 {
 
-DescriptorType ORBextractor::descriptorType{DESCRIPTOR_TYPE};
+DescriptorType FeatureExtractor::descriptorType{DESCRIPTOR_TYPE};
 
 const int PATCH_SIZE = 31;
 const int HALF_PATCH_SIZE = 15;
@@ -427,8 +427,8 @@ static int bit_pattern_31_[256*4] =
     -1,-6, 0,-11/*mean (0.127148), correlation (0.547401)*/
 };
 
-ORBextractor::ORBextractor(int _nfeatures, float _scaleFactor, int _nlevels,
-         int _iniThFAST, int _minThFAST):
+FeatureExtractor::FeatureExtractor(int _nfeatures, float _scaleFactor, int _nlevels,
+                                   int _iniThFAST, int _minThFAST):
     nfeatures(_nfeatures), scaleFactor(_scaleFactor), nlevels(_nlevels),
     iniThFAST(_iniThFAST), minThFAST(_minThFAST)
 {
@@ -556,8 +556,8 @@ void ExtractorNode::DivideNode(ExtractorNode &n1, ExtractorNode &n2, ExtractorNo
 
 }
 
-vector<cv::KeyPoint> ORBextractor::DistributeOctTree(const vector<cv::KeyPoint>& vToDistributeKeys, const int &minX,
-                                       const int &maxX, const int &minY, const int &maxY, const int &N, const int &level)
+vector<cv::KeyPoint> FeatureExtractor::DistributeOctTree(const vector<cv::KeyPoint>& vToDistributeKeys, const int &minX,
+                                                         const int &maxX, const int &minY, const int &maxY, const int &N, const int &level)
 {
     // Compute how many initial nodes   
     const int nIni = round(static_cast<float>(maxX-minX)/(maxY-minY));
@@ -782,7 +782,7 @@ vector<cv::KeyPoint> ORBextractor::DistributeOctTree(const vector<cv::KeyPoint>&
     return vResultKeys;
 }
 
-void ORBextractor::ComputeKeyPointsOctTree(vector<vector<KeyPoint> >& allKeypoints)
+void FeatureExtractor::ComputeKeyPointsOctTree(vector<vector<KeyPoint> >& allKeypoints)
 {
     allKeypoints.resize(nlevels);
     switch (descriptorType)
@@ -1063,7 +1063,7 @@ void ORBextractor::ComputeKeyPointsOctTree(vector<vector<KeyPoint> >& allKeypoin
     }
 }
 
-void ORBextractor::computeDescriptors(const Mat& image, vector<KeyPoint>& keypoints, Mat& descriptors, const vector<Point>& pattern)
+void FeatureExtractor::computeDescriptors(const Mat& image, vector<KeyPoint>& keypoints, Mat& descriptors, const vector<Point>& pattern)
 {
     switch (descriptorType)
     {
@@ -1081,7 +1081,7 @@ void ORBextractor::computeDescriptors(const Mat& image, vector<KeyPoint>& keypoi
     }
 }
 
-void ORBextractor::computeDescriptors(Mat& descriptors, const vector<KeyPoint>& keypoints, const std::vector<std::vector<std::string>>& featuresTxt)
+void FeatureExtractor::computeDescriptors(Mat& descriptors, const vector<KeyPoint>& keypoints, const std::vector<std::vector<std::string>>& featuresTxt)
 {
     descriptors = Mat::zeros((int)keypoints.size(), DESCRIPTOR_SIZE, DESCRIPTOR_MAT_TYPE);
 
@@ -1090,8 +1090,8 @@ void ORBextractor::computeDescriptors(Mat& descriptors, const vector<KeyPoint>& 
 }
 
 #ifdef ORB_FEATURE
-void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPoint>& _keypoints,
-                                   OutputArray _descriptors)
+void FeatureExtractor::operator()(InputArray _image, InputArray _mask, vector<KeyPoint>& _keypoints,
+                                  OutputArray _descriptors)
 {
     if(_image.empty())
         return;
@@ -1154,7 +1154,7 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
 }
 #else
 
-void ORBextractor::operator()(InputArray _image, InputArray _mask, vector<KeyPoint>& _keypoints, Mat& _descriptors){
+void FeatureExtractor::operator()(InputArray _image, InputArray _mask, vector<KeyPoint>& _keypoints, Mat& _descriptors){
     if(_image.empty())
         return;
 
@@ -1195,7 +1195,7 @@ void ORBextractor::operator()(InputArray _image, InputArray _mask, vector<KeyPoi
     }
 }
 #endif
-/*void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPoint>& _keypoints,
+/*void FeatureExtractor::operator()( InputArray _image, InputArray _mask, vector<KeyPoint>& _keypoints,
                       Mat& _descriptors)
 { 
     if(_image.empty())
@@ -1270,9 +1270,9 @@ void ORBextractor::operator()(InputArray _image, InputArray _mask, vector<KeyPoi
     }
 }*/
 
-void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPoint>& _keypoints,
-                                OutputArray _descriptors,
-                                std::vector<std::vector<std::string>>& featuresTxt)
+void FeatureExtractor::operator()(InputArray _image, InputArray _mask, vector<KeyPoint>& _keypoints,
+                                  OutputArray _descriptors,
+                                  std::vector<std::vector<std::string>>& featuresTxt)
 {
     if(_image.empty())
         return;
@@ -1330,7 +1330,7 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
     }
 }
 
-void ORBextractor::ComputePyramid(cv::Mat image)
+void FeatureExtractor::ComputePyramid(cv::Mat image)
 {
     for (int level = 0; level < nlevels; ++level)
     {
