@@ -48,23 +48,23 @@ Matcher::Matcher(float nnratio, bool checkOri): mfNNratio(nnratio), mbCheckOrien
             break;
         }
         case AKAZE16:{
-            parameters.DistanceThreshold_high = DESCRIPTOR_DISTANCE_TYPE(53);
-            parameters.DistanceThreshold_low = DESCRIPTOR_DISTANCE_TYPE(16);
+            parameters.DistanceThreshold_high = DESCRIPTOR_DISTANCE_TYPE(68);
+            parameters.DistanceThreshold_low = DESCRIPTOR_DISTANCE_TYPE(38);
             break;
         }
         case AKAZE32:{
-            parameters.DistanceThreshold_high = DESCRIPTOR_DISTANCE_TYPE(100);
-            parameters.DistanceThreshold_low = DESCRIPTOR_DISTANCE_TYPE(50);
+            parameters.DistanceThreshold_high = DESCRIPTOR_DISTANCE_TYPE(139);
+            parameters.DistanceThreshold_low = DESCRIPTOR_DISTANCE_TYPE(79);
             break;
         }
         case AKAZE61:{
-            parameters.DistanceThreshold_high = DESCRIPTOR_DISTANCE_TYPE(186);
-            parameters.DistanceThreshold_low = DESCRIPTOR_DISTANCE_TYPE(93);
+            parameters.DistanceThreshold_high = DESCRIPTOR_DISTANCE_TYPE(266);
+            parameters.DistanceThreshold_low = DESCRIPTOR_DISTANCE_TYPE(154);
             break;
         }
         case BRISK:{
-            parameters.DistanceThreshold_high = DESCRIPTOR_DISTANCE_TYPE(195);
-            parameters.DistanceThreshold_low = DESCRIPTOR_DISTANCE_TYPE(97);
+            parameters.DistanceThreshold_high = DESCRIPTOR_DISTANCE_TYPE(266);
+            parameters.DistanceThreshold_low = DESCRIPTOR_DISTANCE_TYPE(154);
             break;
         }
         case KAZE:
