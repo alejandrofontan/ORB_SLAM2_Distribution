@@ -61,3 +61,53 @@ void ORB_SLAM2::saveVectorToFile(std::vector<double>& vectorToSave, const std::s
     for (auto &element: vectorToSave)
         f << std::setprecision(precision) << element << std::endl;
 }
+
+void ORB_SLAM2::vectorMedian(float& median, const std::vector<float>& v){
+    if(v.empty())
+    {
+        median = std::numeric_limits<float>::quiet_NaN();
+        return;
+    }
+
+    std::vector<float> vOrdered = v;
+    std::sort(vOrdered.begin(),vOrdered.end());
+    int center = (int) (0.5f * float(vOrdered.size()));
+    median = vOrdered[center];
+}
+
+void ORB_SLAM2::vectorMean(float& mean, const std::vector<float>& v){
+    if(v.empty())
+    {
+        mean = std::numeric_limits<float>::quiet_NaN();
+        return;
+    }
+
+    mean = std::accumulate(v.begin(), v.end(), 0.0) / (static_cast<float>(v.size()));
+}
+
+void ORB_SLAM2::vectorStd(float& std, const float& mean, const std::vector<float>& v){
+    if(v.size() < 2)
+    {
+        std = std::numeric_limits<float>::quiet_NaN();
+        return;
+    }
+
+    float sum_of_squared_deviations = std::accumulate(v.begin(), v.end(), 0.0,
+                                                         [&mean](float accumulator, float data_point) {
+                                                             float deviation = data_point - mean;
+                                                             return accumulator + deviation * deviation;
+                                                         });
+    std = sum_of_squared_deviations / (static_cast<float>(v.size() - 1));
+}
+
+void ORB_SLAM2::vectorPercentage(float& th, const float& percentage, const std::vector<float>& v){
+    if(v.empty())
+    {
+        th = std::numeric_limits<float>::quiet_NaN();
+        return;
+    }
+    std::vector<float> vOrdered = v;
+    std::sort(vOrdered.begin(),vOrdered.end());
+    int position = (int) (percentage * float(vOrdered.size()));
+    th = vOrdered[position];
+}

@@ -479,7 +479,6 @@ void System::Shutdown()
     SaveKeyFrameTrajectoryTUM(resultsPath_expId + "_KeyFrameTrajectoryBeforeBA.txt");
 
     // Global Bundle Adjustment
-    Optimizer::parameters.globalRobustBundleAdjustment.estimateOutlierThreshold = false;
     Optimizer::parameters.globalRobustBundleAdjustment.useGeneralizedGaussian = false;
     Optimizer::parameters.globalRobustBundleAdjustment.useTStudent = false;
     GlobalRobustBundleAdjustment();
@@ -489,24 +488,25 @@ void System::Shutdown()
     SaveKeyFrameTrajectoryTUM(resultsPath_expId + "_KeyFrameTrajectoryAfterBA.txt");
 
     // Save a copy of the Map (keyframes and mapPoints)
-    //for(auto& mapPoint: mpMap->GetAllMapPoints())
-        //slamGraph->addMapPoint(mapPoint->mnId,mapPoint->GetXYZ());
-    //slamGraph->saveMap();
+    for(auto& mapPoint: mpMap->GetAllMapPoints())
+        slamGraph->addMapPoint(mapPoint->mnId,mapPoint->GetXYZ());
+    slamGraph->saveMap();
 
     // Add noise to the saved copy
-    //slamGraph->addNoiseToSavedMap(0.1);
+    slamGraph->addNoiseToSavedMap(0.1);
 
     // Define Ablation Variable
-    //string ablationVariableName1{"probability"};
-    //vector<double> ablationVariable1{0.5,0.6,0.7,0.75,0.8,0.85,0.9,0.95,0.99,0.999};
-    //Optimizer::parameters.estimateThreshold = true;
-    //GBA_ablation(ablationVariable1,ablationVariableName1,UpdateProbability);
+    string ablationVariableName1{"probability"};
+    vector<double> ablationVariable1{0.1,0.3,0.5,0.6,0.7,0.75,0.8,0.85,0.9,0.95,0.99,0.999};
+    Optimizer::parameters.globalRobustBundleAdjustment.estimateOutlierThreshold = true;
+    GBA_ablation(ablationVariable1,ablationVariableName1,UpdateProbability);
 
     // Define Ablation Variable
-    //string ablationVariableName2{"chi2"};
+    string ablationVariableName2{"chi2"};
     //vector<double> ablationVariable2{0.5,1.0,2.0,3.0,4.0,5.0,5.991,7.0,8.0,9.0};
-    //Optimizer::parameters.estimateThreshold = false;
-    //GBA_ablation(ablationVariable2,ablationVariableName2, UpdateChi2);
+    vector<double> ablationVariable2{0.1,0.3,0.5,1.0,2.0,3.0,4.0,5.0,5.991,7.0,8.0,9.0};
+    Optimizer::parameters.globalRobustBundleAdjustment.estimateOutlierThreshold = false;
+    GBA_ablation(ablationVariable2,ablationVariableName2, UpdateChi2);
 
     // Define Ablation Variable
     //string ablationVariableName3{"exp"};
@@ -775,6 +775,11 @@ void System::SaveStatisticsToFiles(const string& pathToFiles){
     cout << "    "<< "ablationParameters.txt" << endl;
     vector<double> ablationParameters{Optimizer::parameters.inlierProbability,Optimizer::parameters.pExp, Optimizer::parameters.th2_2dof};
     saveVectorToFile(ablationParameters,pathToFiles + "ablationParameters.txt");
+
+    saveVectorToFile(Optimizer::newThresholds,pathToFiles + "newThresholds.txt");
+    saveVectorToFile(Optimizer::outlierPerc_chi2,pathToFiles + "outlierPerc_chi2.txt");
+    saveVectorToFile(Optimizer::outlierPerc_p,pathToFiles + "outlierPerc_p.txt");
+
     #ifdef COMPILED_DEBUG
     cout << "    "<< "residuals_u.txt" << endl;
     saveVectorToFile(Optimizer::residuals_u,pathToFiles + "residuals_u.txt");

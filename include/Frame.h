@@ -104,6 +104,11 @@ public:
     // Backprojects a keypoint (if stereo/depth info available) into 3D world coordinates.
     cv::Mat UnprojectStereo(const int &i);
 
+    [[nodiscard]] mat2 GetKeyPt2DInfo(const int &keyPtIdx) const;
+    [[nodiscard]] mat3 GetKeyPt3DInfo(const int &keyPtIdx) const;
+    [[nodiscard]] double GetKeyPtSigma2(const int &keyPtIdx) const;
+    [[nodiscard]] double GetKeyPtInvSigma2(const int &keyPtIdx) const;
+
 public:
     // Vocabulary used for relocalization.
     FEATUREVocabulary* mpORBvocabulary;
@@ -142,6 +147,7 @@ public:
     // In the RGB-D case, RGB images can be distorted.
     std::vector<cv::KeyPoint> mvKeys, mvKeysRight;
     std::vector<cv::KeyPoint> mvKeysUn;
+    std::vector<mat2> keyPointsInformation;
 
     // Corresponding stereo coordinate and depth for each keypoint.
     // "Monocular" keypoints have a negative value.
@@ -182,8 +188,6 @@ public:
     float mfLogScaleFactor;
     vector<float> mvScaleFactors;
     vector<float> mvInvScaleFactors;
-    vector<float> mvLevelSigma2;
-    vector<float> mvInvLevelSigma2;
 
     // Undistorted Image Bounds (computed once).
     static float mnMinX;

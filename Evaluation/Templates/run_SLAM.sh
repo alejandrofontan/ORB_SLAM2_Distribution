@@ -295,6 +295,24 @@ then
 			log_frame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_Frame_TUMformat_results_log.txt"		
 			. ./evaluate_experiment.sh 
 			
+			evaluationName="probability"
+			txtKeyFrameFiles=($(ls ${sequenceFolder}/*_${evaluationName}_AblationKeyFrame.txt))
+			txtFrameFiles=($(ls ${sequenceFolder}/*_${evaluationName}_AblationFrame.txt))
+			
+			keyFrame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_KeyFrame_TUMformat_results.txt"
+			frame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_Frame_TUMformat_results.txt"
+			log_frame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_Frame_TUMformat_results_log.txt"		
+			. ./evaluate_experiment.sh 
+			
+			evaluationName="chi2"
+			txtKeyFrameFiles=($(ls ${sequenceFolder}/*_${evaluationName}_AblationKeyFrame.txt))
+			txtFrameFiles=($(ls ${sequenceFolder}/*_${evaluationName}_AblationFrame.txt))
+			
+			keyFrame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_KeyFrame_TUMformat_results.txt"
+			frame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_Frame_TUMformat_results.txt"
+			log_frame_TUMformat_results="$evaluationSequenceFolder/${evaluationName}_Frame_TUMformat_results_log.txt"		
+			. ./evaluate_experiment.sh 
+			
 			#evaluationName="exp"
 			#txtKeyFrameFiles=($(ls ${sequenceFolder}/*_${evaluationName}_AblationKeyFrame.txt))
 			#txtFrameFiles=($(ls ${sequenceFolder}/*_${evaluationName}_AblationFrame.txt))

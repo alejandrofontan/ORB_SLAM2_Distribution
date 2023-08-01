@@ -124,6 +124,10 @@ public:
         return pKF1->mnId<pKF2->mnId;
     }
 
+    [[nodiscard]] mat2 GetKeyPt2DInfo(const int &keyPtIdx) const;
+    [[nodiscard]] mat3 GetKeyPt3DInfo(const int &keyPtIdx) const;
+    [[nodiscard]] double GetKeyPtSigma2(const int &keyPtIdx) const;
+    [[nodiscard]] double GetKeyPtInvSigma2(const int &keyPtIdx) const;
 
     // The following variables are accesed from only 1 thread or never change (no mutex needed).
 public:
@@ -169,6 +173,7 @@ public:
     // KeyPoints, stereo coordinate and descriptors (all associated by an index)
     const std::vector<cv::KeyPoint> mvKeys;
     const std::vector<cv::KeyPoint> mvKeysUn;
+    const std::vector<mat2> keyPointsInformation;
     const std::vector<float> mvuRight; // negative value for monocular points
     const std::vector<float> mvDepth; // negative value for monocular points
     const cv::Mat mDescriptors;
@@ -185,8 +190,6 @@ public:
     const float mfScaleFactor;
     const float mfLogScaleFactor;
     const std::vector<float> mvScaleFactors;
-    const std::vector<float> mvLevelSigma2;
-    const std::vector<float> mvInvLevelSigma2;
 
     // Image bounds and calibration
     const int mnMinX;

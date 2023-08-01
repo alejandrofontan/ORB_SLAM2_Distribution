@@ -33,8 +33,12 @@ namespace ORB_SLAM2
         static void seedRandomGenerator();
         static int getRandomNumber();
         static int getRandomNumber(const int& maxNumber);
-
     };
+
+    void vectorMedian(float& median, const std::vector<float>& v);
+    void vectorMean(float& mean, const std::vector<float>& v);
+    void vectorStd(float& std, const float& mean, const std::vector<float>& v);
+    void vectorPercentage(float& th, const float& percentage, const std::vector<float>& v);
 
     void saveVectorToFile(std::vector<double>& vectorToSave, const std::string& file, const int& precision = 10);;
 }

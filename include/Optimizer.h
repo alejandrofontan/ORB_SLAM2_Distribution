@@ -52,6 +52,10 @@ public:
     static vector<double> inlierThreshold;
     static vector<double> outlierPercentage;
 #endif
+    static vector<double> newThresholds;
+    static vector<double> outlierPerc_chi2;
+    static vector<double> outlierPerc_p;
+
     void static BundleAdjustment(const std::vector<Keyframe> &vpKF, const std::vector<MapPt> &vpMP,
                                  int nIterations = 5, bool *pbStopFlag = nullptr, const unsigned long nLoopKF = 0,
                                  const bool bRobust = true);

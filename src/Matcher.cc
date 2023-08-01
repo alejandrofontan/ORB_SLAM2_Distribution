@@ -53,18 +53,18 @@ Matcher::Matcher(float nnratio, bool checkOri): mfNNratio(nnratio), mbCheckOrien
             break;
         }
         case AKAZE32:{
-            parameters.DistanceThreshold_high = DESCRIPTOR_DISTANCE_TYPE(139);
-            parameters.DistanceThreshold_low = DESCRIPTOR_DISTANCE_TYPE(79);
+            parameters.DistanceThreshold_high = DESCRIPTOR_DISTANCE_TYPE(100);
+            parameters.DistanceThreshold_low = DESCRIPTOR_DISTANCE_TYPE(50);
             break;
         }
         case AKAZE61:{
-            parameters.DistanceThreshold_high = DESCRIPTOR_DISTANCE_TYPE(266);
-            parameters.DistanceThreshold_low = DESCRIPTOR_DISTANCE_TYPE(154);
+            parameters.DistanceThreshold_high = DESCRIPTOR_DISTANCE_TYPE(172);
+            parameters.DistanceThreshold_low = DESCRIPTOR_DISTANCE_TYPE(100);
             break;
         }
         case BRISK:{
-            parameters.DistanceThreshold_high = DESCRIPTOR_DISTANCE_TYPE(266);
-            parameters.DistanceThreshold_low = DESCRIPTOR_DISTANCE_TYPE(154);
+            parameters.DistanceThreshold_high = DESCRIPTOR_DISTANCE_TYPE(140);
+            parameters.DistanceThreshold_low = DESCRIPTOR_DISTANCE_TYPE(70);
             break;
         }
         case KAZE:
@@ -249,12 +249,11 @@ int Matcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, con
 
                 for(auto idx: keyPtIndices)
                 {
-
                     if(CurrentFrame.mvpMapPoints[idx])
                         if(CurrentFrame.mvpMapPoints[idx]->GetPointObservability()>0)
                             continue;
 
-                    if(CurrentFrame.mvuRight[idx]>0) // TODO THIS IS RGB-D/STEREO STUFF
+                    if(CurrentFrame.mvuRight[idx] > 0) // TODO THIS IS RGB-D/STEREO STUFF
                     {
                         const float ur = u - CurrentFrame.mbf * invzc;
                         const float er = fabs(ur - CurrentFrame.mvuRight[idx]);
@@ -401,7 +400,9 @@ int Matcher::SearchForTriangulation(Keyframe keyframe1, Keyframe keyframe2, cv::
                                 continue;
                         }
 
-                        if(CheckDistEpipolarLine(kp1,kp2,F12,keyframe2))
+                        if(CheckDistEpipolarLine(kp1,kp2,F12,keyframe2,
+                                                 keyframe1->GetKeyPtSigma2(idx1),
+                                                 keyframe2->GetKeyPtSigma2(idx2)))
                         {
                             bestIdx2 = idx2;
                             bestDist = dist;
@@ -461,7 +462,8 @@ int Matcher::SearchForTriangulation(Keyframe keyframe1, Keyframe keyframe2, cv::
         return numberOfMatches;
     }
 
-bool Matcher::CheckDistEpipolarLine(const cv::KeyPoint &kp1, const cv::KeyPoint &kp2, const cv::Mat &F12, const KeyFrame* pKF2)
+bool Matcher::CheckDistEpipolarLine(const cv::KeyPoint &kp1, const cv::KeyPoint &kp2, const cv::Mat &F12, const KeyFrame* pKF2,
+                                    const float& sigma2_kpt1, const float& sigma2_kpt2)
 {
 
     // Epipolar line in second image l = x1'F12 = [a b c]
@@ -477,7 +479,7 @@ bool Matcher::CheckDistEpipolarLine(const cv::KeyPoint &kp1, const cv::KeyPoint 
         return false;
 
     const float dsqr = num*num/den;
-    return dsqr<3.84*pKF2->mvLevelSigma2[kp2.octave];
+    return dsqr<3.84*sigma2_kpt2;
 }
 
 int Matcher::SearchByBoW(KeyFrame* pKF, Frame &F, vector<MapPoint*> &vpMapPointMatches)
@@ -1050,7 +1052,7 @@ int Matcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const fl
                 const float er = ur-kpr;
                 const float e2 = ex*ex+ey*ey+er*er;
 
-                if(e2*pKF->mvInvLevelSigma2[kpLevel]>7.8)
+                if(e2*pKF->GetKeyPtInvSigma2(int(idx)) > 7.8)
                     continue;
             }
             else
@@ -1061,7 +1063,7 @@ int Matcher::Fuse(KeyFrame *pKF, const vector<MapPoint *> &vpMapPoints, const fl
                 const float ey = v-kpy;
                 const float e2 = ex*ex+ey*ey;
 
-                if(e2*pKF->mvInvLevelSigma2[kpLevel]>5.99)
+                if(e2 * pKF->GetKeyPtInvSigma2(int(idx)) > 5.99)
                     continue;
             }
 
@@ -1636,6 +1638,7 @@ DESCRIPTOR_DISTANCE_TYPE Matcher::DescriptorDistance(const cv::Mat &a, const cv:
         }
         return dist;
     }
+
     //cout << (DESCRIPTOR_DISTANCE_TYPE) cv::norm(a,b,DESCRIPTOR_DISTANCE_FUNCTION) << endl;
     return (DESCRIPTOR_DISTANCE_TYPE) cv::norm(a,b,DESCRIPTOR_DISTANCE_FUNCTION);
 }

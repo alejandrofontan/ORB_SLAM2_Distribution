@@ -40,11 +40,10 @@ KeyFrame::KeyFrame(Frame &F, Map *pMap, KeyFrameDatabase *pKFDB):
     mnTrackReferenceForFrame(0), mnFuseTargetForKF(0), mnBALocalForKF(0), mnBAFixedForKF(0),
     mnLoopQuery(0), mnLoopWords(0), mnRelocQuery(0), mnRelocWords(0), mnBAGlobalForKF(0),
     fx(F.fx), fy(F.fy), cx(F.cx), cy(F.cy), invfx(F.invfx), invfy(F.invfy),
-    mbf(F.mbf), mb(F.mb), mThDepth(F.mThDepth), N(F.N), mvKeys(F.mvKeys), mvKeysUn(F.mvKeysUn),
+    mbf(F.mbf), mb(F.mb), mThDepth(F.mThDepth), N(F.N), mvKeys(F.mvKeys), mvKeysUn(F.mvKeysUn), keyPointsInformation(F.keyPointsInformation),
     mvuRight(F.mvuRight), mvDepth(F.mvDepth), mDescriptors(F.mDescriptors.clone()),
     mBowVec(F.mBowVec), mFeatVec(F.mFeatVec), mnScaleLevels(F.mnScaleLevels), mfScaleFactor(F.mfScaleFactor),
-    mfLogScaleFactor(F.mfLogScaleFactor), mvScaleFactors(F.mvScaleFactors), mvLevelSigma2(F.mvLevelSigma2),
-    mvInvLevelSigma2(F.mvInvLevelSigma2), mnMinX(F.mnMinX), mnMinY(F.mnMinY), mnMaxX(F.mnMaxX),
+    mfLogScaleFactor(F.mfLogScaleFactor), mvScaleFactors(F.mvScaleFactors), mnMinX(F.mnMinX), mnMinY(F.mnMinY), mnMaxX(F.mnMaxX),
     mnMaxY(F.mnMaxY), mK(F.mK), mvpMapPoints(F.mvpMapPoints), mpKeyFrameDB(pKFDB),
     mpORBvocabulary(F.mpORBvocabulary), mbFirstConnection(true), mpParent(NULL), mbNotErase(false),
     mbToBeErased(false), mbBad(false), mHalfBaseline(F.mb/2), mpMap(pMap)
@@ -698,6 +697,26 @@ float KeyFrame::ComputeSceneMedianDepth(const int q)
     sort(vDepths.begin(),vDepths.end());
 
     return vDepths[(vDepths.size()-1)/q];
+}
+
+mat2 KeyFrame::GetKeyPt2DInfo(const int &keyPtIdx) const{
+    return keyPointsInformation[keyPtIdx];
+}
+
+mat3 KeyFrame::GetKeyPt3DInfo(const int &keyPtIdx) const{
+    mat3 keyPt3DInfo{mat3::Identity()};
+    keyPt3DInfo(0,0) = keyPointsInformation[keyPtIdx](0,0);
+    keyPt3DInfo(1,1) = keyPointsInformation[keyPtIdx](1,1);
+    keyPt3DInfo(2,2) = keyPointsInformation[keyPtIdx](0,0);
+    return keyPt3DInfo;
+}
+
+double KeyFrame::GetKeyPtSigma2(const int &keyPtIdx) const{
+    return 1.0/keyPointsInformation[keyPtIdx](0,0);
+}
+
+double KeyFrame::GetKeyPtInvSigma2(const int &keyPtIdx) const{
+    return keyPointsInformation[keyPtIdx](0,0);
 }
 
 } //namespace ORB_SLAM

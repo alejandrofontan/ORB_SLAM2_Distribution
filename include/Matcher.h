@@ -26,6 +26,7 @@
 #include"MapPoint.h"
 #include"KeyFrame.h"
 #include"Frame.h"
+#include"Utils.h"
 
 
 namespace ORB_SLAM2
@@ -91,7 +92,8 @@ public:
 
 protected:
 
-    bool CheckDistEpipolarLine(const cv::KeyPoint &kp1, const cv::KeyPoint &kp2, const cv::Mat &F12, const KeyFrame *pKF);
+    bool CheckDistEpipolarLine(const cv::KeyPoint &kp1, const cv::KeyPoint &kp2, const cv::Mat &F12, const KeyFrame *pKF,
+                               const float& sigma2_kpt1, const float& sigma2_kpt2);
 
     float RadiusByViewingCos(const float &viewCos);
 

@@ -24,23 +24,21 @@ FeatureExtractor::FeatureExtractor(int _nfeatures, float _scaleFactor, int _nlev
 {
     // Allocate variables
     mvScaleFactor.resize(nlevels);
-    mvLevelSigma2.resize(nlevels);
     mvInvScaleFactor.resize(nlevels);
-    mvInvLevelSigma2.resize(nlevels);
     mvImagePyramid.resize(nlevels);
 
     mvScaleFactor[0] = 1.0f;
-    mvLevelSigma2[0] = 1.0f;
+    //mvLevelSigma2[0] = 1.0f;
     for(int level = 1; level < nlevels; level++)
     {
         mvScaleFactor[level] = mvScaleFactor[level-1] * scaleFactor;
-        mvLevelSigma2[level] = mvScaleFactor[level] * mvScaleFactor[level];
+        //mvLevelSigma2[level] = mvScaleFactor[level] * mvScaleFactor[level];
     }
 
     for(int level = 0; level < nlevels; level++)
     {
         mvInvScaleFactor[level] = 1.0f/mvScaleFactor[level];
-        mvInvLevelSigma2[level] = 1.0f/mvLevelSigma2[level];
+        //mvInvLevelSigma2[level] = 1.0f/mvLevelSigma2[level];
     }
 
     estimateDesiredNumberOfFeaturesPerLevel();
@@ -138,48 +136,51 @@ void FeatureExtractor::ComputeKeyPointsOctTree(vector<vector<KeyPoint> >& allKey
         OrbFunctions::computeOrientation(mvImagePyramid[level], allKeypoints[level], umax);
 }
 
-void FeatureExtractor::ComputeKeyPointsAndDescriptors(cv::Mat& image, std::vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors)
+void FeatureExtractor::ComputeKeyPointsAndDescriptors(cv::Mat& image, std::vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors,
+                                                      std::vector<mat2>& keyPointsInformation)
 {
     keypoints.clear();
     descriptors.release();
+    keyPointsInformation.clear();
 
     cv::Ptr<DETECTOR_CV> detector;
     createDetector(detector);
 
     const int minBorderX = 0;
     const int minBorderY = 0;
+    bool first{true};
     for(int level{0}; level < nlevels; level++){
         const int maxBorderX = mvImagePyramid[level].cols - 1;
         const int maxBorderY = mvImagePyramid[level].rows - 1;
 
         std::vector<cv::KeyPoint> keypointsTmp;
         detector->detect(mvImagePyramid[level], keypointsTmp);
-        for(auto& keypoint: keypointsTmp){
-            keypoint.pt /= mvScaleFactor[level];
-            keypoint.octave = level;
-        }
 
         std::vector<cv::KeyPoint> distributedKeyPoints = DistributeOctTree(keypointsTmp, minBorderX, maxBorderX,
                                                 minBorderY, maxBorderY,mnFeaturesPerLevel[level], level);
-
         Mat descriptorsLevel{};
         detector->compute(mvImagePyramid[level], distributedKeyPoints, descriptorsLevel);
 
         for(auto& keypoint: distributedKeyPoints){
+            keypoint.octave = level;
             keypoint.pt *= mvScaleFactor[level];
+            keyPointsInformation.push_back(estimateKeyPointInformation(keypoint));
         }
         keypoints.insert(keypoints.end(), distributedKeyPoints.begin(), distributedKeyPoints.end());
 
-        if(level != 0)
-            cv::vconcat(descriptors.clone(), descriptorsLevel, descriptors);
-        else
+        if(first){
             descriptors = descriptorsLevel.clone();
+            first = false;
+        }else{
+            cv::vconcat(descriptors.clone(), descriptorsLevel, descriptors);
+        }
+
     }
-    //cout << descriptors.size << endl;
 }
 
 #ifdef ORB_FEATURE
-void FeatureExtractor::operator()(InputArray _image, InputArray _mask, vector<KeyPoint>& _keypoints, OutputArray _descriptors)
+void FeatureExtractor::operator()(InputArray _image, InputArray _mask,
+        vector<KeyPoint>& _keypoints, OutputArray _descriptors, vector<mat2>& keyPointsInformation)
 {
     if(_image.empty())
         return;
@@ -230,34 +231,36 @@ void FeatureExtractor::operator()(InputArray _image, InputArray _mask, vector<Ke
         offset += nkeypointsLevel;
 
         // Scale keypoint coordinates
-        if (level != 0)
-        {
-            float scale = mvScaleFactor[level]; //getScale(level, firstLevel, scaleFactor);
-            for (vector<KeyPoint>::iterator keypoint = keypoints.begin(),
-                    keypointEnd = keypoints.end(); keypoint != keypointEnd; ++keypoint)
-                keypoint->pt *= scale;
+        float scale = mvScaleFactor[level]; //getScale(level, firstLevel, scaleFactor);
+        for (auto& keypoint: keypoints){
+            keypoint.pt *= scale;
+            keyPointsInformation.push_back(estimateKeyPointInformation(keypoint));
         }
+
         // And add the keypoints to the output
         _keypoints.insert(_keypoints.end(), keypoints.begin(), keypoints.end());
     }
-    cout << "_keypoints = "<< _keypoints.size() << endl;
-    cout << "_descriptors = "<< _descriptors.size() << endl;
+    //cout << "_keypoints = "<< _keypoints.size() << endl;
+    //cout << "_descriptors = "<< _descriptors.size() << endl;
+    //cout << "keyPointsInformation = "<< keyPointsInformation.size() << endl;
 
 }
 #else
-void FeatureExtractor::operator()(InputArray _image, InputArray _mask, vector<KeyPoint>& _keypoints, Mat& _descriptors){
+void FeatureExtractor::operator()(cv::InputArray _image, cv::InputArray mask,
+                                  std::vector<cv::KeyPoint>& _keypoints,
+                                  cv::Mat& _descriptors, std::vector<mat2>& _keyPointsInformation){
     if(_image.empty())
         return;
 
     Mat image = _image.getMat();
     assert(image.type() == CV_8UC1 );
     ComputePyramid(image); // TODO THIS SHOULDNT BE NECESSARY
-    ComputeKeyPointsAndDescriptors(image,_keypoints, _descriptors);
+    ComputeKeyPointsAndDescriptors(image,_keypoints, _descriptors, _keyPointsInformation);
 }
 #endif
 
 void FeatureExtractor::updateDetectorSettings(cv::Ptr<DETECTOR_CV>& detector, float factor){
-    float threshold = 0.0001f;
+    float threshold = 0.00005f;
 #if defined(AKAZE16_FEATURE) || defined(AKAZE32_FEATURE) || defined(AKAZE61_FEATURE)
     detector->setThreshold(threshold/factor);
 #endif
@@ -331,31 +334,11 @@ void FeatureExtractor::ComputePyramid(cv::Mat image)
 
 }
 
-int FeatureExtractor::estimateKeypointOctave(cv::KeyPoint& pt){
-    int levelKeypoint{0};
-#if defined(AKAZE16_FEATURE) || defined(AKAZE32_FEATURE) || defined(AKAZE61_FEATURE)
-    levelKeypoint =int(round(log(pt.size/4.8)/log(1.2)));
-#endif
-#ifdef BRISK_FEATURE
-    levelKeypoint = pt.octave;
-#endif
-
-#ifdef KAZE_FEATURE
-    levelKeypoint = int(round(log(pt.size/3.45713)/log(1.2)));
-#endif
-#ifdef SURF_FEATURE
-    levelKeypoint = pt.octave;
-#endif
-#ifdef SIFT_FEATURE
-    levelKeypoint = 0;
-#endif
-
-    if(levelKeypoint < 0)
-        levelKeypoint = 0;
-    if(levelKeypoint > nlevels - 1)
-        levelKeypoint = nlevels - 1;
-
-    return levelKeypoint;
+mat2 FeatureExtractor::estimateKeyPointInformation(cv::KeyPoint& pt){
+    mat2 information{mat2::Identity()};
+    information(0,0) = 1.0/(mvScaleFactor[pt.octave]*mvScaleFactor[pt.octave]);
+    information(1,1) = information(0,0);
+    return information;
 }
 
 void FeatureExtractor::estimateDesiredNumberOfFeaturesPerLevel(){

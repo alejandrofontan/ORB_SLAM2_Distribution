@@ -71,11 +71,11 @@ public:
     // ORB are dispersed on the image using an octree.
     // Mask is ignored in the current implementation.
 #ifdef ORB_FEATURE
-        void operator()( cv::InputArray _image, cv::InputArray _mask, std::vector<cv::KeyPoint>& _keypoints,cv::OutputArray _descriptors);
+        void operator()( cv::InputArray _image, cv::InputArray _mask, std::vector<cv::KeyPoint>& _keypoints,cv::OutputArray _descriptors, std::vector<mat2>& keyPointsInformation);
 #else
     void operator()( cv::InputArray image, cv::InputArray mask,
                      std::vector<cv::KeyPoint>& keypoints,
-                     cv::Mat& descriptors);
+                     cv::Mat& descriptors, std::vector<mat2>& keyPointsInformation);
 #endif
 
     int inline GetLevels(){
@@ -92,14 +92,6 @@ public:
         return mvInvScaleFactor;
     }
 
-    std::vector<float> inline GetScaleSigmaSquares(){
-        return mvLevelSigma2;
-    }
-
-    std::vector<float> inline GetInverseScaleSigmaSquares(){
-        return mvInvLevelSigma2;
-    }
-
     std::vector<cv::Mat> mvImagePyramid;
 
 protected:
@@ -107,11 +99,11 @@ protected:
     void estimateDesiredNumberOfFeaturesPerLevel();
     static void createDetector(cv::Ptr<DETECTOR_CV>& detector);
     static void updateDetectorSettings(cv::Ptr<DETECTOR_CV>& detector, float factor = 2.0);
-    int estimateKeypointOctave(cv::KeyPoint& pt);
+    mat2 estimateKeyPointInformation(cv::KeyPoint& pt);
     void ComputePyramid(cv::Mat image);
 
     void ComputeKeyPointsOctTree(std::vector<std::vector<cv::KeyPoint> >& allKeypoints);
-    void ComputeKeyPointsAndDescriptors(cv::Mat& image, std::vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors);
+    void ComputeKeyPointsAndDescriptors(cv::Mat& image, std::vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors, std::vector<mat2>& keyPointsInformation);
 
     std::vector<cv::KeyPoint> DistributeOctTree(const std::vector<cv::KeyPoint>& vToDistributeKeys, const int &minX,
                                            const int &maxX, const int &minY, const int &maxY, const int &nFeatures, const int &level);
@@ -129,8 +121,8 @@ protected:
 
     std::vector<float> mvScaleFactor;
     std::vector<float> mvInvScaleFactor;    
-    std::vector<float> mvLevelSigma2;
-    std::vector<float> mvInvLevelSigma2;
+    //std::vector<float> mvLevelSigma2;
+    //std::vector<float> mvInvLevelSigma2;
 };
 
 } //namespace ORB_SLAM

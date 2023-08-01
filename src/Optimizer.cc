@@ -41,6 +41,10 @@ OptimizerParameters Optimizer::parameters{};
     vector<double> Optimizer::outlierPercentage{};
 #endif
 
+vector<double> Optimizer::newThresholds{};
+vector<double> Optimizer::outlierPerc_chi2{};
+vector<double> Optimizer::outlierPerc_p{};
+
 void Optimizer::GlobalBundleAdjustment(Map* pMap, int nIterations, bool* pbStopFlag, const unsigned long nLoopKF, const bool bRobust)
 {
     vector<Keyframe> keyframes = pMap->GetAllKeyFrames();
@@ -58,6 +62,9 @@ void Optimizer::GlobalRobustBundleAdjustment(Map* pMap)
 void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const vector<MapPt> &mapPoints, const unsigned long nLoopKF)
 {
 
+    cout << "[RobustBundleAdjustment] Start ... "<< endl;
+    cout << "[RobustBundleAdjustment] Setting up graph "<< endl;
+
     // Set optimizer
     g2o::SparseOptimizer optimizer;
     g2o::BlockSolver_6_3::LinearSolverType * linearSolver;
@@ -65,6 +72,7 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
     g2o::BlockSolver_6_3 * solver_ptr = new g2o::BlockSolver_6_3(linearSolver);
     g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg(solver_ptr);
     optimizer.setAlgorithm(solver);
+    optimizer.setVerbose(true);
 
     // Set KeyFrame vertices
     KeyframeId maxKeyId{0};
@@ -82,8 +90,8 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
     }
 
     // Set MapPoint vertices
-    const float thHuber2D = float(parameters.th_2dof);
-    const float thHuber3D = float(parameters.th_3dof);
+    const float thHuber2D = float(parameters.chi2_2dof);//float(parameters.th_2dof);
+    const float thHuber3D = float(parameters.chi2_3dof);
     vector<bool> mapPtsNotInclude{};
     mapPtsNotInclude.resize(mapPoints.size());
 
@@ -121,7 +129,7 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
             nEdges++;
 
             const cv::KeyPoint &kpUn = keyframe->mvKeysUn[obs.second.projIndex];
-            const float &invSigma2 = keyframe->mvInvLevelSigma2[kpUn.octave];
+            //const float &invSigma2 = keyframe->mvInvLevelSigma2[kpUn.octave];
 
             if(keyframe->mvuRight[obs.second.projIndex] < 0)
             {
@@ -131,7 +139,7 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
                 g2o::EdgeSE3ProjectXYZ* e = new g2o::EdgeSE3ProjectXYZ();
                 setVertex(e,&optimizer, obs2D, id, keyframe->mnId);
 
-                Eigen::Matrix2d Info = Eigen::Matrix2d::Identity()*invSigma2;
+                Eigen::Matrix2d Info = keyframe->GetKeyPt2DInfo(obs.second.projIndex);
                 e->setInformation(Info);
 
                 setEdgeRobustKernel(e, thHuber2D);
@@ -151,7 +159,7 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
                 g2o::EdgeStereoSE3ProjectXYZ* e = new g2o::EdgeStereoSE3ProjectXYZ();
                 setVertex(e,&optimizer, obs3D, id, keyframe->mnId);
 
-                Eigen::Matrix3d Info = Eigen::Matrix3d::Identity()*invSigma2;
+                Eigen::Matrix3d Info = keyframe->GetKeyPt3DInfo(obs.second.projIndex);
                 e->setInformation(Info);
 
                 setEdgeRobustKernel(e, thHuber3D);
@@ -176,6 +184,8 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
         ++jMapPt;
     }
 
+    cout << "[RobustBundleAdjustment] First Optimization "<< endl;
+
     // Optimize!
     optimizer.initializeOptimization();
     optimizer.optimize(parameters.globalRobustBundleAdjustment.optimizerItsCoarse);
@@ -189,6 +199,7 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
     residuals_v.clear();
     #endif
     #endif
+    cout << "[RobustBundleAdjustment] Compute Mahalanobis distances "<< endl;
     for(const auto& edge: edgesMono){
         edge->computeError();
         mahalanobisDistancesMono.push_back(edge->chi2());
@@ -219,10 +230,14 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
     double correctionFactor{1.0};
     double th2_2dof{parameters.th2_2dof},th2_3dof{parameters.th2_3dof};
     if(parameters.globalRobustBundleAdjustment.estimateOutlierThreshold){
+        cout << "[RobustBundleAdjustment] Fit log lormal "<< endl;
         double mu{parameters.localBundleAdjustment.mu_lognormal}, sigma{parameters.localBundleAdjustment.sigma_lognormal};
         DIST_FITTER::DistributionFitter::FitLogNormal(subset,mu,sigma);
+        cout << "[RobustBundleAdjustment] GetCorrectionFactor "<< endl;
         correctionFactor = DIST_FITTER::DistributionFitter::GetCorrectionFactor(parameters.pExp,parameters.inlierProbability,sigma);
+        cout << "[RobustBundleAdjustment] Lognormal_icdf "<< endl;
         th2_2dof = DIST_FITTER::DistributionFitter::Lognormal_icdf(parameters.inlierProbability,mu,sigma);
+        newThresholds.push_back(correctionFactor*th2_2dof);
     }
     cout << "[Robust bundle adjustment] th2_2dof = "<< th2_2dof << endl;
     cout << "[Robust bundle adjustment] correctionFactor = "<< correctionFactor << endl;
@@ -246,12 +261,15 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
         DIST_FITTER::DistributionFitter::FitTStudent(residualsMono,nu,sigma_);
     }
 
+    cout << "[RobustBundleAdjustment] Second Optimization "<< endl;
+
     // Optimize again without the outliers
     ResetOptimizerVariables(keyframes,mapPoints,optimizer,maxKeyId,mapPtsNotInclude);
     optimizer.setVerbose(true);
     optimizer.initializeOptimization();
     optimizer.optimize(parameters.globalRobustBundleAdjustment.optimizerItsFine);
 
+    cout << "[RobustBundleAdjustment] Update graph "<< endl;
     //Keyframes
     for(size_t i=0; i < keyframes.size(); i++)
     {
@@ -296,6 +314,7 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
             pMP->mnBAGlobalForKF = nLoopKF;
         }
     }
+    cout << "[RobustBundleAdjustment] Finished. "<< endl;
 }
 
 void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<MapPoint *> &vpMP,
@@ -376,8 +395,8 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
                 e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(id)));
                 e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(pKF->mnId)));
                 e->setMeasurement(obs2D);
-                const float &invSigma2 = pKF->mvInvLevelSigma2[kpUn.octave];
-                e->setInformation(Eigen::Matrix2d::Identity()*invSigma2);
+                //const float &invSigma2 = pKF->keyPointsInformation[obs.second.projIndex];
+                e->setInformation(pKF->GetKeyPt2DInfo(obs.second.projIndex));
 
                 if(bRobust)
                 {
@@ -405,8 +424,7 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
                 e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(pKF->mnId)));
                 e->setMeasurement(obs2D);
 
-                const float &invSigma2 = pKF->mvInvLevelSigma2[kpUn.octave];
-                Eigen::Matrix3d Info = Eigen::Matrix3d::Identity()*invSigma2;
+                Eigen::Matrix3d Info = pKF->GetKeyPt3DInfo(obs.second.projIndex);
                 e->setInformation(Info);
 
                 if(bRobust)
@@ -549,8 +567,7 @@ int Optimizer::PoseOptimization(Frame *pFrame)
 
                 e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(0)));
                 e->setMeasurement(obs);
-                const float invSigma2 = pFrame->mvInvLevelSigma2[kpUn.octave];
-                e->setInformation(Eigen::Matrix2d::Identity()*invSigma2);
+                e->setInformation(pFrame->GetKeyPt2DInfo(i));
 
                 g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
                 e->setRobustKernel(rk);
@@ -585,8 +602,7 @@ int Optimizer::PoseOptimization(Frame *pFrame)
 
                 e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(0)));
                 e->setMeasurement(obs);
-                const float invSigma2 = pFrame->mvInvLevelSigma2[kpUn.octave];
-                Eigen::Matrix3d Info = Eigen::Matrix3d::Identity()*invSigma2;
+                Eigen::Matrix3d Info = pFrame->GetKeyPt3DInfo(i);
                 e->setInformation(Info);
 
                 g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
@@ -862,8 +878,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
                     e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(id)));
                     e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(pKFi->mnId)));
                     e->setMeasurement(obs2D);
-                    const float &invSigma2 = pKFi->mvInvLevelSigma2[kpUn.octave];
-                    e->setInformation(Eigen::Matrix2d::Identity()*invSigma2);
+                    e->setInformation(pKFi->GetKeyPt2DInfo(obs.second.projIndex));
 
                     g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
                     e->setRobustKernel(rk);
@@ -890,8 +905,8 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
                     e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(id)));
                     e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(pKFi->mnId)));
                     e->setMeasurement(obs2D);
-                    const float &invSigma2 = pKFi->mvInvLevelSigma2[kpUn.octave];
-                    Eigen::Matrix3d Info = Eigen::Matrix3d::Identity()*invSigma2;
+
+                    Eigen::Matrix3d Info = pKFi->GetKeyPt3DInfo(obs.second.projIndex);
                     e->setInformation(Info);
 
                     g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
@@ -1180,8 +1195,7 @@ void Optimizer::RobustLocalBundleAdjustment(Keyframe& refKeyframe, bool *stopFla
 
                     setVertex(e, &optimizer, obs2D,id,keyframe->mnId);
 
-                    const float &invSigma2 = keyframe->mvInvLevelSigma2[kpUn.octave];
-                    e->setInformation(Eigen::Matrix2d::Identity()*invSigma2);
+                    e->setInformation(keyframe->GetKeyPt2DInfo(obs.second.projIndex));
                     setEdgeRobustKernel(e, thHuberMono);
                     setEdgeMonoIntrinsics(e, keyframe);
 
@@ -1200,8 +1214,7 @@ void Optimizer::RobustLocalBundleAdjustment(Keyframe& refKeyframe, bool *stopFla
 
                     setVertex(e, &optimizer, obs3D,id,keyframe->mnId);
 
-                    const float &invSigma2 = keyframe->mvInvLevelSigma2[kpUn.octave];
-                    Eigen::Matrix3d Info = Eigen::Matrix3d::Identity()*invSigma2;
+                    Eigen::Matrix3d Info = keyframe->GetKeyPt3DInfo(obs.second.projIndex);
                     e->setInformation(Info);
 
                     setEdgeRobustKernel(e, thHuberStereo);
@@ -1275,6 +1288,14 @@ void Optimizer::RobustLocalBundleAdjustment(Keyframe& refKeyframe, bool *stopFla
         // Get inliers
         vector<bool> isInlierMono =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesMono, parameters.th2_2dof);
         vector<bool> isInlierStereo =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesStereo, parameters.th2_3dof);
+
+        int numValues = 0;
+        for(bool value_ : isInlierMono)
+            numValues += int(value_);
+        if(parameters.globalRobustBundleAdjustment.estimateOutlierThreshold)
+            outlierPerc_p.push_back(double(numValues)/double(isInlierMono.size()));
+        else
+            outlierPerc_chi2.push_back(double(numValues)/double(isInlierMono.size()));
 
         // Check inlier observations
         setInliers(edgesMono, isInlierMono);
@@ -1748,8 +1769,7 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
         e12->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(id2)));
         e12->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(0)));
         e12->setMeasurement(obs1);
-        const float &invSigmaSquare1 = pKF1->mvInvLevelSigma2[kpUn1.octave];
-        e12->setInformation(Eigen::Matrix2d::Identity()*invSigmaSquare1);
+        e12->setInformation(pKF1->GetKeyPt2DInfo(i));
 
         g2o::RobustKernelHuber* rk1 = new g2o::RobustKernelHuber;
         e12->setRobustKernel(rk1);
@@ -1766,8 +1786,7 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
         e21->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(id1)));
         e21->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(0)));
         e21->setMeasurement(obs2);
-        float invSigmaSquare2 = pKF2->mvInvLevelSigma2[kpUn2.octave];
-        e21->setInformation(Eigen::Matrix2d::Identity()*invSigmaSquare2);
+        e21->setInformation(pKF2->GetKeyPt2DInfo(i2));
 
         g2o::RobustKernelHuber* rk2 = new g2o::RobustKernelHuber;
         e21->setRobustKernel(rk2);

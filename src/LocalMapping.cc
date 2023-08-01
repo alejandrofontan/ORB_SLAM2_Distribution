@@ -367,7 +367,7 @@ void LocalMapping::CreateNewMapPoints(KeyFrame *keyframe) {
                 continue;
 
             //Check reprojection error in first keyframe
-            const float &sigmaSquare1 = keyframe->mvLevelSigma2[kp1.octave];
+            const float &sigmaSquare1 = (float) keyframe->GetKeyPtSigma2(idx1);
             const float x1 = Rcw1.row(0).dot(x3Dt) + tcw1.at<float>(0);
             const float y1 = Rcw1.row(1).dot(x3Dt) + tcw1.at<float>(1);
             const float invz1 = 1.0 / z1;
@@ -391,7 +391,7 @@ void LocalMapping::CreateNewMapPoints(KeyFrame *keyframe) {
             }
 
             //Check reprojection error in second keyframe
-            const float sigmaSquare2 = neighor->mvLevelSigma2[kp2.octave];
+            const float sigmaSquare2 = (float) neighor->GetKeyPtSigma2(idx2);
             const float x2 = Rcw2.row(0).dot(x3Dt) + tcw2.at<float>(0);
             const float y2 = Rcw2.row(1).dot(x3Dt) + tcw2.at<float>(1);
             const float invz2 = 1.0 / z2;
@@ -622,6 +622,7 @@ void LocalMapping::KeyFrameCulling()
     // in at least other 3 keyframes (in the same or finer scale)
     // We only consider close stereo points
     vector<Keyframe> vpLocalKeyFrames = mpCurrentKeyFrame->GetVectorCovisibleKeyFrames();
+
     for(auto& keyframe: vpLocalKeyFrames)
     {
         if(keyframe->mnId==0)
@@ -678,11 +679,17 @@ void LocalMapping::KeyFrameCulling()
         }
 
         if(nRedundantObservations > 0.9*nMPs){
-
+            //if((mpCurrentKeyFrame->mnId - keyframe->mnId)  < 10){
+                //continue;
+           // }
+            //if((keyframe->mnId %  10) == 0){
+                //continue;
+            //}
             if(keyframe->mnId != 0){
                 slamGraph->removeKeyframe(keyframe->mnFrameId);
             }
             keyframe->SetBadFlag();
+            //break;
         }
     }
 }
