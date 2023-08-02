@@ -79,6 +79,12 @@ DistributionFitter.logNormal.tolerance: 1e-4
 DistributionFitter.burr.maxNumberIterations: 100
 DistributionFitter.burr.stepSize: 1.0
 DistributionFitter.burr.tolerance: 1e-2
+
+#--------------------------------------------------------------------------------------------
+# Tracking Parameters
+#--------------------------------------------------------------------------------------------
+Tracking.mMinFrames: 5
+
 #--------------------------------------------------------------------------------------------
 # Viewer Parameters
 #---------------------------------------------------------------------------------------------

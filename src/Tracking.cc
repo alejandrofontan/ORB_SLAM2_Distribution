@@ -86,7 +86,7 @@ Tracking::Tracking(System *pSys, FEATUREVocabulary* pVoc, FrameDrawer *pFrameDra
 
     // Max/Min Frames to insert keyframes and to check relocalisation
 #ifdef COMPILED_SEQUENTIAL
-    mMinFrames = 5;
+    mMinFrames = fSettings["Tracking.mMinFrames"];
 #else
     mMinFrames = 0;
 #endif
