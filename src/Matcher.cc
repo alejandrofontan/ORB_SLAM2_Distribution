@@ -90,7 +90,7 @@ int Matcher::SearchByProjection(Frame &frame, const vector<MapPt> &mapPoints, co
 {
     int numberOfMatches{0};
 
-    map<size_t,int> lowerDistances{}; // <keypoint index, descriptor distance>
+    map<size_t,DESCRIPTOR_DISTANCE_TYPE> lowerDistances{}; // <keypoint index, descriptor distance>
     for(auto& pt: mapPoints)
     {
         if(!pt->mbTrackInView)
@@ -209,7 +209,7 @@ int Matcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, con
     const bool bForward = tlc.at<float>(2)>CurrentFrame.mb && !bMono;
     const bool bBackward = -tlc.at<float>(2)>CurrentFrame.mb && !bMono;
 
-    map<size_t,int> lowerDistances{}; // <keypoint index, descriptor distance>
+    map<size_t,DESCRIPTOR_DISTANCE_TYPE> lowerDistances{}; // <keypoint index, descriptor distance>
     map<size_t,size_t> matches{}; // <keypoint index, map point index>
     for(size_t iPt{0}; iPt < LastFrame.N; iPt++)
     {
@@ -342,7 +342,7 @@ int Matcher::SearchForTriangulation(Keyframe keyframe1, Keyframe keyframe2, cv::
         DBOW::FeatureVector::const_iterator f1end = featVec1.end();
         DBOW::FeatureVector::const_iterator f2end = featVec2.end();
 
-        map<size_t,int> lowerDistances{}; // <keypoint index, descriptor distance>
+        map<size_t,DESCRIPTOR_DISTANCE_TYPE> lowerDistances{}; // <keypoint index, descriptor distance>
         map<size_t,size_t> matches{}; // <keypoint 1, keypoint 2>
         while(f1it!=f1end && f2it!=f2end)
         {
@@ -502,6 +502,38 @@ int Matcher::SearchByBoW(KeyFrame* pKF, Frame &F, vector<MapPoint*> &vpMapPointM
     DBOW::FeatureVector::const_iterator KFend = vFeatVecKF.end();
     DBOW::FeatureVector::const_iterator Fend = F.mFeatVec.end();
 
+    map<size_t,DESCRIPTOR_DISTANCE_TYPE> lowerDistances{}; // <keypoint index, descriptor distance>
+    map<size_t,size_t> matches{}; // <keypoint index, descriptor distance>
+
+    /*cv::Ptr<cv::DescriptorMatcher> matcher_l1 = cv::DescriptorMatcher::create("BruteForce-Hamming");
+    vector<vector<cv::DMatch> > dmatches;
+    matcher_l1->knnMatch(pKF->mDescriptors, F.mDescriptors, dmatches, 2);
+
+    float dist1 = 0.0, dist2 = 0.0;
+    float mean{0.0};
+    int numMean{0};
+    for (size_t i = 0; i < dmatches.size(); i++) {
+        cv::DMatch dmatch = dmatches[i][0];
+        dist1 = dmatches[i][0].distance;
+        dist2 = dmatches[i][1].distance;
+        cout << dist1 << endl;
+        if (dist1 < 0.9*dist2) {
+            matches[dmatch.trainIdx] = dmatch.queryIdx;
+            numMean++;
+            mean += dist1;
+        }
+    }
+    mean /= numMean;
+    parameters.DistanceThreshold_high = DESCRIPTOR_DISTANCE_TYPE(4*mean);
+    parameters.DistanceThreshold_low = DESCRIPTOR_DISTANCE_TYPE(2*mean);
+
+    cout << F.mDescriptors.size << endl;
+    cout << "parameters.DistanceThreshold_high = " << parameters.DistanceThreshold_high << endl;
+    cout << "parameters.DistanceThreshold_low = " << parameters.DistanceThreshold_low << endl;*/
+
+    //return vpMapPointMatches.size();
+
+
     while(KFit != KFend && Fit != Fend)
     {
         if(KFit->first == Fit->first)
@@ -530,8 +562,10 @@ int Matcher::SearchByBoW(KeyFrame* pKF, Frame &F, vector<MapPoint*> &vpMapPointM
                 {
                     const unsigned int realIdxF = vIndicesF[iF];
 
-                    if(vpMapPointMatches[realIdxF])
-                        continue;
+                    //if(vpMapPointMatches[realIdxF])
+                        //continue;
+                    //if(lowerDistances.count(realIdxF))
+                        //continue;
 
                     const cv::Mat &dF = F.mDescriptors.row(realIdxF);
 
@@ -551,18 +585,28 @@ int Matcher::SearchByBoW(KeyFrame* pKF, Frame &F, vector<MapPoint*> &vpMapPointM
 
                 if(bestDist1 <= parameters.DistanceThreshold_low)
                 {
-                    if(static_cast<float>(bestDist1)<mfNNratio*static_cast<float>(bestDist2))
+                    if(static_cast<float>(bestDist1) < mfNNratio * static_cast<float>(bestDist2))
                     {
-                        vpMapPointMatches[bestIdxF]=pMP;
-
-                        const cv::KeyPoint &kp = pKF->mvKeysUn[realIdxKF];
-
-                        if(mbCheckOrientation)
-                        {
-                            int bin = ComputeBinForRotationHistogram(kp,F.mvKeys[bestIdxF]);
-                            rotationHistogram[bin].push_back(bestIdxF);
+                        if(!lowerDistances.count(bestIdxF)){
+                            lowerDistances[bestIdxF] = bestDist1;
+                            matches[bestIdxF] = realIdxKF;
+                        }else{
+                            if(bestDist1 < lowerDistances[bestIdxF]){
+                                lowerDistances[bestIdxF] = bestDist1;
+                                matches[bestIdxF] = realIdxKF;
+                            }
                         }
-                        nmatches++;
+
+
+                        //vpMapPointMatches[bestIdxF] = pMP;
+                        //const cv::KeyPoint &kp = pKF->mvKeysUn[realIdxKF];
+
+                        //if(mbCheckOrientation)
+                        //{
+                           // int bin = ComputeBinForRotationHistogram(kp,F.mvKeys[bestIdxF]);
+                            //rotationHistogram[bin].push_back(bestIdxF);
+                        //}
+                        //nmatches++;
                     }
                 }
 
@@ -579,6 +623,22 @@ int Matcher::SearchByBoW(KeyFrame* pKF, Frame &F, vector<MapPoint*> &vpMapPointM
         {
             Fit = F.mFeatVec.lower_bound(KFit->first);
         }
+    }
+
+    for(auto& match: matches){
+        const cv::KeyPoint &kp = pKF->mvKeysUn[match.second];
+        vpMapPointMatches[match.first] = vpMapPointsKF[match.second];
+
+        //matches[bestIdxF] = realIdxKF;
+        //vpMapPointMatches[bestIdxF] = pMP;
+        //const cv::KeyPoint &kp = pKF->mvKeysUn[realIdxKF];
+
+        if(mbCheckOrientation)
+        {
+            int bin = ComputeBinForRotationHistogram(kp,F.mvKeys[match.first]);
+            rotationHistogram[bin].push_back(match.first);
+        }
+        nmatches++;
     }
 
     if(mbCheckOrientation)
@@ -721,6 +781,29 @@ int Matcher::SearchByProjection(KeyFrame* pKF, cv::Mat Scw, const vector<MapPoin
 
 int Matcher::SearchForInitialization(Frame &F1, Frame &F2, vector<cv::Point2f> &vbPrevMatched, vector<int> &vnMatches12, int windowSize)
 {
+
+    cv::Ptr<cv::DescriptorMatcher> matcher_l1 = cv::DescriptorMatcher::create("BruteForce-Hamming");
+    vector<vector<cv::DMatch> > dmatches;
+    matcher_l1->knnMatch(F1.mDescriptors, F2.mDescriptors, dmatches, 2);
+
+    float dist1 = 0.0, dist2 = 0.0;
+    float mean{0.0};
+    int numMean{0};
+    for (size_t i = 0; i < dmatches.size(); i++) {
+        cv::DMatch dmatch = dmatches[i][0];
+        dist1 = dmatches[i][0].distance;
+        dist2 = dmatches[i][1].distance;
+        if (dist1 < 0.9*dist2) {
+            numMean++;
+            mean += dist1;
+        }
+    }
+    mean /= numMean;
+    parameters.DistanceThreshold_high = DESCRIPTOR_DISTANCE_TYPE(4*mean);
+    parameters.DistanceThreshold_low = DESCRIPTOR_DISTANCE_TYPE(2*mean);
+    cout << "parameters.DistanceThreshold_high = " << parameters.DistanceThreshold_high << endl;
+    cout << "parameters.DistanceThreshold_low = " << parameters.DistanceThreshold_low << endl;
+
     int nmatches=0;
     vnMatches12 = vector<int>(F1.mvKeysUn.size(),-1);
 
@@ -756,10 +839,10 @@ int Matcher::SearchForInitialization(Frame &F1, Frame &F2, vector<cv::Point2f> &
 
             DESCRIPTOR_DISTANCE_TYPE dist = DescriptorDistance(d1,d2);
 
-            if(vMatchedDistance[i2]<=dist)
+            if(vMatchedDistance[i2] <= dist)
                 continue;
 
-            if(dist<bestDist)
+            if(dist < bestDist)
             {
                 bestDist2=bestDist;
                 bestDist=dist;
@@ -775,14 +858,14 @@ int Matcher::SearchForInitialization(Frame &F1, Frame &F2, vector<cv::Point2f> &
         {
             if(bestDist < (float)bestDist2*mfNNratio)
             {
-                if(vnMatches21[bestIdx2]>=0)
+                if(vnMatches21[bestIdx2] >= 0)
                 {
                     vnMatches12[vnMatches21[bestIdx2]]=-1;
                     nmatches--;
                 }
-                vnMatches12[i1]=bestIdx2;
-                vnMatches21[bestIdx2]=i1;
-                vMatchedDistance[bestIdx2]=bestDist;
+                vnMatches12[i1] = bestIdx2;
+                vnMatches21[bestIdx2] = i1;
+                vMatchedDistance[bestIdx2] = bestDist;
                 nmatches++;
 
                 if(mbCheckOrientation)
@@ -1639,7 +1722,6 @@ DESCRIPTOR_DISTANCE_TYPE Matcher::DescriptorDistance(const cv::Mat &a, const cv:
         return dist;
     }
 
-    //cout << (DESCRIPTOR_DISTANCE_TYPE) cv::norm(a,b,DESCRIPTOR_DISTANCE_FUNCTION) << endl;
     return (DESCRIPTOR_DISTANCE_TYPE) cv::norm(a,b,DESCRIPTOR_DISTANCE_FUNCTION);
 }
 
