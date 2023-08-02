@@ -8,7 +8,7 @@ experimentDate=${4?Error: no experimentDate} 	         # Date: yyyy_mm_dd
 evaluateExperiment=${5?Error: no evaluateExperiment}   # if "y" TUM script evaluation is performed (conda---->python2)
 activeVis=${6?Error: no activeVisualization}           # if "1" display visualization and terminal output
 numRuns=${7?Error: no numberOfRuns}                    # number of executions per sequence
-dataset=${8?Error: no dataset}			 # Dataset: kitti / rgbdtum / euroc / monotum / oxford / (madmax) / (fordva) / 
+dataset=${8?Error: no dataset}			 # Dataset: kitti / rgbdtum / euroc / monotum / nuim / oxford / (madmax) / (fordva) / 
 sequenceGroup=${9?Error: no sequenceGroup}		 # See file <getSequences.sh>
 backwards=${10?Error: no backwards}			 # if "1" runs the sequence backwards
 ws_path=${11?Error: no ws_path}	 	         # Workspace Path: "/home/alex" / "/home/fontan"
@@ -57,6 +57,11 @@ fi
 if [ $dataset == 'rgbdtum' ]
 then 
 dataset_path="${ws_path}/RGBD_TUM"
+fi
+
+if [ $dataset == 'nuim' ]
+then 
+dataset_path="${ws_path}/NUIM"
 fi
 
 if [ $dataset == 'euroc' ]
@@ -185,6 +190,10 @@ do
 				./${executable} Vocabulary/$voc Examples/mono/${sequenceSettings[seqIndex]} ${dataset_path}/data_odometry_gray/dataset/sequences/${sequenceName} ${sequenceFolder} ${expId} ${activeVis} ${backwards} > $system_output 2>&1
 				fi
 				if [ $dataset == 'rgbdtum' ]
+				then
+				./${executable} Vocabulary/$voc Examples/mono/${sequenceSettings[seqIndex]} ${dataset_path}/${sequenceName} ${sequenceFolder} ${expId} ${activeVis} ${backwards} > /dev/null > $system_output 2>&1
+				fi
+				if [ $dataset == 'nuim' ]
 				then
 				./${executable} Vocabulary/$voc Examples/mono/${sequenceSettings[seqIndex]} ${dataset_path}/${sequenceName} ${sequenceFolder} ${expId} ${activeVis} ${backwards} > /dev/null > $system_output 2>&1
 				fi	

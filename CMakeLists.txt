@@ -197,6 +197,10 @@ add_executable(mono_eth
         Examples/mono/mono_eth.cc)
 target_link_libraries(mono_eth ${PROJECT_NAME})
 
+add_executable(mono_nuim
+        Examples/mono/mono_nuim.cc)
+target_link_libraries(mono_nuim ${PROJECT_NAME})
+
 #add_executable(mono_oxford
 #        Examples/mono/mono_oxford.cc)
 #target_link_libraries(mono_oxford ${PROJECT_NAME})

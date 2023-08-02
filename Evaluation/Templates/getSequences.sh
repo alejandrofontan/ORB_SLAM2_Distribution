@@ -185,6 +185,97 @@ then
 	fi
 fi
 
+
+if [ $dataset == 'nuim' ]
+then 
+	if [ $sequenceGroup == 'all' ]
+	then 
+		sequenceNames=(
+			"living_room_traj0_frei_png" 
+			"living_room_traj1_frei_png" 
+			"living_room_traj2_frei_png" 
+			"living_room_traj3_frei_png" 
+			"traj0_frei_png"
+			"traj1_frei_png"
+			"traj2_frei_png"
+			"traj3_frei_png"
+			
+		)
+		sequenceSettings=(
+			"nuim.yaml" "nuim.yaml" "nuim.yaml" "nuim.yaml"
+			"nuim.yaml" "nuim.yaml" "nuim.yaml" "nuim.yaml"
+		)
+	fi
+	
+	if [ $sequenceGroup == 'miniTestGroup' ]
+	then 
+		sequenceNames=(
+			"living_room_traj0_frei_png" 
+			"living_room_traj1_frei_png" 
+			"living_room_traj2_frei_png" 
+			"living_room_traj3_frei_png" 
+			"traj0_frei_png"
+			"traj1_frei_png"
+			"traj2_frei_png"
+			"traj3_frei_png"
+			
+		)
+		sequenceSettings=(
+			"nuim.yaml" "nuim.yaml" "nuim.yaml" "nuim.yaml"
+			"nuim.yaml" "nuim.yaml" "nuim.yaml" "nuim.yaml"
+		)
+	fi
+	
+	if [ $sequenceGroup == 'living_room_traj0_frei_png' ]
+	then 
+		sequenceNames=("living_room_traj0_frei_png")
+		sequenceSettings=("nuim.yaml")
+	fi
+	
+	if [ $sequenceGroup == 'living_room_traj1_frei_png' ]
+	then 
+		sequenceNames=("living_room_traj1_frei_png")
+		sequenceSettings=("nuim.yaml")
+	fi
+	
+	if [ $sequenceGroup == 'living_room_traj2_frei_png' ]
+	then 
+		sequenceNames=("living_room_traj2_frei_png")
+		sequenceSettings=("nuim.yaml")
+	fi
+	
+	if [ $sequenceGroup == 'living_room_traj3_frei_png' ]
+	then 
+		sequenceNames=("living_room_traj3_frei_png")
+		sequenceSettings=("nuim.yaml")
+	fi
+	
+	if [ $sequenceGroup == 'traj0_frei_png' ]
+	then 
+		sequenceNames=("traj0_frei_png")
+		sequenceSettings=("nuim.yaml")
+	fi
+	
+	if [ $sequenceGroup == 'traj1_frei_png' ]
+	then 
+		sequenceNames=("traj1_frei_png")
+		sequenceSettings=("nuim.yaml")
+	fi		
+	
+	if [ $sequenceGroup == 'traj2_frei_png' ]
+	then 
+		sequenceNames=("traj2_frei_png")
+		sequenceSettings=("nuim.yaml")
+	fi
+	
+	if [ $sequenceGroup == 'traj3_frei_png' ]
+	then 
+		sequenceNames=("traj3_frei_png")
+		sequenceSettings=("nuim.yaml")
+	fi	
+fi
+
+
 if [ $dataset == 'monotum' ]
 then 
 	if [ $sequenceGroup == 'all' ]

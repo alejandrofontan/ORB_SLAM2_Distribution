@@ -683,8 +683,8 @@ void LocalMapping::KeyFrameCulling()
         {
             if(keyframe->mnId != 0){
                 slamGraph->removeKeyframe(keyframe->mnFrameId);
-                if(keyframe->mnId == 1)
-                    terminate();
+                //if(keyframe->mnId == 1)
+                    //terminate();
             }
             keyframe->SetBadFlag();
             //break;
