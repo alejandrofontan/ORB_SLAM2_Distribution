@@ -20,7 +20,7 @@ namespace ORB_SLAM2 {
     };
 }
 
-#define AKAZE61_FEATURE
+#define ORB_FEATURE
 
 #ifdef ORB_FEATURE
 #define DESCRIPTOR_NAME "orb"
