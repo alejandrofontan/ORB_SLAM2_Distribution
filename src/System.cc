@@ -40,8 +40,9 @@ namespace ORB_SLAM2
 System::System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor,
                const int expId,
                const bool bUseViewer,
-               const string resultsPath):mSensor(sensor), mpViewer(static_cast<Viewer*>(NULL)), mbReset(false),mbActivateLocalizationMode(false),
-        mbDeactivateLocalizationMode(false), expId(expId), resultsPath(resultsPath)
+               const string resultsPath,
+               const bool activateLoopClosure):mSensor(sensor), mpViewer(static_cast<Viewer*>(NULL)), mbReset(false),mbActivateLocalizationMode(false),
+        mbDeactivateLocalizationMode(false), expId(expId), resultsPath(resultsPath),activateLoopClosure(activateLoopClosure)
 {
 
     RandomIntegerGenerator::seedRandomGenerator();
@@ -203,7 +204,8 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     //Initialize the Loop Closing thread and launch
     mpLoopCloser = new LoopClosing(mpMap, mpKeyFrameDatabase, mpVocabulary, mSensor!=MONOCULAR);
 #ifndef COMPILED_SEQUENTIAL
-    mptLoopClosing = new thread(&ORB_SLAM2::LoopClosing::Run, mpLoopCloser);
+    if(activateLoopClosure)
+        mptLoopClosing = new thread(&ORB_SLAM2::LoopClosing::Run, mpLoopCloser);
 #endif
 
 #ifdef COMPILED_WITH_PANGOLIN

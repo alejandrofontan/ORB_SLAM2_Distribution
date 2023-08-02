@@ -65,7 +65,8 @@ public:
     System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor,
            const int expId = 0,
            const bool bUseViewer = true,
-           const string resultsPath = "");
+           const string resultsPath = "",
+           const bool activateLoopClosure = true);
 
     // Proccess the given stereo frame. Images must be synchronized and rectified.
     // Input images: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to grayscale.
@@ -206,6 +207,7 @@ private:
 public:
     // Image resolution
     int cropBottom{0};
+    bool activateLoopClosure{true};
 };
 
 }// namespace ORB_SLAM
