@@ -194,10 +194,7 @@ void SLAM_GRAPH::SLAMGraph::resetMapFromCopy(){
     for(const auto& mapPointXYZ: mapPointXYZ_0)
         mapPoints.find(mapPointXYZ.first)->second->updateXYZ(mapPointXYZ.second);
 }
-
-void SLAM_GRAPH::SLAMGraph::addNoiseToSavedMap(const double& noise_){
-
-    // Estimate mean distance between consecutive keyframes
+double SLAM_GRAPH::SLAMGraph::getMeanKeyframeDistance() {
     double meanKeyframeDistance{0.0};
 
     auto it = keyframeTwc_0.begin();
@@ -208,6 +205,13 @@ void SLAM_GRAPH::SLAMGraph::addNoiseToSavedMap(const double& noise_){
         Twc_prev = it->second;
     }
     meanKeyframeDistance /= double(keyframeTwc_0.size());
+    return meanKeyframeDistance;
+}
+
+void SLAM_GRAPH::SLAMGraph::addNoiseToSavedMap(const double& noise_){
+
+    // Estimate mean distance between consecutive keyframes
+    double meanKeyframeDistance = getMeanKeyframeDistance();
 
     double noise = noise_ * meanKeyframeDistance;
     for(auto& keyframeTwc: keyframeTwc_0){

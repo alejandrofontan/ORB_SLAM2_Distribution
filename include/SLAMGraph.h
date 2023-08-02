@@ -123,6 +123,7 @@ namespace SLAM_GRAPH {
         void saveMap();
         void resetMapFromCopy();
         void addNoiseToSavedMap(const double& noise_);
+        double getMeanKeyframeDistance();
 
     private:
         VerbosityLevel verbosity{};
