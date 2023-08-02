@@ -85,7 +85,11 @@ Tracking::Tracking(System *pSys, FEATUREVocabulary* pVoc, FrameDrawer *pFrameDra
         fps=30;
 
     // Max/Min Frames to insert keyframes and to check relocalisation
+#ifdef COMPILED_SEQUENTIAL
+    mMinFrames = 5;
+#else
     mMinFrames = 0;
+#endif
     mMaxFrames = fps;
 
     cout << endl << "Camera Parameters: " << endl;
