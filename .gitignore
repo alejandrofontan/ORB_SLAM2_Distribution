@@ -3,6 +3,7 @@ Examples/mono/mono_euroc
 Examples/mono/mono_kitti
 Examples/mono/mono_monotum
 Examples/mono/mono_rgbdtum
+Examples/mono/mono_nuim
 Examples/mono/mono_vector
 Examples/mono/mono_oxford
 Examples/mono/mono_eth
