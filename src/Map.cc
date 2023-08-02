@@ -29,6 +29,17 @@ Map::Map():mnMaxKFid(0),mnBigChangeIdx(0)
 {
 }
 
+float Map::computeMeanDepth(){
+
+    float meanDepth = 0.0;
+    for(auto& keyframe: mspKeyFrames)
+        meanDepth += keyframe.second->ComputeSceneMedianDepth(2);
+
+    meanDepth /= mspKeyFrames.size();
+    cout << "meanDepth = "<< meanDepth << endl;
+    return meanDepth;
+}
+
 void Map::AddKeyFrame(KeyFrame *pKF)
 {
     unique_lock<mutex> lock(mMutexMap);
