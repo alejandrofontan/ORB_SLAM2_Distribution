@@ -29,7 +29,8 @@ void ORB_SLAM2::RandomIntegerGenerator::seedRandomGenerator(){
     }
 #else
     if(need_to_be_seeded){
-        srand (time(nullptr));
+        auto seed = time(nullptr);
+        srand (seed);
         need_to_be_seeded = false;
     }
 #endif
@@ -50,6 +51,7 @@ int ORB_SLAM2::RandomIntegerGenerator::getRandomNumber(){
 }
 
 int ORB_SLAM2::RandomIntegerGenerator::getRandomNumber(const int& maxNumber) {
+
     return int((((double)getRandomNumber())/((double)RAND_MAX)) * maxNumber) ;
 }
 
