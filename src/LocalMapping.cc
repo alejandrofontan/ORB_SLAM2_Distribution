@@ -635,6 +635,7 @@ void LocalMapping::KeyFrameCulling()
         int nRedundantObservations=0;
         int nMPs=0;
         int iMapPt{0};
+
         for(auto& mapPt: vpMapPoints)
         {
             if(mapPt)
@@ -678,15 +679,12 @@ void LocalMapping::KeyFrameCulling()
             ++iMapPt;
         }
 
-        if(nRedundantObservations > 0.9*nMPs){
-            //if((mpCurrentKeyFrame->mnId - keyframe->mnId)  < 10){
-                //continue;
-           // }
-            //if((keyframe->mnId %  10) == 0){
-                //continue;
-            //}
+        if(nRedundantObservations > 0.90*nMPs)
+        {
             if(keyframe->mnId != 0){
                 slamGraph->removeKeyframe(keyframe->mnFrameId);
+                if(keyframe->mnId == 1)
+                    terminate();
             }
             keyframe->SetBadFlag();
             //break;
