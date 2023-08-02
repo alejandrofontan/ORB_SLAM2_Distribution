@@ -56,7 +56,7 @@ class Tracking
 
 public:
     Tracking(System* pSys, FEATUREVocabulary* pVoc, FrameDrawer* pFrameDrawer, MapDrawer* pMapDrawer, Map* pMap, SLAM_GRAPH::SlamGraph& slamGraph,
-             KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor);
+             KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor, const bool activateLoopClosure = true);
 
     // Preprocess the input and call Track(). Extract features and performs stereo matching.
     cv::Mat GrabImageStereo(const cv::Mat &imRectLeft,const cv::Mat &imRectRight, const double &timestamp);
@@ -192,6 +192,9 @@ public:
     cv::Mat mK;
     cv::Mat mDistCoef;
     float mbf;
+
+    bool activateLoopClosure{true};
+
 protected:
     //New KeyFrame rules (according to fps)
     int mMinFrames;

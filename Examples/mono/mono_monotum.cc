@@ -63,11 +63,13 @@ int main(int argc, char **argv)
     size_t nImages = imageFilenames.size();
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
+    bool activatedLoopClosure = false;
     ORB_SLAM2::System SLAM(path_to_vocabulary,path_to_settings,
                            ORB_SLAM2::System::MONOCULAR,
                            stoi(experimentIndex),
                            activateVisualization,
-                           path_to_output);
+                           path_to_output,
+                           activatedLoopClosure);
 
     // Vector for tracking time statistics
     vector<ORB_SLAM2::Seconds> timesTrack{};
