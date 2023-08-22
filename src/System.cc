@@ -156,7 +156,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
             settingsFile["DistributionFitter.burr.stepSize"],
             settingsFile["DistributionFitter.burr.tolerance"]);
 
-    DIST_FITTER::DistributionFitter::verbosity = DIST_FITTER::DistributionFitter::VerbosityLevel::MEDIUM;
+    DIST_FITTER::DistributionFitter::verbosity = DIST_FITTER::DistributionFitter::VerbosityLevel::LOW;
     DIST_FITTER::DistributionFitter::params.SetParameters(logNormal,tStudent,burr);
 
 #ifdef COMPILED_ABLATION

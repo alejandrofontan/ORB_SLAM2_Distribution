@@ -195,7 +195,7 @@ public:
     double th_2dof{sqrt(th2_2dof)};
     double th_3dof{sqrt(th2_3dof)};
     double inlierProbability{0.85};
-    double pExp{0.75};
+    double pExp{0.52};
     double exponent{2.0};
 
     PoseOptimizationParameters poseOptimization{};

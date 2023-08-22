@@ -72,6 +72,69 @@ void DistributionFitter::FitLogNormal(vector<double> &data_, double &mu, double 
     }
 }
 
+void DistributionFitter::FitLogLogistic(vector<double> &data_, double &mu, double &sigma) {
+
+    // Filter points with negligible residuals
+    vector<double> data{};
+    for(const auto& value: data_){
+        if(value > params.minResidual)
+            data.push_back(value);
+    }
+
+    // Vector for parameters (mu, sigma)
+    gsl_vector *fittedParams = gsl_vector_alloc(2);
+
+    // Initialize the parameters with initial guesses
+    gsl_vector_set(fittedParams, 0, mu);
+    gsl_vector_set(fittedParams, 1, sigma);
+
+    // Initialize loglikelihood function
+    gsl_multimin_function loglike_func;
+    loglike_func.n = 2;
+    loglike_func.f = &logLogistic_loglikelihood;
+    loglike_func.params = &data;
+
+    const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex2;
+    gsl_multimin_fminimizer *s = gsl_multimin_fminimizer_alloc(T, 2);
+
+    // Set initial step sizes
+    gsl_vector *stepSize = gsl_vector_alloc(2);
+    gsl_vector_set(stepSize, 0, params.logNormal.stepSize);
+    gsl_vector_set(stepSize, 1, params.logNormal.stepSize);
+
+    gsl_multimin_fminimizer_set(s, &loglike_func, fittedParams, stepSize);
+
+    // Optimize
+    int iter{0};
+    int status;
+    do {
+        iter++;
+        status = gsl_multimin_fminimizer_iterate(s);
+        if (status != GSL_SUCCESS)
+            break;
+
+        double size = gsl_multimin_fminimizer_size(s);
+        status = gsl_multimin_test_size(size, params.logNormal.tolerance);
+    } while (status == GSL_CONTINUE && iter < params.logNormal.maxNumberIterations);
+
+    // Recover fitted parameters
+    mu = gsl_vector_get(s->x, 0);
+    sigma = gsl_vector_get(s->x, 1);
+
+    gsl_multimin_fminimizer_free(s);
+    gsl_vector_free(fittedParams);
+    gsl_vector_free(stepSize);
+
+    //double KS = calculateKS(data, mu, sigma);
+    if (verbosity >= MEDIUM) {
+        cout << "[DistributionFitter] fitLogLogistic(): " << endl;
+        std::cout << "    Fitted LogLogistic Distribution:\n";
+        std::cout << "    Mu: " << mu << "\n";
+        std::cout << "    Sigma: " << sigma << "\n";
+        //std::cout << "    KS: " << KS << "\n";
+    }
+}
+
 void DistributionFitter::FitTStudent(vector<double> &data_, double &nu, double &sigma) {
 
     // Filter points with negligible residuals
@@ -211,6 +274,17 @@ double DistributionFitter::Lognormal_icdf(const double& probability, const doubl
     return logNormalThreshold;
 }
 
+double DistributionFitter::LogLogistic_icdf(const double& probability, const double& mu, const double& sigma) {
+
+    double logLogisticThreshold = exp((log(probability/(1.0-probability)))*sigma + mu);
+
+    if(verbosity >= MEDIUM){
+        cout << "[DistributionFitter] LogLogistic_icdf(): " << endl;
+        cout << "    logLogistic Threshold: "<< logLogisticThreshold << " at probability " << 100.0 * probability << " %"<< endl;
+    }
+    return logLogisticThreshold;
+}
+
 double DistributionFitter::Burr_icdf(const double& probability, const double& k, const double& alpha, const double& beta, double icdf_0){
 
     BurrParameters burrParameters{ probability, k, alpha, beta };
@@ -254,8 +328,11 @@ vector<bool> DistributionFitter::GetInliers(const vector<double>& data, const do
         return vector<bool>{};
 
     vector<bool> isInlier(data.size(), false);
-    for(size_t iData{}; iData < data.size(); iData++)
+    int numValidData{0};
+    for(size_t iData{}; iData < data.size(); iData++){
+        numValidData += int(data[iData] > params.minResidual);
         isInlier[iData] = ((data[iData] < threshold) && (data[iData] > params.minResidual));
+    }
 
     if(verbosity >= MEDIUM){
         int numInliers{};
@@ -263,7 +340,7 @@ vector<bool> DistributionFitter::GetInliers(const vector<double>& data, const do
             if(value)
                 numInliers++;
         cout << "[DistributionFitter] GetInliers(): " << endl;
-        cout << "    Inlier percentaje: "<< numInliers << "/" << isInlier.size() << " = " << 100.0 * double(numInliers)/double(isInlier.size()) << " %"<< endl;
+        cout << "    Inlier percentaje: "<< numInliers << "/" << numValidData << " = " << 100.0 * double(numInliers)/double(numValidData) << " %"<< endl;
     }
 
     return isInlier;
@@ -284,6 +361,40 @@ double DistributionFitter::logNormal_loglikelihood(const gsl_vector *fittedParam
     double loglikelihood = 0.0;
     for (const auto &value: *dataset) {
         loglikelihood += log(lognormal_pdf(value, mu, sigma));
+    }
+
+    return -loglikelihood;
+}
+
+double DistributionFitter::logLogistic_pdf(double x, double mu, double sigma) {
+    double term_1 = 1.0/sigma;
+    double term_2 = 1.0/x;
+    double z = (log(x) - mu)/sigma;
+    double num = exp(z);
+    double den = pow(1 + num,2);
+    double pdf = (term_1 * term_2 * num)/ den;
+    return pdf;
+}
+
+double DistributionFitter::logLogistic_loglikelihood(const gsl_vector *fittedParams, void *data) {
+    double mu = gsl_vector_get(fittedParams, 0);
+    double sigma = gsl_vector_get(fittedParams, 1);
+
+    auto *dataset = static_cast<std::vector<double> *>(data);
+
+    double loglikelihood = 0.0;
+    if(params.p_subset < 1.0){
+        double maxPdf = LogLogistic_icdf(params.p_subset, mu, sigma);
+        for (const auto &value: *dataset) {
+            if(value > maxPdf){
+                loglikelihood -= 32.2362;
+                continue;
+            }
+            loglikelihood += log(logLogistic_pdf(value, mu, sigma));
+        }
+    }else{
+        for (const auto &value: *dataset)
+            loglikelihood += log(logLogistic_pdf(value, mu, sigma));
     }
 
     return -loglikelihood;

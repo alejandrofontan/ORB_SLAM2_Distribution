@@ -38,15 +38,17 @@ namespace DIST_FITTER {
     class DistributionFitter {
     public:
         enum VerbosityLevel{
-            LOW = 0,
-            MEDIUM = 1,
-            HIGH = 2
+            NONE = 0,
+            LOW = 1,
+            MEDIUM = 2,
+            HIGH = 3
         };
 
         enum DistributionType{
             LOGNORMAL = 0,
             TSTUDENT = 1,
             BURR = 2,
+            LOGLOGISTIC = 3
         };
 
         static DistributionFitterParameters params;
@@ -54,10 +56,12 @@ namespace DIST_FITTER {
         static VerbosityLevel verbosity;
 
         void static FitLogNormal(vector<double>& data_, double& mu, double& sigma);
+        void static FitLogLogistic(vector<double>& data_, double& mu, double& sigma);
         void static FitBurr(vector<double>& data_, double& k, double& alpha, double& beta);
         void static FitTStudent(vector<double>& data_, double& nu, double& sigma);
 
         double static Lognormal_icdf(const double& probability, const double& mu, const double& sigma);
+        double static LogLogistic_icdf(const double& probability, const double& mu, const double& sigma);
         double static Burr_icdf(const double& probability, const double& k, const double& alpha, const double& beta, double icdf_0 = 1.0);
 
         vector<bool> static GetInliers(const vector<double>& data, const double& threshold);
@@ -66,6 +70,9 @@ namespace DIST_FITTER {
     private:
         double static lognormal_pdf(double x, double mu, double sigma);
         double static logNormal_loglikelihood(const gsl_vector* params, void* data);
+
+        double static logLogistic_pdf(double x, double mu, double sigma);
+        double static logLogistic_loglikelihood(const gsl_vector* params, void* data);
 
         double static tstudent_pdf(double x, double nu, double sigma);
         double static tstudent_loglikelihood(const gsl_vector* params, void* data);
@@ -79,6 +86,9 @@ namespace DIST_FITTER {
 
     class DistributionFitterParameters {
     public:
+
+        double p_subset{0.5};
+
         struct LogNormal{
             int maxNumberIterations{100};
             double stepSize{0.1};
@@ -116,6 +126,7 @@ namespace DIST_FITTER {
         LogNormal logNormal{};
         TStudent tStudent{};
         Burr burr{};
+    public:
         const double minResidual{1e-8};
 
     public:

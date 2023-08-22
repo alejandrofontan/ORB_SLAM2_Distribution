@@ -72,7 +72,7 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
     g2o::BlockSolver_6_3 * solver_ptr = new g2o::BlockSolver_6_3(linearSolver);
     g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg(solver_ptr);
     optimizer.setAlgorithm(solver);
-    optimizer.setVerbose(true);
+    //optimizer.setVerbose(true);
 
     // Set KeyFrame vertices
     KeyframeId maxKeyId{0};
@@ -219,7 +219,12 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
     }
 
     // Sort Mahalanobis distances
-    std::vector<double> mahalanobisDistancesSorted = mahalanobisDistancesMono;
+    std::vector<double> mahalanobisDistancesSorted{};
+    for(auto& value: mahalanobisDistancesMono){
+        if(value > DIST_FITTER::DistributionFitter::params.minResidual)
+            mahalanobisDistancesSorted.push_back(value);
+    }
+
     std::sort(mahalanobisDistancesSorted.begin(),mahalanobisDistancesSorted.end());
 
     // Get subset of the distribution
@@ -227,24 +232,19 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
     std::vector<double> subset(mahalanobisDistancesSorted.begin(), mahalanobisDistancesSorted.begin() + endIdx + 1);
 
     // Estimate outlier threshold
-    double correctionFactor{1.0};
     double th2_2dof{parameters.th2_2dof},th2_3dof{parameters.th2_3dof};
     if(parameters.globalRobustBundleAdjustment.estimateOutlierThreshold){
-        cout << "[RobustBundleAdjustment] Fit log lormal "<< endl;
-        double mu{parameters.localBundleAdjustment.mu_lognormal}, sigma{parameters.localBundleAdjustment.sigma_lognormal};
-        DIST_FITTER::DistributionFitter::FitLogNormal(subset,mu,sigma);
-        cout << "[RobustBundleAdjustment] GetCorrectionFactor "<< endl;
-        correctionFactor = DIST_FITTER::DistributionFitter::GetCorrectionFactor(parameters.pExp,parameters.inlierProbability,sigma);
-        cout << "[RobustBundleAdjustment] Lognormal_icdf "<< endl;
-        th2_2dof = DIST_FITTER::DistributionFitter::Lognormal_icdf(parameters.inlierProbability,mu,sigma);
-        newThresholds.push_back(correctionFactor*th2_2dof);
+        cout << "[RobustBundleAdjustment] Fit log logistic "<< endl;
+        double mu{1.0}, sigma{1.0};
+        DIST_FITTER::DistributionFitter::FitLogLogistic(subset,mu,sigma);
+        cout << "[RobustBundleAdjustment] LogLogistic_icdf "<< endl;
+        th2_2dof = DIST_FITTER::DistributionFitter::LogLogistic_icdf(parameters.inlierProbability,mu,sigma);
+        newThresholds.push_back(th2_2dof);
     }
     cout << "[Robust bundle adjustment] th2_2dof = "<< th2_2dof << endl;
-    cout << "[Robust bundle adjustment] correctionFactor = "<< correctionFactor << endl;
-    cout << "[Robust bundle adjustment] new th2_2dof = "<< correctionFactor*th2_2dof << endl;
 
     // Set inlier observations
-    vector<bool> isInlierMono =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesMono,correctionFactor*th2_2dof);
+    vector<bool> isInlierMono =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesMono,th2_2dof);
     setInliers(edgesMono, isInlierMono);
 
     // Use Generalized Gaussian distribution
@@ -265,7 +265,7 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
 
     // Optimize again without the outliers
     ResetOptimizerVariables(keyframes,mapPoints,optimizer,maxKeyId,mapPtsNotInclude);
-    optimizer.setVerbose(true);
+    //optimizer.setVerbose(true);
     optimizer.initializeOptimization();
     optimizer.optimize(parameters.globalRobustBundleAdjustment.optimizerItsFine);
 
