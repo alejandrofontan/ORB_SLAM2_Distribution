@@ -659,6 +659,8 @@ void LocalMapping::KeyFrameCulling()
                             KeyFrame* projKeyframe = obs.second.projKeyframe;
                             if(projKeyframe == keyframe)
                                 continue;
+                            if(projKeyframe->isBad())
+                                continue;
 
                             const int &scaleLeveli = projKeyframe->mvKeysUn[obs.second.projIndex].octave;
 
