@@ -29,7 +29,8 @@ namespace ORB_SLAM2
 SLAM_GRAPH::SlamGraph KeyFrame::slamGraph{};
 
 static bool KeyframeComparison(pair<int , KeyFrame*> a, pair<int , KeyFrame*> b){
-    return (a.second->mnId < b.second->mnId);
+
+    return (a.first != b.first) ? (a.first < b.first) : (a.second->mnId < b.second->mnId);
 }
 
 long unsigned int KeyFrame::nNextId=0;
@@ -154,6 +155,7 @@ void KeyFrame::UpdateBestCovisibles()
        vPairs.push_back(make_pair(mit.second,mConnectedKeyFrames[mit.first]));
 
     sort(vPairs.begin(),vPairs.end(),KeyframeComparison);
+
     list<KeyFrame*> lKFs;
     list<int> lWs;
     for(size_t i=0, iend=vPairs.size(); i<iend;i++)

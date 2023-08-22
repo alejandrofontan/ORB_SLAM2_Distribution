@@ -74,7 +74,7 @@ const int HALF_PATCH_SIZE = 15;
 const int EDGE_THRESHOLD = 19;
 
 static bool cornerComparison(pair<int,ExtractorNode*> a, pair<int,ExtractorNode*> b){
-    return (a.second->UL.x < b.second->UL.x);
+    return (a.first != b.first) ? (a.first < b.first) : (a.second->UL.x < b.second->UL.x);
 }
 
 static float IC_Angle(const Mat& image, Point2f pt,  const vector<int> & u_max)
