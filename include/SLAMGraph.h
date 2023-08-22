@@ -14,6 +14,7 @@
 #include<mutex>
 
 #include<Definitions.h>
+#include "Utils.h"
 
 #include<Eigen/Dense>
 
@@ -91,12 +92,6 @@ namespace SLAM_GRAPH {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     class SLAMGraph {
     public:
-        enum VerbosityLevel{
-            NONE = 0,
-            LOW = 1,
-            MEDIUM = 2,
-            HIGH = 3
-        };
 
         SLAMGraph(const VerbosityLevel& verbosity): verbosity(verbosity){};
         void initialize(const FrameId& id_1, const Seconds& timestamp_1, const mat4& Twc_1,

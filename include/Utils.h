@@ -10,6 +10,15 @@
 #include <fstream>
 #include <iomanip>
 
+enum VerbosityLevel{
+    NONE = 0,
+    LOW = 1,
+    MEDIUM = 2,
+    HIGH = 3
+};
+
+void printMessage(const std::string& function, const std::string& message, const VerbosityLevel& verbosityLevel, const VerbosityLevel& verbosityLevelRequired);
+
 namespace ORB_SLAM2
 {
     using FrameId = long unsigned int;
@@ -40,7 +49,8 @@ namespace ORB_SLAM2
     void vectorStd(float& std, const float& mean, const std::vector<float>& v);
     void vectorPercentage(float& th, const float& percentage, const std::vector<float>& v);
 
-    void saveVectorToFile(std::vector<double>& vectorToSave, const std::string& file, const int& precision = 10);;
+    void saveVectorToFile(std::vector<double>& vectorToSave, const std::string& file, const int& precision = 10);
+
 }
 
 #endif //ORB_SLAM2_DETERMINISTIC_UTILS_H

@@ -22,6 +22,8 @@
 #include <gsl/gsl_roots.h>
 #include <boost/math/special_functions/gamma.hpp>
 
+#include "Utils.h"
+
 using namespace std;
 namespace DIST_FITTER {
 
@@ -37,12 +39,6 @@ namespace DIST_FITTER {
 
     class DistributionFitter {
     public:
-        enum VerbosityLevel{
-            NONE = 0,
-            LOW = 1,
-            MEDIUM = 2,
-            HIGH = 3
-        };
 
         enum DistributionType{
             LOGNORMAL = 0,

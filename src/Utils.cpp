@@ -113,3 +113,9 @@ void ORB_SLAM2::vectorPercentage(float& th, const float& percentage, const std::
     int position = (int) (percentage * float(vOrdered.size()));
     th = vOrdered[position];
 }
+
+void printMessage(const std::string& function, const std::string& message,
+                             const VerbosityLevel& verbosityLevel, const VerbosityLevel& verbosityLevelRequired){
+    if(verbosityLevel >= verbosityLevelRequired)
+        std::cout << "[" << function << "] : " <<  message << std::endl;
+}

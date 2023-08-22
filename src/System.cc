@@ -139,7 +139,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Create SLAM Graph
-    slamGraph = make_shared<SLAM_GRAPH::SLAMGraph>(SLAM_GRAPH::SLAMGraph::LOW);
+    slamGraph = make_shared<SLAM_GRAPH::SLAMGraph>(VerbosityLevel::LOW);
     KeyFrame::slamGraph = slamGraph;
 
     // Distribution Fitter
@@ -156,7 +156,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
             settingsFile["DistributionFitter.burr.stepSize"],
             settingsFile["DistributionFitter.burr.tolerance"]);
 
-    DIST_FITTER::DistributionFitter::verbosity = DIST_FITTER::DistributionFitter::VerbosityLevel::LOW;
+    DIST_FITTER::DistributionFitter::verbosity = VerbosityLevel::LOW;
     DIST_FITTER::DistributionFitter::params.SetParameters(logNormal,tStudent,burr);
 
 #ifdef COMPILED_ABLATION

@@ -61,9 +61,8 @@ void Optimizer::GlobalRobustBundleAdjustment(Map* pMap)
 
 void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const vector<MapPt> &mapPoints, const unsigned long nLoopKF)
 {
-
-    cout << "[RobustBundleAdjustment] Start ... "<< endl;
-    cout << "[RobustBundleAdjustment] Setting up graph "<< endl;
+    printMessage("RobustBundleAdjustment","Start ...", parameters.verbosity, VerbosityLevel::MEDIUM);
+    printMessage("RobustBundleAdjustment","Setting up graph", parameters.verbosity, VerbosityLevel::MEDIUM);
 
     // Set optimizer
     g2o::SparseOptimizer optimizer;
@@ -184,7 +183,7 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
         ++jMapPt;
     }
 
-    cout << "[RobustBundleAdjustment] First Optimization "<< endl;
+    printMessage("RobustBundleAdjustment","First Optimization", parameters.verbosity, VerbosityLevel::MEDIUM);
 
     // Optimize!
     optimizer.initializeOptimization();
@@ -199,7 +198,8 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
     residuals_v.clear();
     #endif
     #endif
-    cout << "[RobustBundleAdjustment] Compute Mahalanobis distances "<< endl;
+
+    printMessage("RobustBundleAdjustment","Compute Mahalanobis distances", parameters.verbosity, VerbosityLevel::MEDIUM);
     for(const auto& edge: edgesMono){
         edge->computeError();
         mahalanobisDistancesMono.push_back(edge->chi2());
@@ -234,14 +234,23 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
     // Estimate outlier threshold
     double th2_2dof{parameters.th2_2dof},th2_3dof{parameters.th2_3dof};
     if(parameters.globalRobustBundleAdjustment.estimateOutlierThreshold){
-        cout << "[RobustBundleAdjustment] Fit log logistic "<< endl;
+        printMessage("RobustBundleAdjustment","Estimate Outlier Threshold", parameters.verbosity, VerbosityLevel::MEDIUM);
+
         double mu{1.0}, sigma{1.0};
+        printMessage("RobustBundleAdjustment","Fit log logistic", parameters.verbosity, VerbosityLevel::MEDIUM);
         DIST_FITTER::DistributionFitter::FitLogLogistic(subset,mu,sigma);
-        cout << "[RobustBundleAdjustment] LogLogistic_icdf "<< endl;
+
+        printMessage("RobustBundleAdjustment","LogLogistic_icdf", parameters.verbosity, VerbosityLevel::MEDIUM);
         th2_2dof = DIST_FITTER::DistributionFitter::LogLogistic_icdf(parameters.inlierProbability,mu,sigma);
+
         newThresholds.push_back(th2_2dof);
+        printMessage("RobustBundleAdjustment","th2_2dof = " + std::to_string(th2_2dof) + " at "
+                                              + std::to_string(parameters.inlierProbability) +" %", parameters.verbosity, VerbosityLevel::MEDIUM);
+    }else{
+        printMessage("RobustBundleAdjustment","th2_2dof = " + std::to_string(th2_2dof), parameters.verbosity, VerbosityLevel::MEDIUM);
     }
-    cout << "[Robust bundle adjustment] th2_2dof = "<< th2_2dof << endl;
+
+
 
     // Set inlier observations
     vector<bool> isInlierMono =  DIST_FITTER::DistributionFitter::GetInliers(mahalanobisDistancesMono,th2_2dof);
@@ -261,7 +270,7 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
         DIST_FITTER::DistributionFitter::FitTStudent(residualsMono,nu,sigma_);
     }
 
-    cout << "[RobustBundleAdjustment] Second Optimization "<< endl;
+    printMessage("RobustBundleAdjustment","Second Optimization", parameters.verbosity, VerbosityLevel::MEDIUM);
 
     // Optimize again without the outliers
     ResetOptimizerVariables(keyframes,mapPoints,optimizer,maxKeyId,mapPtsNotInclude);
@@ -269,7 +278,8 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
     optimizer.initializeOptimization();
     optimizer.optimize(parameters.globalRobustBundleAdjustment.optimizerItsFine);
 
-    cout << "[RobustBundleAdjustment] Update graph "<< endl;
+    printMessage("RobustBundleAdjustment","Update graph", parameters.verbosity, VerbosityLevel::MEDIUM);
+
     //Keyframes
     for(size_t i=0; i < keyframes.size(); i++)
     {
@@ -314,7 +324,8 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
             pMP->mnBAGlobalForKF = nLoopKF;
         }
     }
-    cout << "[RobustBundleAdjustment] Finished. "<< endl;
+
+    printMessage("RobustBundleAdjustment","Finished.", parameters.verbosity, VerbosityLevel::MEDIUM);
 }
 
 void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<MapPoint *> &vpMP,

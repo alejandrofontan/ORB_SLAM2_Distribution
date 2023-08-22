@@ -175,8 +175,8 @@ void SLAM_GRAPH::SLAMGraph::correctFramesScale(const double& scale, const FrameI
 }
 
 void SLAM_GRAPH::SLAMGraph::saveMap(){
-    if(verbosity >= LOW)
-        cout << "[SLAMGraph] saveMap() : save a copy of keyframe poses Twc and map point world coordinates XYZ"<< endl;
+
+    printMessage("SLAMGraph","saveMap() : save a copy of keyframe poses Twc and map point world coordinates XYZ",verbosity,VerbosityLevel::LOW);
 
     keyframeTwc_0.clear();
     for(const auto& keyframe: keyframes)

@@ -204,6 +204,8 @@ public:
     OptimizeSim3 optimizeSim3{};
     GlobalRobustBundleAdjustment globalRobustBundleAdjustment{};
 
+    VerbosityLevel verbosity{VerbosityLevel::MEDIUM};
+
 public:
     void setParameters(
             const float& chi2_2dof_, const float& chi2_3dof_,

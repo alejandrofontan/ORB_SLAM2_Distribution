@@ -5,7 +5,7 @@
 #include "DistributionFitter.h"
 namespace DIST_FITTER {
 
-DistributionFitter::VerbosityLevel DistributionFitter::verbosity{LOW};
+VerbosityLevel DistributionFitter::verbosity{LOW};
 DistributionFitterParameters DistributionFitter::params{};
 DistributionFitter::DistributionType DistributionFitter::distributionType{LOGNORMAL};
 
@@ -334,7 +334,7 @@ vector<bool> DistributionFitter::GetInliers(const vector<double>& data, const do
         isInlier[iData] = ((data[iData] < threshold) && (data[iData] > params.minResidual));
     }
 
-    if(verbosity >= MEDIUM){
+    if(verbosity >= LOW){
         int numInliers{};
         for(auto value: isInlier)
             if(value)
