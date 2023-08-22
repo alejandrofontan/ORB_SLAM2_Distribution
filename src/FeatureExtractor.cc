@@ -14,7 +14,7 @@ namespace ORB_SLAM2
 DescriptorType FeatureExtractor::descriptorType{DESCRIPTOR_TYPE};
 
 static bool cornerComparison(pair<int,ExtractorNode*> a, pair<int,ExtractorNode*> b){
-    return (a.second->UL.x < b.second->UL.x);
+    return (a.first != b.first) ? (a.first < b.first) : (a.second->UL.x < b.second->UL.x);
 }
 
 FeatureExtractor::FeatureExtractor(int _nfeatures, float _scaleFactor, int _nlevels,
