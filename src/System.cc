@@ -193,7 +193,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     //Initialize the Tracking thread
     //(it will live in the main thread of execution, the one that called this constructor)
     mpTracker = new Tracking(this, mpVocabulary, mpFrameDrawer, mpMapDrawer,
-                             mpMap, slamGraph,mpKeyFrameDatabase, strSettingsFile, mSensor);
+                             mpMap, slamGraph,mpKeyFrameDatabase, strSettingsFile, mSensor,activateLoopClosure);
 
     //Initialize the Local Mapping thread and launch
     mpLocalMapper = new LocalMapping(mpMap,slamGraph, mSensor==MONOCULAR);
