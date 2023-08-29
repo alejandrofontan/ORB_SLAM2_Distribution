@@ -76,3 +76,24 @@ then
 	max_diff=0.033 # 30Hz
 	frequence=30
 fi
+
+if [ $dataset == 'tartanair' ]
+then
+	groundtruth_file="$dataset_path/${sequenceName}/groundtruth.txt" #???????????????
+	max_diff=0.033 # 30Hz
+	frequence=30
+fi
+
+if [ $dataset == 'drunkards' ]
+then
+	groundtruth_file="$dataset_path/${sequenceName}/pose.txt" #???????????????
+	max_diff=0.033 # 30Hz
+	frequence=30
+fi
+
+if [ $dataset == 'rosario' ]
+then
+	groundtruth_file="$dataset_path/${sequenceName}/groundtruth.txt" #???????????????
+	max_diff=0.05 # 30Hz
+	frequence=20
+fi

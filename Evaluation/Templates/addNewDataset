@@ -1,0 +1,8 @@
+Add new dataset steps:
+
+1) createResultsSubfolders.sh
+2) pathToDataset.sh
+3) executables.sh
+5) dataset.yaml
+6) datasetConfiguration.sh
+7) dataset_to_rgbdtum.m -----> rgb.txt , groundtruth.txt

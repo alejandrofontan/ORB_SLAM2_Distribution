@@ -201,6 +201,10 @@ add_executable(mono_nuim
         Examples/mono/mono_nuim.cc)
 target_link_libraries(mono_nuim ${PROJECT_NAME})
 
+add_executable(mono_template
+        Examples/mono/mono_template.cc)
+target_link_libraries(mono_template ${PROJECT_NAME})
+
 #add_executable(mono_oxford
 #        Examples/mono/mono_oxford.cc)
 #target_link_libraries(mono_oxford ${PROJECT_NAME})

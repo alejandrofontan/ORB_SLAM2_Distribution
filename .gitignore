@@ -9,6 +9,7 @@ Examples/mono/mono_oxford
 Examples/mono/mono_eth
 Examples/mono/mono_fourseasons
 Examples/mono/mono_interior
+Examples/mono/mono_template
 Examples/RGB-D/rgbd_tum
 Examples/ROS/ORB_SLAM2/CMakeLists.txt.user
 Examples/ROS/ORB_SLAM2/Mono

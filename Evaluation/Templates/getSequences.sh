@@ -275,6 +275,168 @@ then
 	fi	
 fi
 
+if [ $dataset == 'tartanair' ]
+then 
+	if [ $sequenceGroup == 'all' ]
+	then 
+		sequenceNames=(
+			"ME000" "ME001" "ME002" "ME003" "ME004" "ME005" "ME006" "ME007" 
+			"MH000" "MH001" "MH002" "MH003" "MH004" "MH005" "MH006" "MH007"  				
+		)
+		sequenceSettings=(
+			"tartanair.yaml" "tartanair.yaml" "tartanair.yaml" "tartanair.yaml" "tartanair.yaml" "tartanair.yaml" "tartanair.yaml" "tartanair.yaml"
+			"tartanair.yaml" "tartanair.yaml" "tartanair.yaml" "tartanair.yaml" "tartanair.yaml" "tartanair.yaml" "tartanair.yaml" "tartanair.yaml"
+		)
+	fi
+	
+	if [ $sequenceGroup == 'easy' ]
+	then 
+		sequenceNames=(
+			"ME000" "ME001" "ME002" "ME003" "ME004" "ME005" "ME006" "ME007" 
+		)
+		sequenceSettings=(
+			"tartanair.yaml" "tartanair.yaml" "tartanair.yaml" "tartanair.yaml" "tartanair.yaml" "tartanair.yaml" "tartanair.yaml" "tartanair.yaml"
+		)
+	fi
+	
+	if [ $sequenceGroup == 'hard' ]
+	then 
+		sequenceNames=(
+			"MH000" "MH001" "MH002" "MH003" "MH004" "MH005" "MH006" "MH007"  				
+		)
+		sequenceSettings=(
+			"tartanair.yaml" "tartanair.yaml" "tartanair.yaml" "tartanair.yaml" "tartanair.yaml" "tartanair.yaml" "tartanair.yaml" "tartanair.yaml"
+		)
+	fi
+	
+	if [ $sequenceGroup == 'ME000' ]
+	then 
+		sequenceNames=("ME000")
+		sequenceSettings=("tartanair.yaml")
+	fi
+	if [ $sequenceGroup == 'ME001' ]
+	then 
+		sequenceNames=("ME001")
+		sequenceSettings=("tartanair.yaml")
+	fi
+	if [ $sequenceGroup == 'ME002' ]
+	then 
+		sequenceNames=("ME002")
+		sequenceSettings=("tartanair.yaml")
+	fi
+	if [ $sequenceGroup == 'ME003' ]
+	then 
+		sequenceNames=("ME003")
+		sequenceSettings=("tartanair.yaml")
+	fi
+	if [ $sequenceGroup == 'ME004' ]
+	then 
+		sequenceNames=("ME004")
+		sequenceSettings=("tartanair.yaml")
+	fi
+	if [ $sequenceGroup == 'ME005' ]
+	then 
+		sequenceNames=("ME005")
+		sequenceSettings=("tartanair.yaml")
+	fi
+	if [ $sequenceGroup == 'ME006' ]
+	then 
+		sequenceNames=("ME006")
+		sequenceSettings=("tartanair.yaml")
+	fi
+	if [ $sequenceGroup == 'ME007' ]
+	then 
+		sequenceNames=("ME007")
+		sequenceSettings=("tartanair.yaml")
+	fi
+	if [ $sequenceGroup == 'MH000' ]
+	then 
+		sequenceNames=("MH000")
+		sequenceSettings=("tartanair.yaml")
+	fi
+	if [ $sequenceGroup == 'MH001' ]
+	then 
+		sequenceNames=("MH001")
+		sequenceSettings=("tartanair.yaml")
+	fi
+	if [ $sequenceGroup == 'MH002' ]
+	then 
+		sequenceNames=("MH002")
+		sequenceSettings=("tartanair.yaml")
+	fi
+	if [ $sequenceGroup == 'MH003' ]
+	then 
+		sequenceNames=("MH003")
+		sequenceSettings=("tartanair.yaml")
+	fi
+	if [ $sequenceGroup == 'MH004' ]
+	then 
+		sequenceNames=("MH004")
+		sequenceSettings=("tartanair.yaml")
+	fi
+	if [ $sequenceGroup == 'MH005' ]
+	then 
+		sequenceNames=("MH005")
+		sequenceSettings=("tartanair.yaml")
+	fi
+	if [ $sequenceGroup == 'MH006' ]
+	then 
+		sequenceNames=("MH006")
+		sequenceSettings=("tartanair.yaml")
+	fi
+	if [ $sequenceGroup == 'MH007' ]
+	then 
+		sequenceNames=("MH007")
+		sequenceSettings=("tartanair.yaml")
+	fi
+	
+fi
+
+if [ $dataset == 'drunkards' ]
+then 
+	if [ $sequenceGroup == 'all' ]
+	then 
+		sequenceNames=(
+			"00000_level0" 
+			"00000_level2" 			
+		)
+		sequenceSettings=(
+			"drunkards.yaml" 
+			"drunkards.yaml" 
+		)
+	fi
+
+	if [ $sequenceGroup == '00000_level0' ]
+	then 
+		sequenceNames=("00000_level0")
+		sequenceSettings=("drunkards.yaml")
+	fi
+	if [ $sequenceGroup == '00000_level2' ]
+	then 
+		sequenceNames=("00000_level2")
+		sequenceSettings=("drunkards.yaml")
+	fi
+
+fi
+
+if [ $dataset == 'rosario' ]
+then 
+	if [ $sequenceGroup == 'all' ]
+	then 
+		sequenceNames=(
+			"sequence01" 
+		)
+		sequenceSettings=(
+			"rosario.yaml" 
+		)
+	fi
+
+	if [ $sequenceGroup == 'sequence01' ]
+	then 
+		sequenceNames=("sequence01")
+		sequenceSettings=("rosario.yaml")
+	fi
+fi
 
 if [ $dataset == 'monotum' ]
 then 
