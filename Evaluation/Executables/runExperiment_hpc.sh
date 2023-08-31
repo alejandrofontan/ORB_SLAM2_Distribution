@@ -2,8 +2,8 @@
 experimentName_=${1?Error: no experimentName_} 
 				
 systemVersion_="ORB_SLAM2_${experimentName_}"
-datasets=("rgbdtum" "kitti" "eth" "euroc" "monotum" "nuim")
-sequenceGroups=("miniTestGroup" "miniTestGroup" "miniTestGroup" "miniTestGroup" "miniTestGroup" "miniTestGroup")	
+datasets=("rgbdtum" "kitti" "eth" "euroc" "nuim")
+sequenceGroups=("miniTestGroup" "miniTestGroup" "miniTestGroup" "miniTestGroup" "miniTestGroup")	
 
 workspacePath_="/home/fontan"
 resultsFolder_="ORB_SLAM2_Ablation"
