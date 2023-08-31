@@ -330,8 +330,8 @@ vector<bool> DistributionFitter::GetInliers(const vector<double>& data, const do
     vector<bool> isInlier(data.size(), false);
     int numValidData{0};
     for(size_t iData{}; iData < data.size(); iData++){
-        numValidData += int(data[iData] > params.minResidual);
-        isInlier[iData] = ((data[iData] < threshold) && (data[iData] > params.minResidual));
+        numValidData += int((data[iData] > params.minResidual) && (data[iData] < params.maxResidual));
+        isInlier[iData] = ((data[iData] < threshold) && (data[iData] > params.minResidual) && (data[iData] < params.maxResidual));
     }
 
     if(verbosity >= LOW){
@@ -344,6 +344,26 @@ vector<bool> DistributionFitter::GetInliers(const vector<double>& data, const do
     }
 
     return isInlier;
+}
+
+void DistributionFitter::UpdateInliers(vector<bool>& isInlier, const vector<double>& data, const double& threshold){
+    if(data.empty())
+        return;
+
+    int numValidData{0};
+    for(size_t iData{}; iData < data.size(); iData++){
+        numValidData += int((data[iData] > params.minResidual) && (data[iData] < params.maxResidual) && (isInlier[iData]));
+        isInlier[iData] = ((data[iData] < threshold) && (data[iData] > params.minResidual) && (data[iData] < params.maxResidual) && (isInlier[iData]));
+    }
+
+    if(verbosity >= LOW){
+        int numInliers{};
+        for(auto value: isInlier)
+            if(value)
+                numInliers++;
+        cout << "[DistributionFitter] GetInliers(): " << endl;
+        cout << "    Inlier percentaje: "<< numInliers << "/" << numValidData << " = " << 100.0 * double(numInliers)/double(numValidData) << " %"<< endl;
+    }
 }
 
 double DistributionFitter::lognormal_pdf(double x, double mu, double sigma) {

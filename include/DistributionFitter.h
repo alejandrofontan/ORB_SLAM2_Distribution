@@ -61,6 +61,8 @@ namespace DIST_FITTER {
         double static Burr_icdf(const double& probability, const double& k, const double& alpha, const double& beta, double icdf_0 = 1.0);
 
         vector<bool> static GetInliers(const vector<double>& data, const double& threshold);
+        void static UpdateInliers(vector<bool>& isInlier, const vector<double>& data, const double& threshold);
+
         double static GetCorrectionFactor(const double& p_exp,const double& p, const double& sigma);
 
     private:
@@ -124,6 +126,7 @@ namespace DIST_FITTER {
         Burr burr{};
     public:
         const double minResidual{1e-8};
+        const double maxResidual{100.0};
 
     public:
         void SetParameters(const LogNormal& logNormal_, const TStudent& tStudent_, const Burr& burr_){
