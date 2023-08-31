@@ -803,6 +803,8 @@ int Matcher::SearchForInitialization(Frame &F1, Frame &F2, vector<cv::Point2f> &
     parameters.DistanceThreshold_low = DESCRIPTOR_DISTANCE_TYPE(2*mean);
     cout << "parameters.DistanceThreshold_high = " << parameters.DistanceThreshold_high << endl;
     cout << "parameters.DistanceThreshold_low = " << parameters.DistanceThreshold_low << endl;
+    //parameters.DistanceThreshold_high = 100;
+    //parameters.DistanceThreshold_low = 50;
 
     int nmatches=0;
     vnMatches12 = vector<int>(F1.mvKeysUn.size(),-1);
