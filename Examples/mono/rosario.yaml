@@ -26,7 +26,7 @@ Camera.RGB: 1
 #--------------------------------------------------------------------------------------------
 
 # ORB Extractor: Number of features per image
-FeatureExtractor.nFeatures: 1000
+FeatureExtractor.nFeatures: 2000
 
 # ORB Extractor: Scale factor between levels in the scale pyramid 	
 FeatureExtractor.scaleFactor: 1.2
