@@ -137,6 +137,16 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
                                         optimizeSim3,
                                         globalRobustBundleAdjustment);
 
+    //vector<double> p{0.7,0.75,0.8,0.85,0.875,0.9,0.925,0.95,0.975,0.98,0.99,0.999};
+    //vector<double> chi2{0.25,0.75,1.25,2.0,3.0,4.0,5.0,5.991,7.0,10.0,15.0,20.0};
+    //vector<double> chi2{0.8,5.991,15.0};
+    //int numRuns = 5;
+    //int index = expId/numRuns;
+    //Optimizer::parameters.UpdateInlierProbability(p[index]);
+    //Optimizer::parameters.UpdateInlierThresholds(chi2[index],chi2[index]);
+    //cout << "aaaaaaaaaaaaaaaaaa = "<< p[index] << endl;
+    //cout << "aaaaaaaaaaaaaaaaaa = "<< chi2[index] << endl;
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Create SLAM Graph
     slamGraph = make_shared<SLAM_GRAPH::SLAMGraph>(VerbosityLevel::LOW);
