@@ -6,3 +6,5 @@ Add new dataset steps:
 5) dataset.yaml
 6) datasetConfiguration.sh
 7) dataset_to_rgbdtum.m -----> rgb.txt , groundtruth.txt
+8) getSequences.sh
+9) hpc executables

@@ -79,3 +79,12 @@ then
 dataset_path="${ws_path}/CANOE"
 fi
 
+if [ $dataset == 'openloris' ]
+then 
+dataset_path="${ws_path}/OPENLORIS"
+fi
+
+if [ $dataset == 'vkitti' ]
+then 
+dataset_path="${ws_path}/VKITTI"
+fi

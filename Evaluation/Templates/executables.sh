@@ -58,7 +58,7 @@ then
 	./${executable} Vocabulary/$voc Examples/mono/${sequenceSettings[seqIndex]} ${dataset_path}/${sequenceName} ${sequenceFolder} ${expId} ${activeVis} ${backwards} > /dev/null > $system_output 2>&1
 fi
 				
-if [ $dataset == 'tartanair' ] || [ $dataset == 'drunkards' ] || [ $dataset == 'rosario' ]
+if [ $dataset == 'tartanair' ] || [ $dataset == 'drunkards' ] || [ $dataset == 'rosario' ] || [ $dataset == 'openloris' ] || [ $dataset == 'vkitti' ]
 then
 	./Examples/${mode}/${mode}_template Vocabulary/$voc Examples/mono/${sequenceSettings[seqIndex]} ${dataset_path}/${sequenceName} ${sequenceFolder} ${expId} ${activeVis} ${backwards} > /dev/null > $system_output 2>&1
 fi				

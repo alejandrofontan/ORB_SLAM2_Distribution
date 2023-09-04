@@ -438,6 +438,65 @@ then
 	fi
 fi
 
+if [ $dataset == 'openloris' ]
+then 
+	if [ $sequenceGroup == 'all' ]
+	then 
+		sequenceNames=(
+			"office1-1" 
+			"office1-2"
+			"cafe1-1" 
+			"cafe1-2"
+		)
+		sequenceSettings=(
+			"openloris.yaml" 
+			"openloris.yaml" 
+			"openloris.yaml" 
+			"openloris.yaml" 
+		)
+	fi
+
+	if [ $sequenceGroup == 'miniTestGroup' ]
+	then 
+		sequenceNames=(
+			"office1-1" 
+			"office1-2"
+			"cafe1-1" 
+			"cafe1-2"
+		)
+		sequenceSettings=(
+			"openloris.yaml" 
+			"openloris.yaml" 
+			"openloris.yaml" 
+			"openloris.yaml" 
+		)
+	fi
+	
+	if [ $sequenceGroup == 'office1-1' ]
+	then 
+		sequenceNames=("office1-1")
+		sequenceSettings=("openloris.yaml")
+	fi
+	
+	if [ $sequenceGroup == 'office1-2' ]
+	then 
+		sequenceNames=("office1-2")
+		sequenceSettings=("openloris.yaml")
+	fi
+	
+	if [ $sequenceGroup == 'cafe1-1' ]
+	then 
+		sequenceNames=("cafe1-1")
+		sequenceSettings=("openloris.yaml")
+	fi
+	
+	if [ $sequenceGroup == 'cafe1-2' ]
+	then 
+		sequenceNames=("cafe1-2")
+		sequenceSettings=("openloris.yaml")
+	fi
+fi
+
 if [ $dataset == 'monotum' ]
 then 
 	if [ $sequenceGroup == 'all' ]
@@ -928,6 +987,58 @@ then
 		sequenceNames=("10")
 		sequenceSettings=("KITTI04-12.yaml")
 	fi
+fi
+
+
+if [ $dataset == 'vkitti' ]
+then 
+	if [ $sequenceGroup == 'all' ]
+	then 
+		sequenceNames=(
+			"Scene01_morning","Scene02_morning","Scene06_morning","Scene18_morning","Scene20_morning"
+		)
+		sequenceSettings=( 
+			"vkitti.yaml" "vkitti.yaml" "vkitti.yaml" "vkitti.yaml" "vkitti.yaml"		
+		)
+	fi
+	
+	if [ $sequenceGroup == 'miniTestGroup' ]
+	then 
+		sequenceNames=(
+			"Scene01_morning","Scene02_morning","Scene06_morning","Scene18_morning","Scene20_morning"
+		)
+		sequenceSettings=( 
+			"vkitti.yaml" "vkitti.yaml" "vkitti.yaml" "vkitti.yaml" "vkitti.yaml"		
+		)
+	fi
+	
+	
+	if [ $sequenceGroup == 'Scene01_morning' ]
+	then 
+		sequenceNames=("Scene01_morning")
+		sequenceSettings=("vkitti.yaml")
+	fi
+	if [ $sequenceGroup == 'Scene02_morning' ]
+	then 
+		sequenceNames=("Scene02_morning")
+		sequenceSettings=("vkitti.yaml")
+	fi
+	if [ $sequenceGroup == 'Scene06_morning' ]
+	then 
+		sequenceNames=("Scene06_morning")
+		sequenceSettings=("vkitti.yaml")
+	fi
+	if [ $sequenceGroup == 'Scene18_morning' ]
+	then 
+		sequenceNames=("Scene18_morning")
+		sequenceSettings=("vkitti.yaml")
+	fi
+	if [ $sequenceGroup == 'Scene20_morning' ]
+	then 
+		sequenceNames=("Scene20_morning")
+		sequenceSettings=("vkitti.yaml")
+	fi
+	
 fi
 
 if [ $dataset == 'fordva' ]

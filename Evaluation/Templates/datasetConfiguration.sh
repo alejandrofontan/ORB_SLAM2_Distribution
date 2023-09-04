@@ -97,3 +97,17 @@ then
 	max_diff=0.05 # 30Hz
 	frequence=20
 fi
+
+if [ $dataset == 'openloris' ]
+then
+	groundtruth_file="$dataset_path/${sequenceName}/groundtruth.txt" #???????????????
+	max_diff=0.033 # 30Hz
+	frequence=30
+fi
+
+if [ $dataset == 'vkitti' ]
+then
+	groundtruth_file="$dataset_path/${sequenceName}/groundtruth.txt" #???????????????
+	max_diff=0.1 # 10Hz
+	frequence=10
+fi
