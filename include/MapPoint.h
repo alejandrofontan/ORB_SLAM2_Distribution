@@ -56,6 +56,7 @@ class Observation{
         KeypointIndex  refIndex{};
         OctaveType refOctave{};
 
+        int numOutlier{0};
         void setActive(const bool& isActive_){active = isActive_;}
         bool isActive() const {return active;}
 

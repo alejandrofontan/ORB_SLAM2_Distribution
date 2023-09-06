@@ -194,8 +194,8 @@ public:
     double th2_3dof{7.815};
     double th_2dof{sqrt(th2_2dof)};
     double th_3dof{sqrt(th2_3dof)};
-    double inlierProbability{0.85};
-    double pExp{0.5};
+    double inlierProbability{0.95};
+    //double pExp{0.5};
     double exponent{2.0};
 
     PoseOptimizationParameters poseOptimization{};
@@ -221,7 +221,7 @@ public:
         deltaMono = sqrt(chi2_2dof);
         deltaStereo = sqrt(chi2_3dof);
 
-        inlierProbability = inlierProbability_;
+        //inlierProbability = inlierProbability_;
 
         poseOptimization = poseOptimization_;
         localBundleAdjustment = localBundleAdjustment_;

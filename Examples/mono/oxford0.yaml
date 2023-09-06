@@ -74,13 +74,6 @@ Optimizer.globalRobustBundleAdjustment.optimizerItsFine: 100
 #--------------------------------------------------------------------------------------------
 # DistributionFitter Parameters
 #--------------------------------------------------------------------------------------------
-DistributionFitter.logNormal.maxNumberIterations: 100
-DistributionFitter.logNormal.stepSize: 0.1
-DistributionFitter.logNormal.tolerance: 1e-4
-
-DistributionFitter.burr.maxNumberIterations: 100
-DistributionFitter.burr.stepSize: 1.0
-DistributionFitter.burr.tolerance: 1e-2
 
 #--------------------------------------------------------------------------------------------
 # Viewer Parameters

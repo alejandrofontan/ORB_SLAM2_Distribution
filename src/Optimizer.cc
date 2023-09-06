@@ -228,7 +228,7 @@ void Optimizer::RobustBundleAdjustment(const vector<Keyframe> &keyframes, const 
     std::sort(mahalanobisDistancesSorted.begin(),mahalanobisDistancesSorted.end());
 
     // Get subset of the distribution
-    int endIdx = int(mahalanobisDistancesSorted.size()) * parameters.pExp;
+    int endIdx = int(mahalanobisDistancesSorted.size()) * DIST_FITTER::DistributionFitter::params.pSubset;
     std::vector<double> subset(mahalanobisDistancesSorted.begin(), mahalanobisDistancesSorted.begin() + endIdx + 1);
 
     // Estimate outlier threshold
@@ -1275,8 +1275,8 @@ void Optimizer::RobustLocalBundleAdjustment(Keyframe& refKeyframe, bool* stopFla
             g2o::EdgeSE3ProjectXYZ *e = edgesMono[iEdgeMono];
 
             if((value > DIST_FITTER::DistributionFitter::params.minResidual)
-                    && (value < DIST_FITTER::DistributionFitter::params.maxResidual)
-                    && (e->isDepthPositive())){
+            && (value < DIST_FITTER::DistributionFitter::params.maxResidual)
+            && (e->isDepthPositive())){
 
                 mahalanobisDistancesSorted.push_back(value);
                 isInlierMono.push_back(true);
@@ -1284,31 +1284,21 @@ void Optimizer::RobustLocalBundleAdjustment(Keyframe& refKeyframe, bool* stopFla
                 isInlierMono.push_back(false);
             }
 
-
             ++iEdgeMono;
         }
 
         std::sort(mahalanobisDistancesSorted.begin(),mahalanobisDistancesSorted.end());
 
         // Get subset of the distribution
-        int endIdx = int(mahalanobisDistancesSorted.size()) * parameters.pExp;
+        int endIdx = int(mahalanobisDistancesSorted.size()) * DIST_FITTER::DistributionFitter::params.pSubset;
         std::vector<double> subset(mahalanobisDistancesSorted.begin(), mahalanobisDistancesSorted.begin() + endIdx + 1);
 
-        double mu{1.0}, sigma{1.0};
-        DIST_FITTER::DistributionFitter::FitLogLogistic(subset,mu,sigma);
-        th2_2dof = DIST_FITTER::DistributionFitter::LogLogistic_icdf(parameters.inlierProbability,mu,sigma);
-
-        //double new_th2_2dof = DIST_FITTER::DistributionFitter::LogLogistic_icdf(0.95,mu,sigma);
-
-       //if(new_th2_2dof > 1.0){
-            //parameters.updateChi2(new_th2_2dof,th2_3dof);
-            //parameters.UpdateInlierThresholds(new_th2_2dof,th2_3dof);
-        //}
+        static double alpha{1.0}, beta{1.0};
+        DIST_FITTER::DistributionFitter::FitGamma(subset,alpha,beta);
+        th2_2dof = DIST_FITTER::DistributionFitter::Gamma_icdf(parameters.inlierProbability,alpha,beta);
 
         printMessage("RobustBundleAdjustment","th2_2dof = " + std::to_string(th2_2dof) + " at "
             + std::to_string(parameters.inlierProbability) +" %", parameters.verbosity, VerbosityLevel::LOW);
-
-        //cout << "new_th2_2dof = " << new_th2_2dof << endl;
 
         // Get inlier observations
         DIST_FITTER::DistributionFitter::UpdateInliers(isInlierMono,mahalanobisDistancesMono,th2_2dof);
@@ -1323,7 +1313,6 @@ void Optimizer::RobustLocalBundleAdjustment(Keyframe& refKeyframe, bool* stopFla
         // Optimize again without the outliers
         optimizer.initializeOptimization(0);
         optimizer.optimize(parameters.localBundleAdjustment.optimizerItsFine);
-
     }
 
     vector<pair<KeyFrame *, MapPoint *> > vToErase;
@@ -1376,10 +1365,15 @@ void Optimizer::RobustLocalBundleAdjustment(Keyframe& refKeyframe, bool* stopFla
             KeyFrame *pKFi = vToErase[i].first;
             MapPoint *pMPi = vToErase[i].second;
             auto obs = pMPi->GetObservation(pKFi->mnId);
-            if (obs)
+            if (obs){
                 obs->setActive(false);
-            pKFi->EraseMapPointMatch(pMPi);
-            pMPi->EraseObservation(pKFi);
+                obs->numOutlier++;
+                //cout << double(obs->numOutlier)/double( obs->numOutlierEvaluations)<< endl;
+                //if((obs->numOutlier > 3)&&(obs->numOutlierEvaluations > 3)){
+
+                pKFi->EraseMapPointMatch(pMPi);
+                pMPi->EraseObservation(pKFi);
+            }
         }
     }
 

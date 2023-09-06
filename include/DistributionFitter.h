@@ -27,56 +27,50 @@
 using namespace std;
 namespace DIST_FITTER {
 
-    class DistributionFitterParameters;
-
-    struct BurrParameters {
-        double x;
-        double k;
-        double alpha;
-        double beta;
+    enum DistributionType {
+        GAMMA = 0,
+        LOGNORMAL = 1,
+        LOGLOGISTIC = 2,
+        TSTUDENT = 3
     };
-    double burr_icdf(double x, void* params);
+
+    class DistributionFitterParameters;
 
     class DistributionFitter {
     public:
 
-        enum DistributionType{
-            LOGNORMAL = 0,
-            TSTUDENT = 1,
-            BURR = 2,
-            LOGLOGISTIC = 3
-        };
-
         static DistributionFitterParameters params;
-        static DistributionType distributionType;
         static VerbosityLevel verbosity;
 
+        void static FitTwoParameterDistribution(vector<double>& data, double& param1, double& param2, const int& distributionType);
+        void static FitGamma(vector<double>& data, double& alpha, double& beta);
         void static FitLogNormal(vector<double>& data_, double& mu, double& sigma);
         void static FitLogLogistic(vector<double>& data_, double& mu, double& sigma);
-        void static FitBurr(vector<double>& data_, double& k, double& alpha, double& beta);
         void static FitTStudent(vector<double>& data_, double& nu, double& sigma);
 
-        double static Lognormal_icdf(const double& probability, const double& mu, const double& sigma);
+        double static Gamma_pdf(const double &x, const double &alpha, const double &beta);
+        double static LogNormal_pdf(const double &x, const double &mu, const double &sigma);
+        double static LogLogistic_pdf(const double &x, const double &mu, const double &sigma);
+
+        double static Gamma_icdf(const double& probability, const double& alpha, const double& beta);
+        double static LogNormal_icdf(const double& probability, const double& mu, const double& sigma);
         double static LogLogistic_icdf(const double& probability, const double& mu, const double& sigma);
-        double static Burr_icdf(const double& probability, const double& k, const double& alpha, const double& beta, double icdf_0 = 1.0);
 
         vector<bool> static GetInliers(const vector<double>& data, const double& threshold);
         void static UpdateInliers(vector<bool>& isInlier, const vector<double>& data, const double& threshold);
 
-        double static GetCorrectionFactor(const double& p_exp,const double& p, const double& sigma);
-
     private:
-        double static lognormal_pdf(double x, double mu, double sigma);
-        double static logNormal_loglikelihood(const gsl_vector* params, void* data);
 
-        double static logLogistic_pdf(double x, double mu, double sigma);
+        double static gamma_loglikelihood(const gsl_vector* params, void* data);
+        double static logNormal_loglikelihood(const gsl_vector* params, void* data);
         double static logLogistic_loglikelihood(const gsl_vector* params, void* data);
+
+        double static twoParameterNonNegativeDistributionLogLikelihood(const gsl_vector *fittedParams, void *data,
+                                                                       double (*pdfFunction)(const double&, const double&, const double&),
+                                                                       double (*icdfFunction)(const double&, const double&, const double&));
 
         double static tstudent_pdf(double x, double nu, double sigma);
         double static tstudent_loglikelihood(const gsl_vector* params, void* data);
-
-        double static burr_pdf(double x, double k, double alpha, double beta);
-        double static burr_loglikelihood(const gsl_vector* params, void* data);
 
         double static calculateKS(const std::vector<double>& data, const double& mu, const double& sigma);
 
@@ -84,56 +78,17 @@ namespace DIST_FITTER {
 
     class DistributionFitterParameters {
     public:
-
-        double p_subset{0.5};
-
-        struct LogNormal{
-            int maxNumberIterations{100};
-            double stepSize{0.1};
-            double tolerance{1e-4};
-            LogNormal() = default;
-            LogNormal(const int& maxNumberIterations, const double& stepSize, const double& tolerance):
-                    maxNumberIterations(maxNumberIterations),stepSize(stepSize),tolerance(tolerance){};
-        };
-
-        struct TStudent{
-            int maxNumberIterations{100};
-            double stepSize{0.1};
-            double tolerance{1e-4};
-            TStudent() = default;
-            TStudent(const int& maxNumberIterations, const double& stepSize, const double& tolerance):
-                    maxNumberIterations(maxNumberIterations),stepSize(stepSize),tolerance(tolerance){};
-        };
-
-        struct Burr{
-            int maxNumberIterations{100};
-            double stepSize{1.0};
-            double tolerance{1e-2};
-            double epsAbs{0.0};
-            double epsRel{0.001};
-            double icdf_upper_rel{10.0};
-            Burr() = default;
-            Burr(const int& maxNumberIterations, const double& stepSize, const double& tolerance):
-                    maxNumberIterations(maxNumberIterations),stepSize(stepSize),tolerance(tolerance){};
-        };
-
-    private:
-        friend std::ostream& operator<<(std::ostream& outstream, const DistributionFitterParameters& parameters);
-        friend class DistributionFitter;
-
-        LogNormal logNormal{};
-        TStudent tStudent{};
-        Burr burr{};
-    public:
+        double pSubset{0.5};
         const double minResidual{1e-8};
         const double maxResidual{100.0};
+    private:
+        const int maxNumberIterations{100};
+        const double stepSize{0.1};
+        const double tolerance{1e-4};
 
-    public:
-        void SetParameters(const LogNormal& logNormal_, const TStudent& tStudent_, const Burr& burr_){
-            logNormal = logNormal_;
-            tStudent = tStudent_;
-            burr = burr_;
-        }
+
+        friend std::ostream& operator<<(std::ostream& outstream, const DistributionFitterParameters& parameters);
+        friend class DistributionFitter;
     };
 }
 

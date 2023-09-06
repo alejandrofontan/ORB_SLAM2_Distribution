@@ -153,21 +153,8 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     KeyFrame::slamGraph = slamGraph;
 
     // Distribution Fitter
-    DIST_FITTER::DistributionFitterParameters::LogNormal logNormal(
-            settingsFile["DistributionFitter.logNormal.maxNumberIterations"],
-            settingsFile["DistributionFitter.logNormal.stepSize"],
-            settingsFile["DistributionFitter.logNormal.tolerance"]);
-    DIST_FITTER::DistributionFitterParameters::TStudent tStudent(
-            settingsFile["DistributionFitter.logNormal.maxNumberIterations"],
-            settingsFile["DistributionFitter.logNormal.stepSize"],
-            settingsFile["DistributionFitter.logNormal.tolerance"]);
-    DIST_FITTER::DistributionFitterParameters::Burr burr(
-            settingsFile["DistributionFitter.burr.maxNumberIterations"],
-            settingsFile["DistributionFitter.burr.stepSize"],
-            settingsFile["DistributionFitter.burr.tolerance"]);
-
     DIST_FITTER::DistributionFitter::verbosity = VerbosityLevel::LOW;
-    DIST_FITTER::DistributionFitter::params.SetParameters(logNormal,tStudent,burr);
+    //DIST_FITTER::DistributionFitter::params.pSubset = 0.5;
 
 #ifdef COMPILED_ABLATION
     vector<double> probabilities{0.5,0.6,
