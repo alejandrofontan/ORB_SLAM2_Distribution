@@ -195,7 +195,7 @@ public:
     double th_2dof{sqrt(th2_2dof)};
     double th_3dof{sqrt(th2_3dof)};
     double inlierProbability{0.95};
-    //double pExp{0.5};
+    double relativeOutlierThreshold{1.0};
     double exponent{2.0};
 
     PoseOptimizationParameters poseOptimization{};
@@ -250,6 +250,10 @@ public:
 
     void UpdateExponent(const double& exponent_){
         exponent = exponent_;
+    }
+
+    void UpdateRelativeOutlierThreshold(const double& relativeOutlierThreshold_){
+        relativeOutlierThreshold = relativeOutlierThreshold_;
     }
 };
 
