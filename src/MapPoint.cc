@@ -163,6 +163,14 @@ std::map<KeyframeId, Observation> MapPoint::GetActiveObservations()
     return activeObservations;
 }
 
+void MapPoint::UpdateActiveObservationsCheck()
+{
+    unique_lock<mutex> lock(mMutexFeatures);
+    for(auto& obs:observations)
+        if(obs.second.isActive())
+            obs.second.numOutlierChecks++;
+}
+
 std::map<KeyframeId, Observation> MapPoint::GetAllObservations()
 {
     unique_lock<mutex> lock(mMutexFeatures);

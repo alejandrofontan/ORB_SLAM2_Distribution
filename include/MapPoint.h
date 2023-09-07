@@ -57,7 +57,9 @@ class Observation{
         OctaveType refOctave{};
 
         int numOutlier{0};
-        void setActive(const bool& isActive_){active = isActive_;}
+        int numOutlierChecks{0};
+
+    void setActive(const bool& isActive_){active = isActive_;}
         bool isActive() const {return active;}
 
 private:
@@ -82,6 +84,8 @@ public:
     void EraseObservation(KeyFrame* projKeyframe);
     std::map<KeyframeId , Observation> GetAllObservations();
     std::map<KeyframeId , Observation> GetActiveObservations();
+    void UpdateActiveObservationsCheck();
+
     void activateAllObservations();
     int GetNumberOfObservations();
     Observation* GetObservation(const KeyframeId& keyframeId);
