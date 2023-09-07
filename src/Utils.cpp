@@ -119,3 +119,39 @@ void printMessage(const std::string& function, const std::string& message,
     if(verbosityLevel >= verbosityLevelRequired)
         std::cout << "[" << function << "] : " <<  message << std::endl;
 }
+
+unsigned long long ORB_SLAM2::nChooseK(int n, int k) {
+    if (k < 0 || k > n) {
+        return 0; // Invalid input, return 0
+    }
+
+    unsigned long long result = 1;
+
+    // Use the multiplicative formula for C(n, k)
+    for (int i = 1; i <= k; ++i) {
+        result *= n - i + 1;
+        result /= i;
+    }
+
+    return result;
+}
+
+double ORB_SLAM2::calculatePosteriorProbability(const double& p, const int& n, const  int& N){
+
+    auto nChooseK_N_n = double(nChooseK(N, n));
+    double inv_p = 1.0 - p;
+
+    // Calculate the binomial probability when the event has happened
+    double P_B_given_A = nChooseK_N_n * pow(p, n) * pow(inv_p, N - n);
+
+    // Calculate the binomial probability when the event hasn't happened
+    double P_B_given_not_A = nChooseK_N_n * pow(inv_p, n) * pow(p, N - n) * (1.0 - p);
+
+    // Calculate the total probability P(B)
+    double P_B = P_B_given_A * p + P_B_given_not_A * inv_p;
+
+    // Calculate the posterior probability P(A|B)
+    double P_A_given_B = P_B_given_A * p / P_B;
+
+    return P_A_given_B;
+}

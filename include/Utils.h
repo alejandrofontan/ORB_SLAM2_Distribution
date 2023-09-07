@@ -49,8 +49,10 @@ namespace ORB_SLAM2
     void vectorStd(float& std, const float& mean, const std::vector<float>& v);
     void vectorPercentage(float& th, const float& percentage, const std::vector<float>& v);
 
-    void saveVectorToFile(std::vector<double>& vectorToSave, const std::string& file, const int& precision = 10);
+    unsigned long long nChooseK(int n, int k);
+    double calculatePosteriorProbability(const double& p, const int& n, const  int& N);
 
+    void saveVectorToFile(std::vector<double>& vectorToSave, const std::string& file, const int& precision = 10);
 }
 
 #endif //ORB_SLAM2_DETERMINISTIC_UTILS_H
